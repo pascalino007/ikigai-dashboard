@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   LogOut,
-  User
+  User,
+  CreditCard
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -25,7 +26,11 @@ const navigation = [
   { name: 'Service Providers', href: '/providers', icon: Users },
   { name: 'Shops', href: '/shops', icon: Store },
   { name: 'Services', href: '/services', icon: Scissors },
+  { name: 'Categories', href: '/categories', icon: Scissors },
+  { name: 'Sliders', href: '/sliders', icon: Scissors },
   { name: 'Bookings', href: '/bookings', icon: Calendar },
+  { name: 'Payments', href: '/payments', icon: CreditCard },
+  { name: 'Users', href: '/users', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]

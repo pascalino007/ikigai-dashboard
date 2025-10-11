@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Search, Filter, Calendar, Clock, User, Phone, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
-import { Booking } from '@/types'
+import { Search, Filter, Calendar, Clock, User, Phone, CheckCircle, XCircle, AlertCircle, MapPin, Store } from 'lucide-react'
+import { Booking, Shop } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 
 // Mock data for demonstration
@@ -70,17 +70,76 @@ const mockBookings: Booking[] = [
   }
 ]
 
+// Mock shops data for demonstration
+const mockShops: Shop[] = [
+  {
+    id: 'shop1',
+    name: 'Downtown Beauty Studio',
+    address: '123 Main Street',
+    country: 'USA',
+    city: 'New York',
+    area: 'Manhattan',
+    phone: '+1 (555) 123-4567',
+    email: 'info@downtownbeauty.com',
+    description: 'Full-service beauty salon in the heart of downtown',
+    isActive: true,
+    ownerId: 'owner1',
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15'),
+    services: []
+  },
+  {
+    id: 'shop2',
+    name: 'Elite Hair & Spa',
+    address: '456 Oak Avenue',
+    country: 'USA',
+    city: 'Los Angeles',
+    area: 'Beverly Hills',
+    phone: '+1 (555) 234-5678',
+    email: 'contact@elitehairspa.com',
+    description: 'Luxury hair salon and spa services',
+    isActive: true,
+    ownerId: 'owner2',
+    createdAt: new Date('2024-01-20'),
+    updatedAt: new Date('2024-01-20'),
+    services: []
+  },
+  {
+    id: 'shop3',
+    name: 'Modern Cuts Barbershop',
+    address: '789 Pine Street',
+    country: 'USA',
+    city: 'Chicago',
+    area: 'Downtown',
+    phone: '+1 (555) 345-6789',
+    email: 'hello@moderncuts.com',
+    description: 'Contemporary barbershop with traditional techniques',
+    isActive: true,
+    ownerId: 'owner3',
+    createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-02-01'),
+    services: []
+  }
+]
+
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>(mockBookings)
+  const [shops] = useState<Shop[]>(mockShops)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterShop, setFilterShop] = useState<string>('all')
 
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = booking.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          booking.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || booking.status === filterStatus
-    return matchesSearch && matchesStatus
+    const matchesShop = filterShop === 'all' || booking.shopId === filterShop
+    return matchesSearch && matchesStatus && matchesShop
   })
+
+  const getShopInfo = (shopId: string) => {
+    return shops.find(shop => shop.id === shopId)
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -142,6 +201,16 @@ export default function BookingsPage() {
           <div className="flex gap-2">
             <select
               className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              value={filterShop}
+              onChange={(e) => setFilterShop(e.target.value)}
+            >
+              <option value="all">All Shops</option>
+              {shops.map(shop => (
+                <option key={shop.id} value={shop.id}>{shop.name}</option>
+              ))}
+            </select>
+            <select
+              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
@@ -151,10 +220,6 @@ export default function BookingsPage() {
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              More Filters
-            </Button>
           </div>
         </div>
       </div>
@@ -167,6 +232,9 @@ export default function BookingsPage() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Customer
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Shop
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date & Time
@@ -201,6 +269,28 @@ export default function BookingsPage() {
                         </div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {(() => {
+                      const shop = getShopInfo(booking.shopId)
+                      return shop ? (
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 flex items-center">
+                            <Store className="h-4 w-4 mr-2" />
+                            {shop.name}
+                          </div>
+                          <div className="text-sm text-gray-500 flex items-center">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {shop.city}, {shop.area}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {shop.phone}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">Shop not found</div>
+                      )
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 flex items-center">

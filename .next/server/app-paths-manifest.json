@@ -1,9 +1,5 @@
 {
   "/page": "app/page.js",
-  "/providers/page": "app/providers/page.js",
-  "/bookings/page": "app/bookings/page.js",
   "/shops/page": "app/shops/page.js",
-  "/analytics/page": "app/analytics/page.js",
-  "/services/page": "app/services/page.js",
-  "/settings/page": "app/settings/page.js"
+  "/providers/page": "app/providers/page.js"
 }

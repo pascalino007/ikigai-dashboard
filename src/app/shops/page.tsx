@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye } from 'lucide-react'
+import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors } from 'lucide-react'
 import { Shop } from '@/types'
 import { ShopForm } from '@/components/forms/shop-form'
 import { DashboardLayout } from '@/components/dashboard-layout'
@@ -13,7 +14,9 @@ const mockShops: Shop[] = [
     id: '1',
     name: 'Downtown Beauty Studio',
     address: '123 Main Street',
+    country: 'USA',
     city: 'New York',
+    area: 'Manhattan',
     phone: '+1 (555) 123-4567',
     email: 'info@downtownbeauty.com',
     description: 'Full-service beauty salon in the heart of downtown',
@@ -27,7 +30,9 @@ const mockShops: Shop[] = [
     id: '2',
     name: 'Elite Hair & Spa',
     address: '456 Oak Avenue',
+    country: 'USA',
     city: 'Los Angeles',
+    area: 'Beverly Hills',
     phone: '+1 (555) 234-5678',
     email: 'contact@elitehairspa.com',
     description: 'Luxury hair salon and spa services',
@@ -41,7 +46,9 @@ const mockShops: Shop[] = [
     id: '3',
     name: 'Modern Cuts Barbershop',
     address: '789 Pine Street',
+    country: 'USA',
     city: 'Chicago',
+    area: 'Downtown',
     phone: '+1 (555) 345-6789',
     email: 'hello@moderncuts.com',
     description: 'Contemporary barbershop with traditional techniques',
@@ -50,13 +57,69 @@ const mockShops: Shop[] = [
     createdAt: new Date('2024-02-01'),
     updatedAt: new Date('2024-02-01'),
     services: []
+  },
+  {
+    id: '4',
+    name: 'Paris Beauty Center',
+    address: '12 Rue de la Paix',
+    country: 'France',
+    city: 'Paris',
+    area: '1st Arrondissement',
+    phone: '+33 1 42 60 30 30',
+    email: 'contact@parisbeauty.fr',
+    description: 'Elegant beauty center in the heart of Paris',
+    isActive: true,
+    ownerId: 'owner4',
+    createdAt: new Date('2024-01-25'),
+    updatedAt: new Date('2024-01-25'),
+    services: []
+  },
+  {
+    id: '5',
+    name: 'London Hair Studio',
+    address: '45 Oxford Street',
+    country: 'UK',
+    city: 'London',
+    area: 'Westminster',
+    phone: '+44 20 7946 0958',
+    email: 'info@londonhair.co.uk',
+    description: 'Modern hair studio in central London',
+    isActive: true,
+    ownerId: 'owner5',
+    createdAt: new Date('2024-02-05'),
+    updatedAt: new Date('2024-02-05'),
+    services: []
   }
 ]
 
 export default function ShopsPage() {
+  const router = useRouter()
   const [shops, setShops] = useState<Shop[]>(mockShops)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCountry, setSelectedCountry] = useState('')
+  const [selectedCity, setSelectedCity] = useState('')
+  const [selectedArea, setSelectedArea] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+
+  // Get unique values for filters
+  const countries = Array.from(new Set(shops.map(shop => shop.country)))
+  const cities = selectedCountry 
+    ? Array.from(new Set(shops.filter(shop => shop.country === selectedCountry).map(shop => shop.city)))
+    : Array.from(new Set(shops.map(shop => shop.city)))
+  const areas = selectedCity
+    ? Array.from(new Set(shops.filter(shop => shop.city === selectedCity).map(shop => shop.area)))
+    : Array.from(new Set(shops.map(shop => shop.area)))
+
+  const filteredShops = shops.filter(shop => {
+    const matchesSearch = shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         shop.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         shop.address.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCountry = !selectedCountry || shop.country === selectedCountry
+    const matchesCity = !selectedCity || shop.city === selectedCity
+    const matchesArea = !selectedArea || shop.area === selectedArea
+    
+    return matchesSearch && matchesCountry && matchesCity && matchesArea
+  })
 
   const handleAddShop = async (data: any) => {
     const newShop: Shop = {
@@ -67,7 +130,9 @@ export default function ShopsPage() {
       profileImage: data.profileImage ? URL.createObjectURL(data.profileImage) : undefined,
       images: (data.images || []).map((f: File) => URL.createObjectURL(f)),
       address: data.address,
+      country: data.country || 'USA',
       city: data.city,
+      area: data.area || data.city,
       phone: data.phone,
       email: data.email || '',
       description: data.description,
@@ -82,11 +147,9 @@ export default function ShopsPage() {
     setShowAddModal(false)
   }
 
-  const filteredShops = shops.filter(shop => 
-    shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shop.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    shop.address.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const handleManageServices = (shopId: string) => {
+    router.push(`/shops/${shopId}/services`)
+  }
 
   return (
     <DashboardLayout>
@@ -104,19 +167,90 @@ export default function ShopsPage() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search and Location Filters */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search shops..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search shops..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {/* Location Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <select
+                value={selectedCountry}
+                onChange={(e) => {
+                  setSelectedCountry(e.target.value)
+                  setSelectedCity('') // Reset city when country changes
+                  setSelectedArea('') // Reset area when country changes
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              >
+                <option value="">All Countries</option>
+                {countries.map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <select
+                value={selectedCity}
+                onChange={(e) => {
+                  setSelectedCity(e.target.value)
+                  setSelectedArea('') // Reset area when city changes
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              >
+                <option value="">All Cities</option>
+                {cities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+              <select
+                value={selectedArea}
+                onChange={(e) => setSelectedArea(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              >
+                <option value="">All Areas</option>
+                {areas.map(area => (
+                  <option key={area} value={area}>{area}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-end">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSelectedCountry('')
+                  setSelectedCity('')
+                  setSelectedArea('')
+                  setSearchTerm('')
+                }}
+                className="w-full"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
+      
 
       {/* Shops Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -140,7 +274,7 @@ export default function ShopsPage() {
               <div className="space-y-2 mb-4">
                 <div className="flex items-center text-sm text-gray-600">
                   <MapPin className="h-4 w-4 mr-2" />
-                  {shop.address}, {shop.city}
+                  {shop.address}, {shop.area}, {shop.city}, {shop.country}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Phone className="h-4 w-4 mr-2" />
@@ -157,6 +291,15 @@ export default function ShopsPage() {
                   Created {shop.createdAt.toLocaleDateString()}
                 </div>
                 <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleManageServices(shop.id)}
+                    className="text-ikigai-primary border-ikigai-primary hover:bg-ikigai-primary hover:text-white"
+                  >
+                    <Scissors className="h-4 w-4 mr-1" />
+                    Services
+                  </Button>
                   <Button variant="ghost" size="sm">
                     <Eye className="h-4 w-4" />
                   </Button>
