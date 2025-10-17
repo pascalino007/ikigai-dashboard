@@ -1,12 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors } from 'lucide-react'
+import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors, Filter } from 'lucide-react'
 import { Shop } from '@/types'
 import { ShopForm } from '@/components/forms/shop-form'
+import { ShopViewModal } from '@/components/modals/shop-view-modal'
+import { ShopEditModal } from '@/components/modals/shop-edit-modal'
 import { DashboardLayout } from '@/components/dashboard-layout'
+import { shopApi, handleApiError, handleApiSuccess } from '@/services/api'
+import { RouteGuard } from '@/components/auth/route-guard'
 
 // Mock data for demonstration
 const mockShops: Shop[] = [
@@ -96,12 +100,18 @@ export default function ShopsPage() {
   const router = useRouter()
   const [shops, setShops] = useState<Shop[]>(mockShops)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedArea, setSelectedArea] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showViewModal, setShowViewModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedShop, setSelectedShop] = useState<Shop | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Get unique values for filters
+  const categories = Array.from(new Set(shops.map(shop => shop.category).filter(Boolean)))
   const countries = Array.from(new Set(shops.map(shop => shop.country)))
   const cities = selectedCountry 
     ? Array.from(new Set(shops.filter(shop => shop.country === selectedCountry).map(shop => shop.city)))
@@ -114,45 +124,137 @@ export default function ShopsPage() {
     const matchesSearch = shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          shop.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          shop.address.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = !selectedCategory || shop.category === selectedCategory
     const matchesCountry = !selectedCountry || shop.country === selectedCountry
     const matchesCity = !selectedCity || shop.city === selectedCity
     const matchesArea = !selectedArea || shop.area === selectedArea
     
-    return matchesSearch && matchesCountry && matchesCity && matchesArea
+    return matchesSearch && matchesCategory && matchesCountry && matchesCity && matchesArea
   })
 
-  const handleAddShop = async (data: any) => {
-    const newShop: Shop = {
-      id: Date.now().toString(),
-      name: data.name,
-      category: data.category,
-      tags: data.tags,
-      profileImage: data.profileImage ? URL.createObjectURL(data.profileImage) : undefined,
-      images: (data.images || []).map((f: File) => URL.createObjectURL(f)),
-      address: data.address,
-      country: data.country || 'USA',
-      city: data.city,
-      area: data.area || data.city,
-      phone: data.phone,
-      email: data.email || '',
-      description: data.description,
-      isActive: true,
-      ownerId: 'owner-new',
-      openingHours: data.openingHours,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      services: []
+  // Load shops from API on component mount
+  useEffect(() => {
+    loadShops()
+  }, [])
+
+  const loadShops = async () => {
+    setIsLoading(true)
+    try {
+      const response = await shopApi.getAll({
+        search: searchTerm,
+        category: selectedCategory,
+        country: selectedCountry,
+        city: selectedCity,
+        area: selectedArea
+      })
+      setShops(response)
+    } catch (error) {
+      console.error('Error loading shops:', error)
+      // Fallback to mock data if API fails
+      setShops(mockShops)
+    } finally {
+      setIsLoading(false)
     }
-    setShops(prev => [newShop, ...prev])
-    setShowAddModal(false)
+  }
+
+  const handleAddShop = async (data: any) => {
+    setIsLoading(true)
+    try {
+      const response = await shopApi.create(data)
+      setShops(prev => [response, ...prev])
+      setShowAddModal(false)
+    } catch (error) {
+      console.error('Error creating shop:', error)
+      // Fallback to local state update
+      const newShop: Shop = {
+        id: Date.now().toString(),
+        name: data.name,
+        category: data.category,
+        tags: data.tags,
+        profileImage: data.profileImage ? URL.createObjectURL(data.profileImage) : undefined,
+        images: (data.images || []).map((f: File) => URL.createObjectURL(f)),
+        address: data.address,
+        country: data.country || 'USA',
+        city: data.city,
+        area: data.area || data.city,
+        phone: data.phone,
+        email: data.email || '',
+        description: data.description,
+        isActive: true,
+        ownerId: 'owner-new',
+        openingHours: data.openingHours,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        services: []
+      }
+      setShops(prev => [newShop, ...prev])
+      setShowAddModal(false)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleViewShop = (shop: Shop) => {
+    setSelectedShop(shop)
+    setShowViewModal(true)
+  }
+
+  const handleEditShop = (shop: Shop) => {
+    setSelectedShop(shop)
+    setShowEditModal(true)
+  }
+
+  const handleUpdateShop = async (shopId: string, data: any) => {
+    setIsLoading(true)
+    try {
+      const response = await shopApi.update(shopId, data)
+      setShops(prev => prev.map(shop => shop.id === shopId ? response : shop))
+      setShowEditModal(false)
+      setSelectedShop(null)
+    } catch (error) {
+      console.error('Error updating shop:', error)
+      // Fallback to local state update
+      setShops(prev => prev.map(shop => 
+        shop.id === shopId 
+          ? { ...shop, ...data, updatedAt: new Date() }
+          : shop
+      ))
+      setShowEditModal(false)
+      setSelectedShop(null)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleteShop = async (shopId: string) => {
+    setIsLoading(true)
+    try {
+      await shopApi.delete(shopId)
+      setShops(prev => prev.filter(shop => shop.id !== shopId))
+      setShowViewModal(false)
+      setSelectedShop(null)
+    } catch (error) {
+      console.error('Error deleting shop:', error)
+      // Fallback to local state update
+      setShops(prev => prev.filter(shop => shop.id !== shopId))
+      setShowViewModal(false)
+      setSelectedShop(null)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleManageServices = (shopId: string) => {
     router.push(`/shops/${shopId}/services`)
   }
 
+  const handleViewShopDetails = (shopId: string) => {
+    router.push(`/shops/${shopId}`)
+  }
+
   return (
-    <DashboardLayout>
+    <RouteGuard allowedRoles={['admin', 'manager', 'enroller']}>
+      <DashboardLayout>
       <div className="p-6">
       <div className="mb-8">
         <div className="flex justify-between items-center">
@@ -182,8 +284,22 @@ export default function ShopsPage() {
             />
           </div>
 
-          {/* Location Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              >
+                <option value="">All Categories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
               <select
@@ -237,6 +353,7 @@ export default function ShopsPage() {
               <Button 
                 variant="outline" 
                 onClick={() => {
+                  setSelectedCategory('')
                   setSelectedCountry('')
                   setSelectedCity('')
                   setSelectedArea('')
@@ -300,13 +417,33 @@ export default function ShopsPage() {
                     <Scissors className="h-4 w-4 mr-1" />
                     Services
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleViewShopDetails(shop.id)}
+                    title="View Shop Details"
+                  >
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleEditShop(shop)}
+                    title="Edit Shop"
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete this shop?')) {
+                        handleDeleteShop(shop.id)
+                      }
+                    }}
+                    title="Delete Shop"
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -316,8 +453,31 @@ export default function ShopsPage() {
         ))}
       </div>
 
+      {/* Modals */}
       <ShopForm isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSubmit={handleAddShop} />
+      
+      <ShopViewModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false)
+          setSelectedShop(null)
+        }}
+        shop={selectedShop}
+        onEdit={handleEditShop}
+        onDelete={handleDeleteShop}
+      />
+      
+      <ShopEditModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setSelectedShop(null)
+        }}
+        shop={selectedShop}
+        onSubmit={handleUpdateShop}
+      />
       </div>
     </DashboardLayout>
+    </RouteGuard>
   )
 }

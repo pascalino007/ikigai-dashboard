@@ -133,6 +133,124 @@ export interface User {
   updatedAt: Date;
 }
 
+export interface SpecialOffer {
+  id: string;
+  title: string;
+  description: string;
+  serviceId: string;
+  serviceName: string;
+  shopId: string;
+  shopName: string;
+  originalPrice: number;
+  discountedPrice: number;
+  discountPercentage: number;
+  startDate: Date;
+  endDate: Date;
+  duration: number; // in days
+  isActive: boolean;
+  maxUses?: number; // optional limit on how many times this offer can be used
+  usedCount: number; // how many times this offer has been used
+  image?: string;
+  termsAndConditions?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string; // admin or shop owner ID
+}
+
+export interface ShopService {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: number; // in minutes
+  category: string;
+  subcategory?: string;
+  shopId: string;
+  shopName: string;
+  providerId?: string; // optional if service is provided by specific provider
+  providerName?: string;
+  isActive: boolean;
+  image?: string;
+  tags?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Worker {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  profilePicture?: string;
+  specialization: string; // e.g., 'Hair Stylist', 'Nail Technician', 'Massage Therapist'
+  experience: number; // years of experience
+  hourlyRate: number;
+  shopId: string;
+  shopName: string;
+  isActive: boolean;
+  status: 'available' | 'busy' | 'break' | 'offline';
+  currentBookingId?: string; // if busy, which booking they're working on
+  rating: number;
+  totalBookings: number;
+  totalEarnings: number;
+  workingHours: {
+    start: string; // e.g., "09:00"
+    end: string;   // e.g., "18:00"
+    days: string[]; // e.g., ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WorkerPerformance {
+  workerId: string;
+  workerName: string;
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  date: Date;
+  totalBookings: number;
+  totalRevenue: number;
+  averageRating: number;
+  totalHoursWorked: number;
+  bookingsCompleted: number;
+  bookingsCancelled: number;
+  customerSatisfaction: number; // percentage
+  servicesPerformed: Array<{
+    serviceName: string;
+    count: number;
+    revenue: number;
+  }>;
+}
+
+export interface ShopPerformance {
+  shopId: string;
+  shopName: string;
+  period: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  date: Date;
+  totalRevenue: number;
+  totalBookings: number;
+  averageRating: number;
+  totalWorkers: number;
+  activeWorkers: number;
+  workerPerformance: Array<{
+    workerId: string;
+    workerName: string;
+    bookings: number;
+    revenue: number;
+    rating: number;
+  }>;
+  topServices: Array<{
+    serviceName: string;
+    bookings: number;
+    revenue: number;
+  }>;
+  customerMetrics: {
+    newCustomers: number;
+    returningCustomers: number;
+    customerSatisfaction: number;
+  };
+}
+
 export interface DashboardStats {
   totalProviders: number;
   totalShops: number;

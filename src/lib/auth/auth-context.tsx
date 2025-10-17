@@ -6,8 +6,9 @@ interface User {
   id: string
   email: string
   name: string
-  role: 'admin' | 'manager' | 'staff'
+  role: 'admin' | 'manager' | 'enroller'
   avatar?: string
+  enrolledShops?: number // For enrollers to track their enrolled shops
 }
 
 interface AuthContextType {
@@ -20,15 +21,34 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Mock admin credentials for demonstration
-const MOCK_ADMIN = {
-  id: '1',
-  email: 'admin@ikigai.com',
-  password: 'admin123',
-  name: 'Admin User',
-  role: 'admin' as const,
-  avatar: undefined
-}
+// Mock user credentials for demonstration
+const MOCK_USERS = [
+  {
+    id: '1',
+    email: 'admin@ikigai.com',
+    password: 'admin123',
+    name: 'Admin User',
+    role: 'admin' as const,
+    avatar: undefined
+  },
+  {
+    id: '2',
+    email: 'manager@ikigai.com',
+    password: 'manager123',
+    name: 'Manager User',
+    role: 'manager' as const,
+    avatar: undefined
+  },
+  {
+    id: '3',
+    email: 'enroller@ikigai.com',
+    password: 'enroller123',
+    name: 'Enroller User',
+    role: 'enroller' as const,
+    avatar: undefined,
+    enrolledShops: 5
+  }
+]
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -59,13 +79,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     // Mock authentication logic
-    if (email === MOCK_ADMIN.email && password === MOCK_ADMIN.password) {
+    const foundUser = MOCK_USERS.find(user => 
+      user.email === email && user.password === password
+    )
+    
+    if (foundUser) {
       const userData: User = {
-        id: MOCK_ADMIN.id,
-        email: MOCK_ADMIN.email,
-        name: MOCK_ADMIN.name,
-        role: MOCK_ADMIN.role,
-        avatar: MOCK_ADMIN.avatar
+        id: foundUser.id,
+        email: foundUser.email,
+        name: foundUser.name,
+        role: foundUser.role,
+        avatar: foundUser.avatar,
+        enrolledShops: foundUser.enrolledShops
       }
       
       setUser(userData)

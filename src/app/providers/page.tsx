@@ -6,6 +6,7 @@ import { Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react'
 import { ServiceProvider } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ProviderForm } from '@/components/forms/provider-form'
+import { AdminOnly } from '@/components/auth/route-guard'
 
 // Mock data for demonstration
 const shopIdToName: Record<string, string> = {
@@ -123,7 +124,8 @@ export default function ProvidersPage() {
   }
 
   return (
-    <DashboardLayout>
+    <AdminOnly>
+      <DashboardLayout>
       <div className="p-6">
       <div className="mb-8">
         <div className="flex justify-between items-center">
@@ -288,5 +290,6 @@ export default function ProvidersPage() {
       />
       </div>
     </DashboardLayout>
+    </AdminOnly>
   )
 }

@@ -15,31 +15,43 @@ import {
   X,
   LogOut,
   User,
-  CreditCard
+  CreditCard,
+  Percent,
+  Wrench,
+  Plus,
+  UserCheck,
+  TrendingUp
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/auth-context'
+import { usePermissions } from '@/lib/auth/use-permissions'
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Service Providers', href: '/providers', icon: Users },
-  { name: 'Shops', href: '/shops', icon: Store },
-  { name: 'Services', href: '/services', icon: Scissors },
-  { name: 'Categories', href: '/categories', icon: Scissors },
-  { name: 'Sliders', href: '/sliders', icon: Scissors },
-  { name: 'Bookings', href: '/bookings', icon: Calendar },
-  { name: 'Payments', href: '/payments', icon: CreditCard },
-  { name: 'Users', href: '/users', icon: Users },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
-]
+// Icon mapping for dynamic navigation
+const iconMap = {
+  LayoutDashboard,
+  Users,
+  Store,
+  Wrench,
+  Percent,
+  Scissors,
+  Calendar,
+  CreditCard,
+  BarChart3,
+  Settings,
+  Plus,
+  UserCheck,
+  TrendingUp
+}
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const { user, logout } = useAuth()
+  const { getNavigationItems } = usePermissions()
   const router = useRouter()
+
+  const navigation = getNavigationItems()
 
   const handleLogout = () => {
     logout()
@@ -74,6 +86,7 @@ export function Sidebar() {
           <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href
+              const IconComponent = iconMap[item.icon as keyof typeof iconMap]
               return (
                 <Link
                   key={item.name}
@@ -86,7 +99,7 @@ export function Sidebar() {
                   )}
                   onClick={() => setIsOpen(false)}
                 >
-                  <item.icon className="mr-3 h-5 w-5" />
+                  <IconComponent className="mr-3 h-5 w-5" />
                   {item.name}
                 </Link>
               )

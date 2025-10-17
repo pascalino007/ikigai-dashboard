@@ -139,12 +139,27 @@ export function LoginForm() {
 
           <div className="text-center">
             <div className="text-sm text-gray-600">
-              <p className="font-medium">Demo Credentials:</p>
-              <p>Email: admin@ikigai.com</p>
-              <p>Password: admin123</p>
+              <p className="font-medium mb-3">Demo Credentials:</p>
+               <div className="space-y-2 text-left">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="font-semibold text-blue-800">Admin (Full Access)</p>
+                  <p className="text-xs">Email: admin@ikigai.com</p>
+                  <p className="text-xs">Password: admin123</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="font-semibold text-green-800">Manager (Shops & Services)</p>
+                  <p className="text-xs">Email: manager@ikigai.com</p>
+                  <p className="text-xs">Password: manager123</p>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <p className="font-semibold text-purple-800">Enroller (Register Shops)</p>
+                  <p className="text-xs">Email: enroller@ikigai.com</p>
+                  <p className="text-xs">Password: enroller123</p>
+                </div>
+              </div> 
             </div>
-            <div className="mt-4">
-              <Button
+            <div className="mt-4 space-x-2">
+               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
@@ -153,7 +168,29 @@ export function LoginForm() {
                 }}
                 className="text-xs"
               >
-                Fill Demo Credentials
+                Admin
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEmail('manager@ikigai.com')
+                  setPassword('manager123')
+                }}
+                className="text-xs"
+              >
+                Manager
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setEmail('enroller@ikigai.com')
+                  setPassword('enroller123')
+                }}
+                className="text-xs"
+              >
+                Enroller
               </Button>
             </div>
           </div>
