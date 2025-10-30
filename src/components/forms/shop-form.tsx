@@ -160,7 +160,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   setIsSubmitting(true);
     try {
-    const res = await fetch('http://localhost:4040/shops', {
+    const res = await fetch('http://168.231.101.119:4040/shops', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),

@@ -142,7 +142,7 @@ export default function ShopsPage() {
   const loadShops = async () => {
   setIsLoading(true)
   try {
-    const response = await fetch(`http://localhost:4040/shops`, {
+    const response = await fetch(`http://168.231.101.119:4040/shops`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

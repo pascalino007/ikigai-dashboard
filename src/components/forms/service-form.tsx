@@ -64,7 +64,7 @@ export function ServiceForm({
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true)
-        const res = await fetch('http://localhost:4040/categories')
+        const res = await fetch('http://168.231.101.119:4040/categories')
         const data = await res.json()
         setCategories(data)
       } catch (err) {
@@ -83,7 +83,7 @@ export function ServiceForm({
       if (!formData.category) return
       try {
         setLoadingSubcategories(true)
-        const res = await fetch(`http://localhost:4040/sous-categories/subcate/${formData.category}`)
+        const res = await fetch(`http://168.231.101.119:4040/sous-categories/subcate/${formData.category}`)
         const data = await res.json()
         setSubcategories(data)
       } catch (err) {
@@ -164,7 +164,7 @@ export function ServiceForm({
       provider_name: formData.provider_name || '',
     }
 
-    const response = await fetch('http://localhost:4040/services', {
+    const response = await fetch('http://168.231.101.119:4040/services', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

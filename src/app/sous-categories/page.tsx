@@ -28,7 +28,7 @@ export default function ShopServicesPage() {
     const fetchServices = async () => {
       setLoading(true)
       try {
-        const res = await fetch(`http://localhost:4040/sous-categories`, {
+        const res = await fetch(`http://168.231.101.119:4040/sous-categories`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         })

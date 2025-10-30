@@ -96,7 +96,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
         imageurl: formData.imageurl.trim(),
       }
 
-      const response = await fetch('http://localhost:4040/categories/', {
+      const response = await fetch('http://168.231.101.119:4040/categories/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
