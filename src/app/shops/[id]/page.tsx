@@ -78,7 +78,7 @@ const mockWorkers: Worker[] = [
   }
 ]
 
-type TabType = 'overview' | 'workers' | 'performance' | 'bookings' | 'payments' | 'settings'
+type TabType = 'overview' | 'workers' | 'performance' | 'bookings' | 'payments' | 'settings' | 'Boutique'
 
 export default function ShopDetailPage() {
   const params = useParams()
@@ -104,6 +104,7 @@ export default function ShopDetailPage() {
     { id: 'bookings', name: 'Bookings', icon: Calendar },
     { id: 'payments', name: 'Payments', icon: CreditCard },
     { id: 'settings', name: 'Settings', icon: Settings },
+     { id: 'Boutique', name: 'Boutique', icon: Settings },
   ]
 
   const renderTabContent = () => {
@@ -120,6 +121,7 @@ export default function ShopDetailPage() {
         return <ShopPaymentsTab shopId={shopId} shop={shop} />
       case 'settings':
         return <ShopSettingsTab shop={shop} />
+      
       default:
         return <ShopOverviewTab shop={shop} workers={workers} />
     }

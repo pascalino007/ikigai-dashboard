@@ -275,8 +275,9 @@ export function UserForm({ isOpen, onClose, onSubmit, initialData }: UserFormPro
                     errors.role ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
-                  <option value="customer">Customer</option>
-                  <option value="provider">Provider</option>
+                  <option value="customer">Client</option>
+                  <option value="enroller">Enroller</option>
+                   <option value="provider">Provider</option>
                   <option value="manager">Manager</option>
                   <option value="admin">Admin</option>
                 </select>

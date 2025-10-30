@@ -1,8 +1,11 @@
 {
   "/not-found": "app/not-found.js",
+  "/shop-services/page": "app/shop-services/page.js",
+  "/sous-categories/page": "app/sous-categories/page.js",
+  "/shops/page": "app/shops/page.js",
+  "/shops/[id]/services/page": "app/shops/[id]/services/page.js",
+  "/categories/page": "app/categories/page.js",
   "/page": "app/page.js",
-  "/login/page": "app/login/page.js",
   "/special-offers/page": "app/special-offers/page.js",
-  "/users/page": "app/users/page.js",
-  "/categories/page": "app/categories/page.js"
+  "/providers/page": "app/providers/page.js"
 }

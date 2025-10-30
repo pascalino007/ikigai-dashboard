@@ -1,4 +1,4 @@
-// File: C:\Ikigia\Ikigai-dashboard\src\app\special-offers\page.tsx
+// File: C:\Users\pasca\OneDrive\Documents\GitHub\ikigai-dashboard\src\app\special-offers\page.tsx
 import * as entry from '../../../../src/app/special-offers/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -84,7 +84,7 @@ const serviceSubcategories = {
   'Other': ['Consultation', 'Package Deal', 'Custom Service']
 }
 
-export default function ShopServicesPage() {
+export default function Enrollers() {
   const [shopServices, setShopServices] = useState<ShopService[]>(mockShopServices)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
@@ -155,36 +155,18 @@ export default function ShopServicesPage() {
     }
   }
 
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-
-const handleSelect = (id: string) => {
-  setSelectedServices((prev) =>
-    prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-  );
-};
-
-const allSelected = filteredServices.length > 0 && selectedServices.length === filteredServices.length;
-
-const toggleSelectAll = () => {
-  if (allSelected) {
-    setSelectedServices([]);
-  } else {
-    setSelectedServices(filteredServices.map((s) => s.id));
-  }
-};
-
   return (
     <DashboardLayout>
       <div className="p-6">
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Services rf</h1>
-              <p className="text-gray-600 mt-2">Manage your shop's services and offerings</p>
+              <h1 className="text-3xl font-bold text-gray-900">Enrollers</h1>
+              <p className="text-gray-600 mt-2">l</p>
             </div>
             <Button onClick={() => setShowAddModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add Service
+             Add Enroller
             </Button>
           </div>
         </div>
@@ -239,10 +221,10 @@ const toggleSelectAll = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service Details
+                   Nom
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
+                    Nb Shop Enrolled
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Provider
@@ -262,40 +244,29 @@ const toggleSelectAll = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                 {filteredServices.map((service) => (
-      <tr key={service.id} className="hover:bg-gray-50">
-        {/* ✅ Checkbox column */}
-        <td className="px-6 py-4 whitespace-nowrap">
-          <input
-            type="checkbox"
-            checked={selectedServices.includes(service.id)}
-            onChange={() => handleSelect(service.id)}
-            className="h-4 w-4 text-ikigai-primary border-gray-300 rounded"
-          />
-        </td>
-
-        {/* Existing columns below */}
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            <div className="h-12 w-12 rounded-lg bg-ikigai-primary flex items-center justify-center overflow-hidden">
-              {service.image ? (
-                <img
-                  src={service.image}
-                  alt={service.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-sm font-medium text-white">
-                  {service.name.split(' ').map((n) => n[0]).join('')}
-                </span>
-              )}
-            </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900">{service.name}</div>
-              <div className="text-sm text-gray-500 max-w-xs truncate">{service.description}</div>
-            </div>
-          </div>
-        </td>
+                {filteredServices.map((service) => (
+                  <tr key={service.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-12 w-12 rounded-lg bg-ikigai-primary flex items-center justify-center overflow-hidden">
+                          {service.image ? (
+                            <img 
+                              src={service.image} 
+                              alt={service.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-white">
+                              {service.name.split(' ').map(n => n[0]).join('')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{service.name}</div>
+                          <div className="text-sm text-gray-500 max-w-xs truncate">{service.description}</div>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(service.category)}`}>

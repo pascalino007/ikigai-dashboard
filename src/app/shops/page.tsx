@@ -13,7 +13,7 @@ import { shopApi, handleApiError, handleApiSuccess } from '@/services/api'
 import { RouteGuard } from '@/components/auth/route-guard'
 
 // Mock data for demonstration
-const mockShops: Shop[] = [
+/* const mockShops: Shop[] = [
   {
     id: '1',
     name: 'Downtown Beauty Studio',
@@ -94,11 +94,11 @@ const mockShops: Shop[] = [
     updatedAt: new Date('2024-02-05'),
     services: []
   }
-]
+] */
 
 export default function ShopsPage() {
   const router = useRouter()
-  const [shops, setShops] = useState<Shop[]>(mockShops)
+  const [shops, setShops] = useState<Shop[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedCountry, setSelectedCountry] = useState('')
@@ -137,25 +137,33 @@ export default function ShopsPage() {
     loadShops()
   }, [])
 
+
+
   const loadShops = async () => {
-    setIsLoading(true)
-    try {
-      const response = await shopApi.getAll({
-        search: searchTerm,
-        category: selectedCategory,
-        country: selectedCountry,
-        city: selectedCity,
-        area: selectedArea
-      })
-      setShops(response)
-    } catch (error) {
-      console.error('Error loading shops:', error)
-      // Fallback to mock data if API fails
-      setShops(mockShops)
-    } finally {
-      setIsLoading(false)
+  setIsLoading(true)
+  try {
+    const response = await fetch(`http://localhost:4040/shops`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch shops: ${response.status}`)
     }
+
+    const data = await response.json()
+    setShops(data)
+  } catch (error) {
+    console.error('Error loading shops:', error)
+    // Fallback to mock data if API fails
+    setShops([])
+  } finally {
+    setIsLoading(false)
   }
+}
+
 
   const handleAddShop = async (data: any) => {
     setIsLoading(true)
@@ -372,84 +380,108 @@ export default function ShopsPage() {
       {/* Shops Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredShops.map((shop) => (
-          <div key={shop.id} className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{shop.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{shop.description}</p>
-                </div>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  shop.isActive 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {shop.isActive ? 'Active' : 'Inactive'}
-                </span>
-              </div>
+         <div
+  key={shop.id}
+  className="bg-white rounded-lg shadow overflow-hidden flex flex-col md:flex-row"
+>
+  {/* Left: Image Section */}
+  <div className="md:w-1/2 w-full h-48 md:h-auto relative">
+    <img
+      src={shop.profileImageUrl || '/placeholder-shop.jpg'}
+      alt={shop.name}
+      className="object-cover w-full h-full"
+    />
+    <span
+      className={`absolute top-3 right-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shadow-md ${
+        shop.isActive
+          ? 'bg-green-100 text-green-800'
+          : 'bg-red-100 text-red-800'
+      }`}
+    >
+      {shop.isActive ? 'Active' : 'Inactive'}
+    </span>
+  </div>
 
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  {shop.address}, {shop.area}, {shop.city}, {shop.country}
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <Phone className="h-4 w-4 mr-2" />
-                  {shop.phone}
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <Mail className="h-4 w-4 mr-2" />
-                  {shop.email}
-                </div>
-              </div>
+  {/* Right: Content Section */}
+  <div className="md:w-2/3 w-full p-6 flex flex-col justify-between">
+    <div>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {shop.name}
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">{shop.description}</p>
+        </div>
+      </div>
 
-              <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                <div className="text-xs text-gray-500">
-                  Created {shop.createdAt.toLocaleDateString()}
-                </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleManageServices(shop.id)}
-                    className="text-ikigai-primary border-ikigai-primary hover:bg-ikigai-primary hover:text-white"
-                  >
-                    <Scissors className="h-4 w-4 mr-1" />
-                    Services
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleViewShopDetails(shop.id)}
-                    title="View Shop Details"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleEditShop(shop)}
-                    title="Edit Shop"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-red-600 hover:text-red-700"
-                    onClick={() => {
-                      if (confirm('Are you sure you want to delete this shop?')) {
-                        handleDeleteShop(shop.id)
-                      }
-                    }}
-                    title="Delete Shop"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="space-y-2 mt-4">
+        <div className="flex items-center text-sm text-gray-600">
+          <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+          {shop.address}, {shop.area}, {shop.city}, {shop.country}
+        </div>
+        <div className="flex items-center text-sm text-gray-600">
+          <Phone className="h-4 w-4 mr-2 text-gray-500" />
+          {shop.phone}
+        </div>
+        <div className="flex items-center text-sm text-gray-600">
+          <Mail className="h-4 w-4 mr-2 text-gray-500" />
+          {shop.email}
+        </div>
+      </div>
+    </div>
+
+    <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-200">
+      <div className="text-xs text-gray-500">
+        Created on {shop.createdAt.toString().slice(0, 10)}
+      </div>
+
+      <div className="flex space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleManageServices(shop.id)}
+          className="text-ikigai-primary border-ikigai-primary hover:bg-ikigai-primary hover:text-white"
+        >
+          <Scissors className="h-4 w-4 mr-1" />
+          Services
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleViewShopDetails(shop.id)}
+          title="View Shop Details"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleEditShop(shop)}
+          title="Edit Shop"
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-red-600 hover:text-red-700"
+          onClick={() => {
+            if (confirm('Are you sure you want to delete this shop?')) {
+              handleDeleteShop(shop.id)
+            }
+          }}
+          title="Delete Shop"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  </div>
+</div>
+
         ))}
       </div>
 

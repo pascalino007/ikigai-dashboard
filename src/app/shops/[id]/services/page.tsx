@@ -7,51 +7,12 @@ import { Plus, ArrowLeft, Search, Clock, DollarSign, Edit, Trash2, Eye, Scissors
 import { Service } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ServiceForm } from '@/components/forms/service-form'
+import { error } from 'console'
 
 // Mock data for demonstration
 const mockServices: Service[] = [
-  {
-    id: '1',
-    name: 'Haircut & Styling',
-    description: 'Professional haircut with styling and consultation',
-    price: 45,
-    duration: 60,
-    category: 'Hair',
-    subcategory: 'Haircut',
-    providerId: 'provider1',
-    shopId: '1',
-    isActive: true,
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15')
-  },
-  {
-    id: '2',
-    name: 'Beard Trim',
-    description: 'Precision beard trimming and shaping',
-    price: 25,
-    duration: 30,
-    category: 'Barber',
-    subcategory: 'Beard Trim',
-    providerId: 'provider1',
-    shopId: '1',
-    isActive: true,
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15')
-  },
-  {
-    id: '3',
-    name: 'Full Makeup',
-    description: 'Complete makeup application for special occasions',
-    price: 80,
-    duration: 90,
-    category: 'Beauty',
-    subcategory: 'Makeup',
-    providerId: 'provider2',
-    shopId: '2',
-    isActive: true,
-    createdAt: new Date('2024-01-20'),
-    updatedAt: new Date('2024-01-20')
-  }
+  
+
 ]
 
 // Mock shop data
@@ -73,21 +34,57 @@ export default function ShopServicesPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
   const [shopName, setShopName] = useState('')
+  const [loading, setLoading] = useState(false);
+const [error, setError] = useState('');
 
   // Filter services for this specific shop
-  useEffect(() => {
-    const shopServices = mockServices.filter(service => service.shopId === shopId)
-    setServices(shopServices)
-    
-    // Get shop name
-    const shop = mockShops.find(s => s.id === shopId)
-    setShopName(shop?.name || 'Unknown Shop')
-  }, [shopId])
+useEffect(() => {
+  if (!shopId) return;
+
+  const controller = new AbortController();
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      console.log('Fetching services for shop ID:', shopId);
+      const response = await fetch(`http://localhost:4040/services/shop/${shopId}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch services');
+      }
+
+      const data = await response.json();
+      console.log('Fetched services data:', data);
+
+      // ensure it's an array
+      const formatted = Array.isArray(data) ? data : [data];
+      setServices(formatted);
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching services:', error);
+        setError('Error loading services');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchServices();
+
+  return () => controller.abort();
+}, [shopId]);
+
 
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          service.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = filterCategory === 'all' || service.category === filterCategory
+    const matchesCategory = filterCategory === 'all' ||
+     service.category === filterCategory
     return matchesSearch && matchesCategory
   })
 
@@ -139,7 +136,7 @@ export default function ShopServicesPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Services</h1>
               <p className="text-gray-600 mt-2">
-                Manage services for <strong>{shopName}</strong>
+                Manage services for <strong>{shopId}</strong>
               </p>
             </div>
             <Button onClick={() => setShowAddModal(true)}>
@@ -225,7 +222,7 @@ export default function ShopServicesPage() {
 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                   <div className="text-xs text-gray-500">
-                    Created {service.createdAt.toLocaleDateString()}
+                    Created {service.createdAt.toString().slice(0, 10)}
                   </div>
                   <div className="flex space-x-2">
                     <Button variant="ghost" size="sm">
@@ -280,3 +277,15 @@ export default function ShopServicesPage() {
     </DashboardLayout>
   )
 }
+
+
+
+
+function setError(arg0: string) {
+  throw new Error('Function not implemented.')
+}
+
+function setLoading(arg0: boolean) {
+  throw new Error('Function not implemented.')
+}
+
