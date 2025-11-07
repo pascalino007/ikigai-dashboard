@@ -12,89 +12,6 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { shopApi, handleApiError, handleApiSuccess } from '@/services/api'
 import { RouteGuard } from '@/components/auth/route-guard'
 
-// Mock data for demonstration
-/* const mockShops: Shop[] = [
-  {
-    id: '1',
-    name: 'Downtown Beauty Studio',
-    address: '123 Main Street',
-    country: 'USA',
-    city: 'New York',
-    area: 'Manhattan',
-    phone: '+1 (555) 123-4567',
-    email: 'info@downtownbeauty.com',
-    description: 'Full-service beauty salon in the heart of downtown',
-    isActive: true,
-    ownerId: 'owner1',
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15'),
-    services: []
-  },
-  {
-    id: '2',
-    name: 'Elite Hair & Spa',
-    address: '456 Oak Avenue',
-    country: 'USA',
-    city: 'Los Angeles',
-    area: 'Beverly Hills',
-    phone: '+1 (555) 234-5678',
-    email: 'contact@elitehairspa.com',
-    description: 'Luxury hair salon and spa services',
-    isActive: true,
-    ownerId: 'owner2',
-    createdAt: new Date('2024-01-20'),
-    updatedAt: new Date('2024-01-20'),
-    services: []
-  },
-  {
-    id: '3',
-    name: 'Modern Cuts Barbershop',
-    address: '789 Pine Street',
-    country: 'USA',
-    city: 'Chicago',
-    area: 'Downtown',
-    phone: '+1 (555) 345-6789',
-    email: 'hello@moderncuts.com',
-    description: 'Contemporary barbershop with traditional techniques',
-    isActive: false,
-    ownerId: 'owner3',
-    createdAt: new Date('2024-02-01'),
-    updatedAt: new Date('2024-02-01'),
-    services: []
-  },
-  {
-    id: '4',
-    name: 'Paris Beauty Center',
-    address: '12 Rue de la Paix',
-    country: 'France',
-    city: 'Paris',
-    area: '1st Arrondissement',
-    phone: '+33 1 42 60 30 30',
-    email: 'contact@parisbeauty.fr',
-    description: 'Elegant beauty center in the heart of Paris',
-    isActive: true,
-    ownerId: 'owner4',
-    createdAt: new Date('2024-01-25'),
-    updatedAt: new Date('2024-01-25'),
-    services: []
-  },
-  {
-    id: '5',
-    name: 'London Hair Studio',
-    address: '45 Oxford Street',
-    country: 'UK',
-    city: 'London',
-    area: 'Westminster',
-    phone: '+44 20 7946 0958',
-    email: 'info@londonhair.co.uk',
-    description: 'Modern hair studio in central London',
-    isActive: true,
-    ownerId: 'owner5',
-    createdAt: new Date('2024-02-05'),
-    updatedAt: new Date('2024-02-05'),
-    services: []
-  }
-] */
 
 export default function ShopsPage() {
   const router = useRouter()
@@ -142,7 +59,7 @@ export default function ShopsPage() {
   const loadShops = async () => {
   setIsLoading(true)
   try {
-    const response = await fetch(`http://168.231.101.119:4040/shops`, {
+    const response = await fetch(`http://localhost:4040/shops`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -387,7 +304,7 @@ export default function ShopsPage() {
   {/* Left: Image Section */}
   <div className="md:w-1/2 w-full h-48 md:h-auto relative">
     <img
-      src={shop.profileImageUrl || '/placeholder-shop.jpg'}
+      src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+shop.profileImageUrl}
       alt={shop.name}
       className="object-cover w-full h-full"
     />

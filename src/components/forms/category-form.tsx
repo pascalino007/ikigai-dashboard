@@ -6,10 +6,11 @@ import { X, ImageIcon, Tag, Upload } from 'lucide-react'
 import { Category } from '@/types'
 
 interface CategoryFormData {
-  name: string
-  description: string
-  imageurl: string
-  isActive: boolean
+  name: string;
+  description: string;
+  imageurl: string;
+  isActive: boolean;
+  submit?: string;
 }
 
 interface CategoryFormProps {
@@ -58,18 +59,39 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
   }
 
-  // ✅ Image change — for preview only
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ✅ Image change — upload to backend and preview
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = () => {
-        setImagePreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
 
-      // For now, send a placeholder URL to backend
-      handleInputChange('imageurl', 'https://cdn.example.com/categories/electronics.jpg')
+    // preview locally
+    const reader = new FileReader()
+    reader.onload = () => setImagePreview(reader.result as string)
+    reader.readAsDataURL(file)
+
+    // upload to backend as multipart/form-data
+    const form = new FormData()
+    form.append('image', file)
+
+    try {
+      const res = await fetch('http://localhost:4040/upload', {
+        method: 'POST',
+        body: form,
+      })
+      if (!res.ok) throw new Error('Image upload failed')
+      const data = await res.json()
+
+      // Extract filename from imageUrl
+      if (!data.imageUrl) throw new Error('No image URL returned from upload')
+      const filename = data.imageUrl.split('/').pop()
+      if (!filename) throw new Error('Invalid image URL format')
+
+      // store only the filename in formData
+      handleInputChange('imageurl', filename)
+      console.log('✅ Image uploaded successfully:', filename)
+    } catch (err) {
+      console.error('❌ Image upload error:', err)
+      setErrors(prev => ({ ...prev, imageurl: 'Failed to upload image' }))
     }
   }
 
@@ -83,38 +105,81 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
     return Object.keys(newErrors).length === 0
   }
 
-  // ✅ Submit handler (only sends once)
+  // ✅ Submit handler with proper image handling
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
-    setIsSubmitting(true)
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsSubmitting(true);
 
     try {
+      // Get the file from the input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = fileInput?.files?.[0];
+      let finalImageUrl = formData.imageurl;
+
+      // If there's a new file, upload it first
+      if (file) {
+        const uploadForm = new FormData();
+        uploadForm.append('image', file);
+
+        console.log('Uploading new image...');
+        const uploadRes = await fetch('http://localhost:4040/upload', {
+          method: 'POST',
+          body: uploadForm,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        const uploadData = await uploadRes.json();
+        finalImageUrl = uploadData.imageUrl;
+        console.log('Image uploaded successfully:', finalImageUrl);
+      }
+
+      // Prepare payload for category update
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        imageurl: formData.imageurl.trim(),
+        imageurl: finalImageUrl,
+        isActive: formData.isActive
+      };
+
+      console.log('Submitting payload:', payload);
+
+      // Send PATCH request to update category
+      const url =  `http://localhost:4040/categories/update/${initialData.id!}` ;
+        
+
+      const response = await fetch(url, {
+        method: 'POST' ,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit category');
       }
 
-      const response = await fetch('http://168.231.101.119:4040/categories/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      const result = await response.json();
+      console.log('✅ Category ' + (initialData ? 'updated' : 'created') + ':', result);
 
-      if (!response.ok) throw new Error('Failed to submit category')
+      onSubmit(formData);
+      setFormData({ name: '', description: '', imageurl: '', isActive: true });
+      setImagePreview('');
+      onClose();
 
-      const result = await response.json()
-      console.log('✅ Successfully created category:', result)
-
-      onSubmit(formData)
-      setFormData({ name: '', description: '', imageurl: '', isActive: true })
-      setImagePreview('')
-      onClose()
     } catch (error) {
-      console.error('❌ Error submitting form:', error)
+      console.error('❌ Error submitting form:', error);
+      setErrors(prev => ({
+        ...prev,
+        submit: error instanceof Error ? error.message : 'Failed to submit category'
+      }));
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
   }
 
@@ -184,7 +249,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
                 {imagePreview && (
                   <div className="mb-4">
                     <img
-                      src={imagePreview}
+                      src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+formData.imageurl}
                       alt="Preview"
                       className="w-full h-48 object-cover rounded-lg border"
                     />
@@ -192,19 +257,20 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
                 )}
 
                 <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <Upload className="w-8 h-8 mb-2 text-gray-500" />
-                      <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-500">PNG, JPG or GIF (MAX. 800x400px)</p>
-                    </div>
+                  <label
+                    htmlFor="image-upload"
+                    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-md cursor-pointer hover:border-ikigai-primary transition-all"
+                  >
+                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-500 text-center">
+                      {`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+formData.imageurl ? 'Change Image' : 'Upload Image'}
+                    </span>
                     <input
+                      id="image-upload"
                       type="file"
-                      className="hidden"
                       accept="image/*"
                       onChange={handleImageChange}
+                      className="hidden"
                     />
                   </label>
                 </div>

@@ -45,6 +45,7 @@ export interface Shop {
 }
 
 export interface Category {
+  imageurl: string;
   id: string;
   name: string;
   description: string;

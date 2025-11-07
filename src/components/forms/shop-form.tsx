@@ -108,7 +108,41 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   const [errors, setErrors] = useState<Partial<Record<keyof ShopFormData, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false)
+  const [profileUploadError, setProfileUploadError] = useState<string | null>(null)
   const [modal, setModal] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Upload profile image to backend and set returned imageUrl on success
+  const uploadProfileImage = async (file: File) => {
+    setProfileUploadError(null)
+    // local preview immediately
+    setFormData(prev => ({ ...prev, profileImageUrl: URL.createObjectURL(file) }))
+    const form = new FormData()
+    form.append('image', file) // backend expects 'image'
+
+    setIsUploadingProfile(true)
+    try {
+      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: form })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || `Upload failed (${res.status})`)
+      }
+      const data = await res.json()
+      if (!data?.imageUrl) throw new Error('No imageUrl in upload response')
+
+      // Use the returned full imageUrl for preview and submission
+      setFormData(prev => ({ ...prev, profileImageUrl: data.imageUrl }))
+      console.log('✅ Profile image uploaded:', data.imageUrl)
+    } catch (err) {
+      console.error('❌ Profile upload error:', err)
+      setProfileUploadError(err instanceof Error ? err.message : 'Upload failed')
+      // clear preview if upload failed
+      setFormData(prev => ({ ...prev, profileImageUrl: '' }))
+      setErrors(prev => ({ ...prev, profileImageUrl: err instanceof Error ? err.message : 'Failed to upload profile image' }))
+    } finally {
+      setIsUploadingProfile(false)
+    }
+  }
 
   if (!isOpen) return null
 
@@ -160,7 +194,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   setIsSubmitting(true);
     try {
-    const res = await fetch('http://168.231.101.119:4040/shops', {
+    const res = await fetch('http://localhost:4040/shops', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
@@ -395,18 +429,22 @@ const [formData, setFormData] = useState<ShopFormData>({
         <ImageIcon className="h-4 w-4 mr-1" /> Profile Image *
       </label>
       <input
-   type="file"
-   accept="image/*"
-   onChange={(e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setFormData(prev => ({
-      ...prev,
-      profileImageFile: file,
-      profileImageUrl: URL.createObjectURL(file) // optional preview
-    }));
-  }}
-/>
+        type="file"
+        accept="image/*"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          // optionally keep the File too
+          setFormData(prev => ({ ...prev, profileImageFile: file }))
+          await uploadProfileImage(file)
+        }}
+      />
+      {isUploadingProfile && <p className="text-xs text-ink-600 mt-1">Uploading profile image...</p>}
+      {profileUploadError && <p className="text-red-500 text-sm mt-1">{profileUploadError}</p>}
+      {/* preview */}
+      {formData.profileImageUrl && (
+        <img src={formData.profileImageUrl} alt="Profile preview" className="mt-2 w-32 h-32 object-cover rounded" />
+      )}
       {errors.profileImageUrl && <p className="text-red-500 text-sm mt-1">{errors.profileImageUrl}</p>}
     </div>
 
@@ -485,7 +523,9 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
     <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-    <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Shop'}</Button>
+    <Button type="submit" disabled={isSubmitting || isUploadingProfile}>
+      {isUploadingProfile ? 'Uploading image...' : isSubmitting ? 'Creating...' : 'Create Shop'}
+    </Button>
   </div>
 </form>
 

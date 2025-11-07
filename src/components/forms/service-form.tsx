@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
 import { Service } from '@/types'
@@ -53,20 +53,24 @@ export function ServiceForm({
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false)
+  const [profileUploadError, setProfileUploadError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
   const [subcategories, setSubcategories] = useState<Array<{ id: string; name: string }>>([])
   const [loadingCategories, setLoadingCategories] = useState(false)
   const [loadingSubcategories, setLoadingSubcategories] = useState(false)
+  const [concatained, setconcatained] = useState<string>('')
 
   // ✅ Fetch all categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true)
-        const res = await fetch('http://168.231.101.119:4040/categories')
+        const res = await fetch('http://localhost:4040/categories')
         const data = await res.json()
         setCategories(data)
+        
       } catch (err) {
         console.error('Error fetching categories:', err)
       } finally {
@@ -83,7 +87,7 @@ export function ServiceForm({
       if (!formData.category) return
       try {
         setLoadingSubcategories(true)
-        const res = await fetch(`http://168.231.101.119:4040/sous-categories/subcate/${formData.category}`)
+        const res = await fetch(`http://localhost:4040/sous-categories/subcate/${formData.category}`)
         const data = await res.json()
         setSubcategories(data)
       } catch (err) {
@@ -125,9 +129,77 @@ export function ServiceForm({
     }
   }, [initialData, selectedShopId, isOpen])
 
+  // Keep track of previous auto-generated base name so we only overwrite
+  // when name is empty or still equals the previous generated base.
+  const prevBaseNameRef = useRef<string>('')
+
+  // Update name immediately when category/subcategory changes (preserve user edits)
+  const updateNameFromCategorySub = (catId: string, subId: string) => {
+    const catName = categories.find((c) => c.id === catId)?.name || ''
+    const subName = subcategories.find((s) => s.id === subId)?.name || ''
+    const baseName = [catName, subName].filter(Boolean).join(' ').trim()
+
+    const currentName = (formData.name || '').trim()
+    if (!currentName || currentName === prevBaseNameRef.current) {
+      setFormData((prev) => ({ ...prev, name: baseName }))
+    }
+    prevBaseNameRef.current = baseName
+  }
+
+  useEffect(() => {
+    const catName = categories.find((c) => c.id === formData.category)?.name || ''
+    const subName = subcategories.find((s) => s.id === formData.sous_category)?.name || ''
+    const parts = []
+    if (catName) parts.push(catName)
+    if (subName) parts.push(subName)
+    const baseName = parts.join(' ')
+
+    const currentName = (formData.name || '').trim()
+
+    // If user hasn't typed anything or current name equals previous auto base,
+    // update the name to the new base. Otherwise preserve user's custom name.
+    if (!currentName || currentName === prevBaseNameRef.current) {
+      setFormData((prev) => ({ ...prev, name: baseName }))
+    }
+    // store new base for future comparisons
+    prevBaseNameRef.current = baseName
+  }, [formData.category, formData.sous_category, categories, subcategories])
+
   const handleInputChange = (field: keyof ServiceFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }))
+  }
+
+  // Upload profile image to backend and set returned imageUrl on success
+  const uploadProfileImage = async (file: File) => {
+    setProfileUploadError(null)
+    // show immediate local preview (will be replaced by returned URL)
+    setFormData(prev => ({ ...prev, imageurl: URL.createObjectURL(file) }))
+
+    const form = new FormData()
+    form.append('image', file) // backend expects 'image'
+
+    setIsUploadingProfile(true)
+    try {
+      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: form })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || `Upload failed (${res.status})`)
+      }
+      const data = await res.json()
+      if (!data?.imageUrl) throw new Error('No imageUrl in upload response')
+
+      // use the returned full URL for preview/submission
+      setFormData(prev => ({ ...prev, imageurl: data.imageUrl }))
+      console.log('✅ Profile image uploaded:', data.imageUrl)
+    } catch (err) {
+      console.error('❌ Profile upload error:', err)
+      setProfileUploadError(err instanceof Error ? err.message : 'Upload failed')
+      setFormData(prev => ({ ...prev, imageurl: '' }))
+      setErrors(prev => ({ ...prev, profileImageFile: err instanceof Error ? err.message : 'Failed to upload profile image' }))
+    } finally {
+      setIsUploadingProfile(false)
+    }
   }
 
   const validateForm = (): boolean => {
@@ -139,47 +211,71 @@ export function ServiceForm({
     if (!formData.category) newErrors.category = 'Category is required'
     if (!formData.sous_category) newErrors.sous_category = 'Subcategory is required'
     if (!formData.duration || formData.duration <= 0) newErrors.duration = 'Valid duration is required'
-    if (!formData.profileImageFile) newErrors.profileImageFile = 'Profile image is required'
+    // require either an uploaded URL or a selected file (upload will set imageurl)
+    if (!formData.imageurl && !formData.profileImageFile) newErrors.profileImageFile = 'Profile image is required'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  if (!validateForm()) return
+  e.preventDefault();
+  if (!validateForm()) return;
 
-  setIsSubmitting(true)
+  setIsSubmitting(true);
   try {
-    const body = {
-      name: formData.name,
-      description: formData.description,
-      Category: formData.category, // note the capital "C"
-      sous_category: formData.sous_category,
-      price: formData.price.toString(), // backend expects string
-      duration: `${formData.duration}min`, // backend expects text like "30min"
-      tags: formData.tags || '',
-      imageurl: formData.imageurl || 'https://cdn.example.com/default-service.jpg', // backend expects URL, not file
-      provider_id: selectedShopId ? selectedShopId.toString() : '',
-      provider_name: formData.provider_name || '',
+    let imageUrl = formData.imageurl;
+
+    // Upload new image if provided
+    if (formData.profileImageFile) {
+      const form = new FormData();
+      form.append('image', formData.profileImageFile);
+
+      const res = await fetch('http://localhost:4040/upload', { 
+        method: 'POST', 
+        body: form 
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Image upload failed');
+      }
+      const data = await res.json();
+      imageUrl = data.imageUrl;
     }
 
-    const response = await fetch('http://168.231.101.119:4040/services', {
+    // Prepare payload with correct types
+    const payload = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      category: String(formData.category), // Convert to string
+      sous_category: String(formData.sous_category), // Convert to string
+      price: String(formData.price), // Convert to string
+      duration: String(formData.duration), // Convert to string
+      imageurl: imageUrl,
+      provider_id: String(formData.provider_id), // Convert to string
+      shopId: String(formData.shopId) // Convert to string
+    };
+
+    console.log('Submitting payload:', payload); // Debug log
+
+    const response = await fetch('http://localhost:4040/services', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+      body: JSON.stringify(payload),
+    });
 
     if (!response.ok) {
-      const errText = await response.text()
-      throw new Error(`Failed to create service: ${errText}`)
+      const errorData = await response.json();
+      throw new Error(`Failed to create service: ${JSON.stringify(errorData)}`);
     }
 
-    const data = await response.json()
-    console.log('✅ Service created successfully:', data)
+    const data = await response.json();
+    console.log('✅ Service created successfully:', data);
 
-    if (onSubmit) onSubmit(formData)
+    if (onSubmit) onSubmit(formData);
 
+    // Reset form
     setFormData({
       shopId: selectedShopId || '',
       name: '',
@@ -191,14 +287,18 @@ export function ServiceForm({
       tags: '',
       imageurl: '',
       provider_id: selectedShopId ? parseInt(selectedShopId) : 0,
-      provider_name: '',  
-    })
+      provider_name: '',
+    });
 
-    onClose()
+    onClose();
   } catch (error) {
-    console.error('❌ Error submitting form:', error)
+    console.error('❌ Error submitting form:', error);
+    setErrors(prev => ({
+      ...prev,
+      submit: error instanceof Error ? error.message : 'Failed to submit form'
+    }));
   } finally {
-    setIsSubmitting(false)
+    setIsSubmitting(false);
   }
 }
 
@@ -222,7 +322,7 @@ export function ServiceForm({
             {/* Shop Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {selectedShopId ? 'Shop' : 'Select Shop'} * {name}
+                {selectedShopId ? 'Shop' : 'Select Shop'} *
               </label>
               <select
                 value={formData.shopId}
@@ -230,14 +330,18 @@ export function ServiceForm({
                 disabled={!!selectedShopId}
                 className="w-full px-3 py-2 border rounded-md"
               >
-                <option value="">Choose a shop...</option>
-               {/*  {shops.map((shop) => (
-                  <option key={shop.id} value={shop.id}>
-                    {shop.name}
-                  </option>
-                ))} */}
-                <option value={selectedShopId ? parseInt(selectedShopId) : 0}>{selectedShopId ? parseInt(selectedShopId) : 0 } </option>
-                
+                {selectedShopId ? (
+                  <option value={selectedShopId}>{selectedShopId}</option>
+                ) : (
+                  <>
+                    <option value="">Choose a shop...</option>
+                    {shops.map((shop) => (
+                      <option key={shop.id} value={shop.id}>
+                        {shop.name}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
             </div>
 
@@ -248,9 +352,22 @@ export function ServiceForm({
                 <select
                   value={formData.category}
                   onChange={(e) => {
-                    handleInputChange('category', e.target.value)
+                    const catId = e.target.value
+                    const catName = categories.find((c) => c.id === catId)?.name || ''
+                    handleInputChange('category', catId)
                     handleInputChange('sous_category', '')
-                  }}
+                    
+                    // Update name and log
+                    const newName = catName
+                    handleInputChange('name', newName)
+                    console.log('Updated name after category change:', newName)
+                    
+                    setErrors(prev => ({
+                      ...prev,
+                      category: '',
+                      name: ''
+                    }))
+}}
                   disabled={loadingCategories}
                   className="w-full px-3 py-2 border rounded-md"
                 >
@@ -267,7 +384,11 @@ export function ServiceForm({
                 <label>Subcategory *</label>
                 <select
                   value={formData.sous_category}
-                  onChange={(e) => handleInputChange('sous_category', e.target.value)}
+                  onChange={(e) => {
+                    const subId = e.target.value
+                    handleInputChange('sous_category', subId)
+                    updateNameFromCategorySub(formData.category, subId)
+                  }}
                   disabled={!formData.category || loadingSubcategories}
                   className="w-full px-3 py-2 border rounded-md"
                 >
@@ -286,10 +407,11 @@ export function ServiceForm({
               <label>Service Name *</label>
               <input
                 type="text"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
+               onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full px-3 py-2 border rounded-md bg-gray-50"
+                placeholder=""
               />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -329,11 +451,19 @@ export function ServiceForm({
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0]
-                  if (file) handleInputChange('profileImageFile', file)
+                  if (!file) return
+                  // keep File reference
+                  handleInputChange('profileImageFile', file)
+                  await uploadProfileImage(file)
                 }}
               />
+              {isUploadingProfile && <p className="text-xs text-gray-600 mt-1">Uploading profile image...</p>}
+              {profileUploadError && <p className="text-red-500 text-sm mt-1">{profileUploadError}</p>}
+              {formData.imageurl && (
+                <img src={formData.imageurl} alt="Profile preview" className="mt-2 w-32 h-32 object-cover rounded" />
+              )}
             </div>
 
             <div>
@@ -354,7 +484,7 @@ export function ServiceForm({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isUploadingProfile}>
                 {isSubmitting
                   ? initialData
                     ? 'Updating...'

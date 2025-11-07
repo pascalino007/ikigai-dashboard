@@ -11,7 +11,7 @@ interface ProviderFormData {
   phoneNumber: string
   idCardNumber: string
   profilePicture: File | null
-  idCardPicture: File | null
+  idCardPictures: File[] // changed to array
   type: 'barber' | 'hairdresser' | 'makeup_artist' | 'nail_technician' | 'esthetician'
   experience: number
   description: string
@@ -31,7 +31,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
     phoneNumber: '',
     idCardNumber: '',
     profilePicture: null,
-    idCardPicture: null,
+    idCardPictures: [],
     type: 'barber',
     experience: 0,
     description: ''
@@ -39,19 +39,32 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
 
   const [errors, setErrors] = useState<Partial<ProviderFormData>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadingProfile, setUploadingProfile] = useState(false)
+  const [uploadingIdCards, setUploadingIdCards] = useState(false)
+
+  const SERVICE_TYPE_MAP: Record<string, number> = {
+    barber: 1,
+    hairdresser: 2,
+    makeup_artist: 3,
+    nail_technician: 4,
+    esthetician: 5
+  }
 
   const handleInputChange = (field: keyof ProviderFormData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
-    if (errors[field]) {
+    setFormData(prev => ({ ...prev, [field]: value } as any))
+    if ((errors as any)[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
   }
 
-  const handleFileChange = (field: 'profilePicture' | 'idCardPicture', file: File | null) => {
-    setFormData(prev => ({ ...prev, [field]: file }))
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }))
+  const handleFileChange = (field: 'profilePicture' | 'idCardPictures', files: FileList | null) => {
+    if (field === 'profilePicture') {
+      setFormData(prev => ({ ...prev, profilePicture: files?.[0] || null }))
+      if (errors.profilePicture) setErrors(prev => ({ ...prev, profilePicture: '' }))
+    } else {
+      const arr = files ? Array.from(files) : []
+      setFormData(prev => ({ ...prev, idCardPictures: arr }))
+      if (errors.idCardPicture) setErrors(prev => ({ ...prev, idCardPicture: '' }))
     }
   }
 
@@ -65,21 +78,97 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
     if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required'
     if (!formData.idCardNumber.trim()) newErrors.idCardNumber = 'ID card number is required'
     if (!formData.profilePicture) newErrors.profilePicture = 'Profile picture is required'
-    if (!formData.idCardPicture) newErrors.idCardPicture = 'ID card picture is required'
+    if (!formData.idCardPictures || formData.idCardPictures.length === 0) newErrors.idCardPicture = 'At least one ID card image is required'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
+  const uploadSingle = async (file: File): Promise<string> => {
+    setUploadingProfile(true)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '')
+        throw new Error(txt || `Upload failed (${res.status})`)
+      }
+      const data = await res.json()
+      // handle different possible keys
+      return (data.imageUrl || data.url || data.path || '') as string
+    } finally {
+      setUploadingProfile(false)
+    }
+  }
+
+  const uploadMultiple = async (files: File[]): Promise<string[]> => {
+    setUploadingIdCards(true)
+    try {
+      const fd = new FormData()
+      // backend expects multiple files under 'images' (adjust if needed)
+      files.forEach((f) => fd.append('images', f))
+      const res = await fetch('http://localhost:4040/upload/multiple', { method: 'POST', body: fd })
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '')
+        throw new Error(txt || `Multiple upload failed (${res.status})`)
+      }
+      const data = await res.json()
+      // expect array of urls in data.imageUrls or data.urls or data.images
+      return data.imageUrls || data.urls || data.images || []
+    } finally {
+      setUploadingIdCards(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!validateForm()) return
 
     setIsSubmitting(true)
     try {
-      await onSubmit(formData)
-      // Reset form
+      // upload profile picture -> get URL
+      let profileImageUrl = ''
+      if (formData.profilePicture) {
+        profileImageUrl = await uploadSingle(formData.profilePicture)
+        if (!profileImageUrl) throw new Error('Failed to upload profile image')
+      }
+
+      // upload id card pictures -> get array of URLs
+      let idcards: string[] = []
+      if (formData.idCardPictures && formData.idCardPictures.length > 0) {
+        idcards = await uploadMultiple(formData.idCardPictures)
+        if (!Array.isArray(idcards) || idcards.length === 0) throw new Error('Failed to upload ID card images')
+      }
+
+      // build payload that backend expects
+      const payload = {
+        firstname: formData.firstName.trim(),
+        lastname: formData.lastName.trim(),
+        email: formData.email.trim(),
+        phone_number: formData.phoneNumber.trim(),
+        CNI_number: formData.idCardNumber.trim(),
+        service_type: SERVICE_TYPE_MAP[formData.type] || 0,
+        year_expe: formData.experience,
+        profileImageUrl: profileImageUrl,
+        idcards: idcards,
+        registered_by: 'admin' // set as required - replace as needed
+      }
+
+      // send to proownners endpoint
+      const res = await fetch('http://localhost:4040/proownners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) {
+        const err = await res.text().catch(() => '')
+        throw new Error(err || `Create provider failed (${res.status})`)
+      }
+
+      // success: call parent onSubmit with original form data (or response if needed)
+      onSubmit(formData)
+      // reset
       setFormData({
         firstName: '',
         lastName: '',
@@ -87,14 +176,15 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
         phoneNumber: '',
         idCardNumber: '',
         profilePicture: null,
-        idCardPicture: null,
+        idCardPictures: [],
         type: 'barber',
         experience: 0,
         description: ''
       })
       onClose()
     } catch (error) {
-      console.error('Error submitting form:', error)
+      console.error('Error submitting provider:', error)
+      setErrors(prev => ({ ...prev, submit: (error as Error).message }))
     } finally {
       setIsSubmitting(false)
     }
@@ -288,7 +378,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileChange('profilePicture', e.target.files?.[0] || null)}
+                      onChange={(e) => handleFileChange('profilePicture', e.target.files)}
                       className="hidden"
                       id="profile-picture"
                     />
@@ -311,29 +401,30 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
                   )}
                 </div>
 
-                {/* ID Card Picture */}
+                {/* ID Card Pictures (multiple) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ID Card Picture *
+                    ID Card Pictures * (front & back)
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileChange('idCardPicture', e.target.files?.[0] || null)}
+                      multiple
+                      onChange={(e) => handleFileChange('idCardPictures', e.target.files)}
                       className="hidden"
-                      id="id-card-picture"
+                      id="id-card-pictures"
                     />
-                    <label htmlFor="id-card-picture" className="cursor-pointer">
-                      {formData.idCardPicture ? (
+                    <label htmlFor="id-card-pictures" className="cursor-pointer">
+                      {formData.idCardPictures && formData.idCardPictures.length > 0 ? (
                         <div className="space-y-2">
                           <FileImage className="h-8 w-8 mx-auto text-green-500" />
-                          <p className="text-sm text-gray-600">{formData.idCardPicture.name}</p>
+                          <p className="text-sm text-gray-600">{formData.idCardPictures.map(f => f.name).join(', ')}</p>
                         </div>
                       ) : (
                         <div className="space-y-2">
                           <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                          <p className="text-sm text-gray-600">Click to upload ID card picture</p>
+                          <p className="text-sm text-gray-600">Click to upload ID card images (front & back)</p>
                         </div>
                       )}
                     </label>
@@ -350,10 +441,12 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || uploadingProfile || uploadingIdCards}>
                 {isSubmitting ? 'Creating...' : 'Create Provider'}
               </Button>
             </div>
+
+            {errors.submit && <p className="text-red-500 text-sm mt-2">{errors.submit}</p>}
           </form>
         </div>
       </div>

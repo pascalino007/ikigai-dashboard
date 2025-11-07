@@ -40,7 +40,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         name: shop.name || '',
         description: shop.description || '',
         category: shop.category || '',
-        tags: shop.tags ? shop.tags.join(', ') : '',
+        tags: Array.isArray(shop.tags) ? shop.tags.join(', ') : shop.tags || '',
         address: shop.address || '',
         country: shop.country || '',
         city: shop.city || '',

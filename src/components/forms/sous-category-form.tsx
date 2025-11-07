@@ -33,7 +33,7 @@ export function SousCategoryForm({
     const fetchCategories = async () => {
       setIsLoading(true)
       try {
-        const res = await fetch(`http://168.231.101.119:4040/categories/`, {
+        const res = await fetch(`http://localhost:4040/categories/`, {
           method: 'GET',
         })
         if (!res.ok) throw new Error('Failed to load categories')
@@ -64,7 +64,7 @@ export function SousCategoryForm({
 
     setIsSubmitting(true)
     try {
-      const res = await fetch(`http://168.231.101.119:4040/sous-categories`, {
+      const res = await fetch(`http://localhost:4040/sous-categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react'
 import { ServiceProvider } from '@/types'
@@ -15,53 +15,69 @@ const shopIdToName: Record<string, string> = {
   '3': 'Modern Cuts Barbershop',
 }
 
-const mockProviders: ServiceProvider[] = [
-  {
-    id: '1',
-    name: 'John Smith',
-    email: 'john@example.com',
-    phone: '+1 (555) 123-4567',
-    type: 'barber',
-    experience: 5,
-    rating: 4.8,
-    isActive: true,
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15'),
-    shopId: '1'
-  },
-  {
-    id: '2',
-    name: 'Maria Garcia',
-    email: 'maria@example.com',
-    phone: '+1 (555) 234-5678',
-    type: 'hairdresser',
-    experience: 8,
-    rating: 4.9,
-    isActive: true,
-    createdAt: new Date('2024-01-20'),
-    updatedAt: new Date('2024-01-20'),
-    shopId: '2'
-  },
-  {
-    id: '3',
-    name: 'Lisa Brown',
-    email: 'lisa@example.com',
-    phone: '+1 (555) 345-6789',
-    type: 'makeup_artist',
-    experience: 3,
-    rating: 4.7,
-    isActive: false,
-    createdAt: new Date('2024-02-01'),
-    updatedAt: new Date('2024-02-01'),
-    shopId: '3'
-  }
-]
+const mockProviders: ServiceProvider[] = []
 
 export default function ProvidersPage() {
   const [providers, setProviders] = useState<ServiceProvider[]>(mockProviders)
+  const [loadingProviders, setLoadingProviders] = useState<boolean>(false)
+  const [providersError, setProvidersError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+
+  // fetch providers from backend
+  useEffect(() => {
+    let mounted = true
+    const load = async () => {
+      setLoadingProviders(true)
+      setProvidersError(null)
+      try {
+        const res = await fetch('http://localhost:4040/proownners')
+        if (!res.ok) throw new Error(`Failed to fetch providers (${res.status})`)
+        const data = await res.json()
+
+        const mapType = (n: number | string) => {
+          switch (Number(n)) {
+            case 1: return 'barber'
+            case 2: return 'hairdresser'
+            case 3: return 'makeup_artist'
+            case 4: return 'nail_technician'
+            case 5: return 'esthetician'
+            default: return 'barber'
+          }
+        }
+
+        const arr = Array.isArray(data) ? data.map((d: any, i: number) => ({
+          id: d.id || d._id || String(d._key || `prov-${Date.now()}-${i}`),
+          name: `${d.firstname || ''} ${d.lastname || ''}`.trim() || (d.name || 'Unknown'),
+          firstName: d.firstname || '',
+          lastName: d.lastname || '',
+          email: d.email || '',
+          phone: d.phone_number || d.phone || '',
+          idCardNumber: d.CNI_number || d.CNI_number || '',
+          profilePicture: d.profileImageUrl || d.profileImageUrl || '',
+          idCardPicture: Array.isArray(d.idcards) && d.idcards.length ? d.idcards[0] : undefined,
+          type: mapType(d.service_type),
+          experience: d.year_expe || 0,
+          description: d.description || '',
+          rating: d.rating || 0,
+          isActive: typeof d.is_active !== 'undefined' ? Boolean(d.is_active) : true,
+          createdAt: d.createdAt ? new Date(d.createdAt) : new Date(),
+          updatedAt: d.updatedAt ? new Date(d.updatedAt) : new Date(),
+          shopId: d.shopId || d.shop_id || ''
+        })) : []
+
+        if (mounted) setProviders(arr)
+      } catch (err) {
+        console.error('Failed to load providers:', err)
+        if (mounted) setProvidersError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        if (mounted) setLoadingProviders(false)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
 
   const filteredProviders = providers.filter(provider => {
     const matchesSearch = provider.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -176,6 +192,13 @@ export default function ProvidersPage() {
         </div>
       </div>
 
+      {loadingProviders && (
+        <div className="mb-4 text-sm text-gray-600">Loading providers...</div>
+      )}
+      {providersError && (
+        <div className="mb-4 text-sm text-red-600">Error loading providers: {providersError}</div>
+      )}
+
       {/* Providers Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -192,10 +215,10 @@ export default function ProvidersPage() {
                   Experience
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Owner of
+                 Rating 
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rating
+                  Owner of Shop
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status

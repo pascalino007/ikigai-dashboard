@@ -1,6 +1,6 @@
 // API service functions for backend integration
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://168.231.101.119:3001/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
 
 // Generic API request function
 async function apiRequest<T>(

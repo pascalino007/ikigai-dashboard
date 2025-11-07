@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, Percent, Clock } from 'lucide-react'
 import { SpecialOffer, ShopService } from '@/types'
@@ -8,113 +8,72 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { SpecialOfferForm } from '@/components/forms/special-offer-form'
 import { AdminOnly } from '@/components/auth/route-guard'
 
-// Mock data for demonstration
-const mockShopServices: ShopService[] = [
-  {
-    id: '1',
-    name: 'Haircut & Styling',
-    description: 'Professional haircut with styling',
-    price: 50,
-    duration: 60,
-    category: 'Hair',
-    subcategory: 'Cut & Style',
-    shopId: '1',
-    shopName: 'Downtown Beauty Studio',
-    isActive: true,
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15')
-  },
-  {
-    id: '2',
-    name: 'Manicure & Pedicure',
-    description: 'Complete nail care service',
-    price: 35,
-    duration: 90,
-    category: 'Nails',
-    subcategory: 'Manicure',
-    shopId: '2',
-    shopName: 'Elite Hair & Spa',
-    isActive: true,
-    createdAt: new Date('2024-01-20'),
-    updatedAt: new Date('2024-01-20')
-  },
-  {
-    id: '3',
-    name: 'Facial Treatment',
-    description: 'Deep cleansing facial treatment',
-    price: 80,
-    duration: 75,
-    category: 'Skincare',
-    subcategory: 'Facial',
-    shopId: '3',
-    shopName: 'Modern Cuts Barbershop',
-    isActive: true,
-    createdAt: new Date('2024-02-01'),
-    updatedAt: new Date('2024-02-01')
-  }
-]
 
-const mockSpecialOffers: SpecialOffer[] = [
-  {
-    id: '1',
-    title: 'Summer Hair Special',
-    description: 'Get 20% off on all hair services this summer',
-    serviceId: '1',
-    serviceName: 'Haircut & Styling',
-    shopId: '1',
-    shopName: 'Downtown Beauty Studio',
-    originalPrice: 50,
-    discountedPrice: 40,
-    discountPercentage: 20,
-    startDate: new Date('2024-06-01'),
-    endDate: new Date('2024-08-31'),
-    duration: 92,
-    isActive: true,
-    maxUses: 100,
-    usedCount: 23,
-    createdAt: new Date('2024-05-15'),
-    updatedAt: new Date('2024-05-15'),
-    createdBy: 'admin-1'
-  },
-  {
-    id: '2',
-    title: 'New Customer Discount',
-    description: 'First-time customers get 30% off nail services',
-    serviceId: '2',
-    serviceName: 'Manicure & Pedicure',
-    shopId: '2',
-    shopName: 'Elite Hair & Spa',
-    originalPrice: 35,
-    discountedPrice: 24.5,
-    discountPercentage: 30,
-    startDate: new Date('2024-07-01'),
-    endDate: new Date('2024-07-31'),
-    duration: 31,
-    isActive: true,
-    maxUses: 50,
-    usedCount: 12,
-    createdAt: new Date('2024-06-20'),
-    updatedAt: new Date('2024-06-20'),
-    createdBy: 'admin-1'
-  }
-]
+
 
 export default function SpecialOffersPage() {
-  const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>(mockSpecialOffers)
-  const [shopServices, setShopServices] = useState<ShopService[]>(mockShopServices)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [specialOffers, setSpecialOffers] = useState<SpecialOffer[]>([])
+  const [loading, setLoading] = useState<boolean>(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
+  const [shopServices, setShopServices] = useState<ShopService[]>([])
+  // filters removed for now
   const [showAddModal, setShowAddModal] = useState(false)
 
-  const filteredOffers = specialOffers.filter(offer => {
-    const matchesSearch = offer.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         offer.shopName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         offer.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterStatus === 'all' || 
-                         (filterStatus === 'active' && offer.isActive) ||
-                         (filterStatus === 'inactive' && !offer.isActive)
-    return matchesSearch && matchesFilter
-  })
+  // date filters
+  const [dateFrom, setDateFrom] = useState<string>('')
+  const [dateTo, setDateTo] = useState<string>('')
+
+  // fetch specials from backend on mount
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      setFetchError(null)
+      try {
+        const res = await fetch('http://localhost:4040/specials')
+        if (!res.ok) throw new Error(`Failed to fetch specials (${res.status})`)
+        const data = await res.json()
+
+        // Normalize dates coming from backend (strings) into Date objects
+        const normalized = Array.isArray(data)
+          ? data.map((d: any) => ({
+              ...d,
+              startDate: d.startDate ? new Date(d.startDate) : new Date(),
+              endDate: d.endDate ? new Date(d.endDate) : new Date()
+            }))
+          : []
+        setSpecialOffers(normalized)
+      } catch (err) {
+        console.error('Error fetching specials:', err)
+        setFetchError(err instanceof Error ? err.message : 'Unknown error')
+        // keep mock data as fallback
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
+
+  const stats = useMemo(() => {
+    const now = new Date()
+    const total = specialOffers.length
+    const active = specialOffers.filter(o => o.isActive && now >= o.startDate && now <= o.endDate).length
+    const finished = specialOffers.filter(o => now > o.endDate).length
+    return { total, active, finished }
+  }, [specialOffers])
+
+  const filteredOffers = useMemo(() => {
+    if (!dateFrom && !dateTo) return specialOffers
+    const from = dateFrom ? new Date(dateFrom) : new Date(-8640000000000000)
+    // include entire day for `to`
+    const to = dateTo ? new Date(new Date(dateTo).setHours(23,59,59,999)) : new Date(8640000000000000000)
+    return specialOffers.filter((o) => {
+      const s = o.startDate instanceof Date ? o.startDate : new Date(o.startDate)
+      const e = o.endDate instanceof Date ? o.endDate : new Date(o.endDate)
+      // overlap test: offer ends on/after from AND offer starts on/before to
+      return e >= from && s <= to
+    })
+  }, [specialOffers, dateFrom, dateTo])
 
   const getStatusColor = (offer: SpecialOffer) => {
     const now = new Date()
@@ -169,7 +128,11 @@ export default function SpecialOffersPage() {
     setShowAddModal(false)
   }
 
-  const formatDate = (date: Date) => {
+  // Accept Date | string | number and return readable string
+  const formatDate = (dateInput?: Date | string | number) => {
+    if (!dateInput) return '-'
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput)
+    if (isNaN(date.getTime())) return '-'
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -187,153 +150,194 @@ export default function SpecialOffersPage() {
               <h1 className="text-3xl font-bold text-gray-900">Special Offers</h1>
               <p className="text-gray-600 mt-2">Manage special offers and promotions for shops</p>
             </div>
-            <Button onClick={() => setShowAddModal(true)}>
+            <Button onClick={() => alert('Filter modal coming soon!')} variant="outline" className="mr-4">
               <Plus className="h-4 w-4 mr-2" />
-              Create Special Offer
+              Create Combo
             </Button>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search offers..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+        {/* Stats + Date range filter */}
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Active Offers</div>
+              <div className="text-2xl font-bold text-gray-900">{stats.active}</div>
             </div>
-            <div className="flex gap-2">
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+            <div className="text-xs text-gray-400 mt-2">Currently running</div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+            <div>
+              <div className="text-sm text-gray-500">Total Offers</div>
+              <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+            </div>
+            <div className="text-xs text-gray-400 mt-2">All specials</div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="text-sm text-gray-500 mb-2">Finished Offers</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.finished}</div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="px-3 py-2 border rounded-md"
+                aria-label="From date"
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="px-3 py-2 border rounded-md"
+                aria-label="To date"
+              />
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setDateFrom(''); setDateTo('') }}
+                className="px-3 py-2 border rounded-md text-sm"
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="expired">Expired</option>
-              </select>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                More Filters
-              </Button>
+                Clear
+              </button>
+              <div className="text-sm text-gray-500 self-center">Showing offers inside selected range</div>
             </div>
           </div>
         </div>
 
         {/* Special Offers Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Offer Details
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service & Shop
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pricing
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Duration
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Usage
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOffers.map((offer) => (
-                  <tr key={offer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{offer.title}</div>
-                        <div className="text-sm text-gray-500">{offer.description}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{offer.serviceName}</div>
-                        <div className="text-sm text-gray-500">{offer.shopName}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">
-                          <span className="line-through text-gray-400">${offer.originalPrice}</span>
-                          <span className="ml-2 font-semibold text-green-600">${offer.discountedPrice}</span>
-                        </div>
-                        <div className="text-sm text-red-600 font-medium">
-                          <Percent className="h-3 w-3 inline mr-1" />
-                          {offer.discountPercentage}% OFF
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm text-gray-900">
-                          <Calendar className="h-3 w-3 inline mr-1" />
-                          {formatDate(offer.startDate)} - {formatDate(offer.endDate)}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          <Clock className="h-3 w-3 inline mr-1" />
-                          {offer.duration} days
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {offer.usedCount} / {offer.maxUses || '∞'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(offer)}`}>
-                        {getStatusText(offer)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {loading ? (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">Loading specials...</div>
+        ) : fetchError ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-6">
+            Error loading specials: {fetchError}
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Image
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Offer Details
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Service & Shop
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Pricing
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Duration
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Usage
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Status
+                     </th>
+                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                       Actions
+                     </th>
+                   </tr>
+                 </thead>
+                 <tbody className="bg-white divide-y divide-gray-200">
+                   {filteredOffers.map((offer) => (
+                     <tr key={offer.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <img
+                            src={offer.image || '/images/placeholder-rect.png'}
+                            alt={offer.title}
+                            className="w-20 h-12 object-cover rounded-md"
+                            onError={(e) => { (e.target as HTMLImageElement).src = '/images/placeholder-rect.png' }}
+                          />
+                        </div>
+                      </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <div>
+                           <div className="text-sm font-medium text-gray-900">{offer.title}</div>
+                           <div className="text-sm text-gray-500">{offer.description}</div>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <div>
+                           <div className="text-sm font-medium text-gray-900">{offer.serviceId}</div>
+                           <div className="text-sm text-gray-500">{offer.shopId}</div>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <div>
+                           <div className="text-sm text-gray-900">
+                             <span className="line-through text-gray-400">${offer.originalPrice}</span>
+                             <span className="ml-2 font-semibold text-green-600">${offer.discountedPrice}</span>
+                           </div>
+                           <div className="text-sm text-red-600 font-medium">
+                             <Percent className="h-3 w-3 inline mr-1" />
+                             {offer.discountPercentage}% OFF
+                           </div>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <div>
+                           <div className="text-sm text-gray-900">
+                             <Calendar className="h-3 w-3 inline mr-1" />
+                             {formatDate(offer.startDate)} - {formatDate(offer.endDate)}
+                           </div>
+                           <div className="text-sm text-gray-500">
+                             <Clock className="h-3 w-3 inline mr-1" />
+                             {offer.duration} days
+                           </div>
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <div className="text-sm text-gray-900">
+                           {offer.usedCount} / {offer.maxUses || '∞'}
+                         </div>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap">
+                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(offer)}`}>
+                           {getStatusText(offer)}
+                         </span>
+                       </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                         <div className="flex space-x-2">
+                           <Button variant="ghost" size="sm">
+                             <Eye className="h-4 w-4" />
+                           </Button>
+                           <Button variant="ghost" size="sm">
+                             <Edit className="h-4 w-4" />
+                           </Button>
+                           <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       </td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+             </div>
+           </div>
+         )}
 
         {/* Add Special Offer Form */}
-        <SpecialOfferForm
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSubmit={handleAddSpecialOffer}
-          shopServices={shopServices}
-        />
+        {(() => {
+          const AnySpecialOfferForm: any = SpecialOfferForm
+          return (
+            <AnySpecialOfferForm
+              isOpen={showAddModal}
+              onClose={() => setShowAddModal(false)}
+              onSubmit={handleAddSpecialOffer}
+              shopServices={shopServices}
+            />
+          )
+        })()}
       </div>
     </DashboardLayout>
     </AdminOnly>

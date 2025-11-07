@@ -19,7 +19,7 @@ export default function CategoriesPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://168.231.101.119:4040/categories/')
+        const res = await fetch('http://localhost:4040/categories/')
         if (!res.ok) throw new Error('Failed to fetch categories')
         const data: Category[] = await res.json()
         setCategories(data)
@@ -36,8 +36,8 @@ export default function CategoriesPage() {
 
   const filteredCategories = categories.filter(category => {
     const matchesSearch =
-      category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      category.description.toLowerCase().includes(searchTerm.toLowerCase())
+      (category?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (category?.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
 
     const matchesStatus =
       filterStatus === 'all' ||
@@ -56,7 +56,7 @@ export default function CategoriesPage() {
       formData.append('isActive', data.isActive !== false ? 'true' : 'false')
       if (data.image) formData.append('image', data.image)
 
-      const res = await fetch('http://168.231.101.119:4040/categories/', {
+      const res = await fetch('http://localhost:4040/categories/', {
         method: 'POST',
         body: formData,
       })
@@ -79,7 +79,7 @@ export default function CategoriesPage() {
       if (data.image) formData.append('image', data.image)
 
       const res = await fetch(
-        `http://168.231.101.119:4040/categories/${editingCategory.id}`,
+        `http://localhost:4040/categories/${editingCategory.id}`,
         {
           method: 'PUT',
           body: formData,
@@ -99,7 +99,7 @@ export default function CategoriesPage() {
   const handleDeleteCategory = async (categoryId: string) => {
     if (!window.confirm('Are you sure you want to delete this category?')) return
     try {
-      await fetch(`http://168.231.101.119:4040/categories/${categoryId}`, {
+      await fetch(`http://localhost:4040/categories/${categoryId}`, {
         method: 'DELETE',
       })
       setCategories(prev => prev.filter(cat => cat.id !== categoryId))
@@ -114,7 +114,7 @@ export default function CategoriesPage() {
     if (!category) return
 
     try {
-      const res = await fetch(`http://168.231.101.119:4040/categories/${categoryId}`, {
+      const res = await fetch(`http://localhost:4040/categories/${categoryId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !category.isActive }),
@@ -172,12 +172,12 @@ export default function CategoriesPage() {
         {loading && <p className="text-center text-gray-500">Loading categories...</p>}
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xs:grid-cols-2  md:grid-cols-4 lg:grid-cols-5  gap-1">
           {filteredCategories.map(category => (
-            <div key={category.id} className="bg-white rounded-lg shadow overflow-hidden">
+            <div key={category.id} className="bg-white rounded-lg shadow overflow-hidden w-72">
               <div className="relative">
                 <img
-                  src={category.image}
+                  src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+category.imageurl}
                   alt={category.name}
                   className="w-full h-48 object-cover"
                   onError={e => {

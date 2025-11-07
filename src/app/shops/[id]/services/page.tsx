@@ -7,7 +7,7 @@ import { Plus, ArrowLeft, Search, Clock, DollarSign, Edit, Trash2, Eye, Scissors
 import { Service } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ServiceForm } from '@/components/forms/service-form'
-import { error } from 'console'
+import { SpecialOfferForm } from '@/components/forms/special-offer-form'
 
 // Mock data for demonstration
 const mockServices: Service[] = [
@@ -33,12 +33,14 @@ export default function ShopServicesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showSpecialModal, setShowSpecialModal] = useState(false)
   const [shopName, setShopName] = useState('')
   const [loading, setLoading] = useState(false);
-const [error, setError] = useState('');
+  const [error, setError] = useState('');
 
   // Filter services for this specific shop
 useEffect(() => {
+
   if (!shopId) return;
 
   const controller = new AbortController();
@@ -48,7 +50,7 @@ useEffect(() => {
       setLoading(true);
       setError('');
       console.log('Fetching services for shop ID:', shopId);
-      const response = await fetch(`http://168.231.101.119:4040/services/shop/${shopId}`, {
+      const response = await fetch(`http://localhost:4040/services/shop/${shopId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
@@ -112,6 +114,26 @@ useEffect(() => {
     console.log('Service created successfully!')
   }
 
+  const handleAddSpecialOffer = async (data: any) => {
+    // create a simple special-offer object and add to services list (adjust shape as needed)
+    const newOffer: Service = {
+      id: Date.now().toString(),
+      name: data.title || 'Special Offer',
+      description: data.description || '',
+      price: data.price || 0,
+      duration: data.duration || 0,
+      category: data.category || 'special',
+      subcategory: data.subcategory || '',
+      providerId: 'offer-new',
+      shopId: shopId,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    setServices(prev => [newOffer, ...prev])
+    setShowSpecialModal(false)
+  }
+
   const handleBackToShop = () => {
     router.push(`/shops/${shopId}`)
   }
@@ -132,13 +154,18 @@ useEffect(() => {
             </Button>
           </div>
           
-          <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4 justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Services</h1>
               <p className="text-gray-600 mt-2">
                 Manage services for <strong>{shopId}</strong>
               </p>
             </div>
+            
+            <Button onClick={() => setShowSpecialModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Special offert
+            </Button>
             <Button onClick={() => setShowAddModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Service
@@ -177,69 +204,82 @@ useEffect(() => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((service) => (
-            <div key={service.id} className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                  </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    service.isActive 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {service.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
+       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+  {filteredServices.map((service) => (
+    <div key={service.id} className="bg-white rounded-lg shadow overflow-hidden">
+      
+      {/* 🖼️ Service Image */}
+      <div className="h-48 w-full overflow-hidden">
+        <img
+          src={service.imageurl}
+          alt={service.name}
+          className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+        />
+      </div>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Category:</span>
-                    <span className="font-medium text-gray-900">{service.category}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Subcategory:</span>
-                    <span className="font-medium text-gray-900">{service.subcategory}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Price:</span>
-                    <span className="font-medium text-gray-900 flex items-center">
-                      <DollarSign className="h-4 w-4 mr-1" />
-                      {service.price}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Duration:</span>
-                    <span className="font-medium text-gray-900 flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      {service.duration} min
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                  <div className="text-xs text-gray-500">
-                    Created {service.createdAt.toString().slice(0, 10)}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* 📄 Service Info */}
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
+            <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+          </div>
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              service.isActive
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {service.isActive ? 'Active' : 'Inactive'}
+          </span>
         </div>
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Category:</span>
+            <span className="font-medium text-gray-900">{service.category}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Subcategory:</span>
+            <span className="font-medium text-gray-900">{service.subcategory}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Price:</span>
+            <span className="font-medium text-gray-900 flex items-center">
+             
+              {service.price}  XOF
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Duration:</span>
+            <span className="font-medium text-gray-900 flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              {service.duration} 
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+          <div className="text-xs text-gray-500">
+            Created {service.createdAt.toString().slice(0, 10)}
+          </div>
+          <div className="flex space-x-2">
+            <Button variant="ghost" size="sm">
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
 
         {/* Empty State */}
         {filteredServices.length === 0 && (
@@ -272,6 +312,13 @@ useEffect(() => {
           onSubmit={handleAddService}
           shops={[{ id: shopId, name: shopName }]} // Pre-select current shop
           selectedShopId={shopId} // Pre-select the current shop
+        />
+        <SpecialOfferForm
+          isOpen={showSpecialModal}
+          onClose={() => setShowSpecialModal(false)}
+          onSubmit={handleAddSpecialOffer}
+          //shopServices={services}
+          shopId={shopId}
         />
       </div>
     </DashboardLayout>
