@@ -67,7 +67,7 @@ export function ServiceForm({
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true)
-        const res = await fetch('http://localhost:4040/categories')
+        const res = await fetch('http://168.231.101.119:4040/categories')
         const data = await res.json()
         setCategories(data)
         
@@ -87,7 +87,7 @@ export function ServiceForm({
       if (!formData.category) return
       try {
         setLoadingSubcategories(true)
-        const res = await fetch(`http://localhost:4040/sous-categories/subcate/${formData.category}`)
+        const res = await fetch(`http://168.231.101.119:4040/sous-categories/subcate/${formData.category}`)
         const data = await res.json()
         setSubcategories(data)
       } catch (err) {
@@ -181,7 +181,7 @@ export function ServiceForm({
 
     setIsUploadingProfile(true)
     try {
-      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: form })
+      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: form })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.message || `Upload failed (${res.status})`)
@@ -231,7 +231,7 @@ export function ServiceForm({
       const form = new FormData();
       form.append('image', formData.profileImageFile);
 
-      const res = await fetch('http://localhost:4040/upload', { 
+      const res = await fetch('http://168.231.101.119:4040/upload', { 
         method: 'POST', 
         body: form 
       });
@@ -259,7 +259,7 @@ export function ServiceForm({
 
     console.log('Submitting payload:', payload); // Debug log
 
-    const response = await fetch('http://localhost:4040/services', {
+    const response = await fetch('http://168.231.101.119:4040/services', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

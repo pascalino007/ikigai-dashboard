@@ -74,7 +74,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
     form.append('image', file)
 
     try {
-      const res = await fetch('http://localhost:4040/upload', {
+      const res = await fetch('http://168.231.101.119:4040/upload', {
         method: 'POST',
         body: form,
       })
@@ -123,7 +123,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
         uploadForm.append('image', file);
 
         console.log('Uploading new image...');
-        const uploadRes = await fetch('http://localhost:4040/upload', {
+        const uploadRes = await fetch('http://168.231.101.119:4040/upload', {
           method: 'POST',
           body: uploadForm,
         });
@@ -148,7 +148,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
       console.log('Submitting payload:', payload);
 
       // Send PATCH request to update category
-      const url =  `http://localhost:4040/categories/update/${initialData.id!}` ;
+      const url =  `http://168.231.101.119:4040/categories/update/${initialData.id!}` ;
         
 
       const response = await fetch(url, {

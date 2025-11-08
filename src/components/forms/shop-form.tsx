@@ -122,7 +122,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
     setIsUploadingProfile(true)
     try {
-      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: form })
+      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: form })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.message || `Upload failed (${res.status})`)
@@ -194,7 +194,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   setIsSubmitting(true);
     try {
-    const res = await fetch('http://localhost:4040/shops', {
+    const res = await fetch('http://168.231.101.119:4040/shops', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
