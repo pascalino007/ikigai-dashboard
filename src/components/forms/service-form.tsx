@@ -218,89 +218,93 @@ export function ServiceForm({
     return Object.keys(newErrors).length === 0
   }
 
+// ...existing code...
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+    e.preventDefault()
+    if (!validateForm()) return
 
-  setIsSubmitting(true);
-  try {
-    let imageUrl = formData.imageurl;
-
-    // Upload new image if provided
-    if (formData.profileImageFile) {
-      const form = new FormData();
-      form.append('image', formData.profileImageFile);
-
-      const res = await fetch('http://168.231.101.119:4040/upload', { 
-        method: 'POST', 
-        body: form 
-      });
-      
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Image upload failed');
+    setIsSubmitting(true)
+    try {
+      // Ensure imageUrl: upload file if provided
+      let imageUrl = formData.imageurl || ''
+      if (formData.profileImageFile) {
+        const fd = new FormData()
+        fd.append('image', formData.profileImageFile)
+        const upRes = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: fd })
+        if (!upRes.ok) {
+          const errBody = await upRes.text().catch(() => '')
+          throw new Error(errBody || `Image upload failed (${upRes.status})`)
+        }
+        const upData = await upRes.json().catch(() => ({}))
+        imageUrl = upData.imageUrl || upData.url || ''
       }
-      const data = await res.json();
-      imageUrl = data.imageUrl;
+
+      if (!imageUrl) {
+        throw new Error('Image URL is required (upload failed or missing)')
+      }
+
+      // Build payload matching CreateServiceDto
+      const payload: any = {
+        name: (formData.name || '').trim(),
+        description: (formData.description || '').trim(),
+        Category: String(formData.category || ''), // capital C
+        sous_category: String(formData.sous_category || ''),
+        price: String(formData.price ?? ''),
+        duration: String(formData.duration ?? ''),
+        imageurl: String(imageUrl)
+      }
+
+      if (formData.tags) payload.tags = String(formData.tags)
+      if (typeof formData.provider_id !== 'undefined' && formData.provider_id !== null) {
+        payload.provider_id = String(formData.provider_id)
+      }
+      if (formData.provider_name) payload.provider_name = String(formData.provider_name)
+
+      const url = initialData
+        ? `http://168.231.101.119:4040/services/${initialData.id}`
+        : 'http://168.231.101.119:4040/services'
+      const method = initialData ? 'PATCH' : 'POST'
+
+      console.log('Submitting service payload:', payload)
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Unknown error' }))
+        throw new Error(JSON.stringify(err))
+      }
+
+      const result = await res.json()
+      console.log('Service saved:', result)
+      if (onSubmit) onSubmit(result)
+
+      // reset form
+      setFormData({
+        shopId: selectedShopId || '',
+        name: '',
+        description: '',
+        category: '',
+        sous_category: '',
+        price: 0,
+        duration: 30,
+        tags: '',
+        imageurl: '',
+        provider_id: selectedShopId ? parseInt(selectedShopId) : 0,
+        provider_name: ''
+      })
+      setErrors({})
+      onClose()
+    } catch (error) {
+      console.error('Error submitting service:', error)
+      setErrors(prev => ({ ...prev, submit: error instanceof Error ? error.message : String(error) }))
+    } finally {
+      setIsSubmitting(false)
     }
-
-    // Prepare payload with correct types
-    const payload = {
-      name: formData.name.trim(),
-      description: formData.description.trim(),
-      category: String(formData.category), // Convert to string
-      sous_category: String(formData.sous_category), // Convert to string
-      price: String(formData.price), // Convert to string
-      duration: String(formData.duration), // Convert to string
-      imageurl: imageUrl,
-      provider_id: String(formData.provider_id), // Convert to string
-      shopId: String(formData.shopId) // Convert to string
-    };
-
-    console.log('Submitting payload:', payload); // Debug log
-
-    const response = await fetch('http://168.231.101.119:4040/services', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Failed to create service: ${JSON.stringify(errorData)}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Service created successfully:', data);
-
-    if (onSubmit) onSubmit(formData);
-
-    // Reset form
-    setFormData({
-      shopId: selectedShopId || '',
-      name: '',
-      description: '',
-      category: '',
-      sous_category: '',
-      price: 0,
-      duration: 30,
-      tags: '',
-      imageurl: '',
-      provider_id: selectedShopId ? parseInt(selectedShopId) : 0,
-      provider_name: '',
-    });
-
-    onClose();
-  } catch (error) {
-    console.error('❌ Error submitting form:', error);
-    setErrors(prev => ({
-      ...prev,
-      submit: error instanceof Error ? error.message : 'Failed to submit form'
-    }));
-  } finally {
-    setIsSubmitting(false);
   }
-}
+// ...existing code...
 
 
   if (!isOpen) return null
