@@ -1,7 +1,8 @@
 {
-  "/shop-services/page": "app/shop-services/page.js",
-  "/shops/page": "app/shops/page.js",
+  "/not-found": "app/not-found.js",
+  "/sous-categories/page": "app/sous-categories/page.js",
+  "/shops/[id]/page": "app/shops/[id]/page.js",
+  "/special-offers/page": "app/special-offers/page.js",
   "/categories/page": "app/categories/page.js",
-  "/shops/[id]/services/page": "app/shops/[id]/services/page.js",
-  "/shops/[id]/page": "app/shops/[id]/page.js"
+  "/sliders/page": "app/sliders/page.js"
 }

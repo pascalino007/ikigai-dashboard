@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, MapPin, Phone, Mail, Clock, Image as ImageIcon, Tag } from 'lucide-react'
+import { X, MapPin, Phone, Mail, Clock, Image as ImageIcon, Tag, Upload, Trash2 } from 'lucide-react'
 import { Shop } from '@/types'
 
 interface ShopEditModalProps {
@@ -26,12 +26,15 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     email: '',
     isActive: true,
     openingHours: [] as Array<{ day: string; open: string; close: string }>,
-    profileImage: null as File | null,
-    images: [] as File[]
+    profileImageUrl: '',
+    profileImageFile: null as File | null,
+    galleryImages: [] as string[],
+    galleryImageFiles: [] as File[]
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [previewGallery, setPreviewGallery] = useState<string[]>([])
 
   // Initialize form data when shop changes
   useEffect(() => {
@@ -49,9 +52,12 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         email: shop.email || '',
         isActive: shop.isActive,
         openingHours: shop.openingHours || [],
-        profileImage: null,
-        images: []
+        profileImageUrl: shop.profileImageUrl || '',
+        profileImageFile: null,
+        galleryImages: Array.isArray(shop.images) ? shop.images : [],
+        galleryImageFiles: []
       })
+      setPreviewGallery(Array.isArray(shop.images) ? shop.images : [])
     }
   }, [shop])
 
@@ -66,7 +72,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     if (!formData.phone.trim()) newErrors.phone = 'Phone number is required'
     if (!formData.email.trim()) newErrors.email = 'Email is required'
     
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address'
@@ -76,19 +81,92 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     return Object.keys(newErrors).length === 0
   }
 
+  // Upload image to backend
+  const uploadImage = async (file: File): Promise<string> => {
+    const fd = new FormData()
+    fd.append('image', file)
+    
+    const res = await fetch('http://168.231.101.119:4040/upload', {
+      method: 'POST',
+      body: fd
+    })
+    
+    if (!res.ok) throw new Error('Failed to upload image')
+    const data = await res.json()
+    return data.imageUrl || data.url || ''
+  }
+
+  // Upload multiple images to backend
+  const uploadMultipleImages = async (files: File[]): Promise<string[]> => {
+    const fd = new FormData()
+    files.forEach(file => fd.append('images', file))
+    
+    const res = await fetch('http://168.231.101.119:4040/upload/multiple', {
+      method: 'POST',
+      body: fd
+    })
+    
+    if (!res.ok) throw new Error('Failed to upload images')
+    const data = await res.json()
+    return data.imageUrls || data.urls || data.images || []
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm() || !shop) return
 
     setIsLoading(true)
     try {
-      await onSubmit(shop.id, {
-        ...formData,
-        tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : []
+      let finalProfileUrl = formData.profileImageUrl
+      let finalGalleryUrls = formData.galleryImages
+
+      // Upload new profile image if provided
+      if (formData.profileImageFile) {
+        finalProfileUrl = await uploadImage(formData.profileImageFile)
+      }
+
+      // Upload new gallery images if provided
+      if (formData.galleryImageFiles.length > 0) {
+        const newUrls = await uploadMultipleImages(formData.galleryImageFiles)
+        finalGalleryUrls = [...formData.galleryImages, ...newUrls]
+      }
+
+      const response = await fetch(`http://168.231.101.119:4040/shops/update/${shop.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          description: formData.description.trim(),
+          category: formData.category,
+          tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [],
+          address: formData.address.trim(),
+          country: formData.country.trim(),
+          city: formData.city.trim(),
+          area: formData.area.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
+          isActive: formData.isActive,
+          openingHours: formData.openingHours,
+          profileImageUrl: finalProfileUrl,
+          images: finalGalleryUrls
+        }),
       })
+
+      if (!response.ok) {
+        throw new Error('Failed to update shop')
+      }
+
+      const result = await response.json()
+      console.log('Shop updated successfully:', result)
       handleClose()
     } catch (error) {
       console.error('Error updating shop:', error)
+      setErrors(prev => ({
+        ...prev,
+        submit: error instanceof Error ? error.message : 'Failed to update shop'
+      }))
     } finally {
       setIsLoading(false)
     }
@@ -108,10 +186,13 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       email: '',
       isActive: true,
       openingHours: [],
-      profileImage: null,
-      images: []
+      profileImageUrl: '',
+      profileImageFile: null,
+      galleryImages: [],
+      galleryImageFiles: []
     })
     setErrors({})
+    setPreviewGallery([])
     onClose()
   }
 
@@ -120,6 +201,32 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
     }
+  }
+
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handleInputChange('profileImageFile', file)
+    }
+  }
+
+  const handleGalleryImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files) {
+      const newFiles = Array.from(files)
+      handleInputChange('galleryImageFiles', newFiles)
+      
+      // Create previews for new files
+      const newPreviews = newFiles.map(file => URL.createObjectURL(file))
+      setPreviewGallery(prev => [...prev, ...newPreviews])
+    }
+  }
+
+  const removeGalleryImage = (index: number) => {
+    const newGallery = formData.galleryImages.filter((_, i) => i !== index)
+    const newPreview = previewGallery.filter((_, i) => i !== index)
+    handleInputChange('galleryImages', newGallery)
+    setPreviewGallery(newPreview)
   }
 
   const addOpeningHour = () => {
@@ -213,6 +320,97 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
               onChange={(e) => handleInputChange('description', e.target.value)}
             />
             {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+          </div>
+
+          {/* Profile Image */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <ImageIcon className="h-4 w-4 inline mr-1" />
+              Profile Image
+            </label>
+            <div className="space-y-3">
+              {formData.profileImageUrl && (
+                <div className="relative inline-block">
+                  <img 
+                    src={formData.profileImageUrl.startsWith('http') ? formData.profileImageUrl : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${formData.profileImageUrl}`}
+                    alt="Profile"
+                    className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                  />
+                </div>
+              )}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                  className="hidden"
+                  id="profile-image-input"
+                />
+                <label htmlFor="profile-image-input" className="cursor-pointer flex items-center justify-center">
+                  <div className="text-center">
+                    <Upload className="h-6 w-6 mx-auto text-gray-400 mb-1" />
+                    <p className="text-sm text-gray-600">Click to upload new profile image</p>
+                  </div>
+                </label>
+              </div>
+              {formData.profileImageFile && (
+                <p className="text-sm text-green-600">✓ New image selected: {formData.profileImageFile.name}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Gallery Images */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <ImageIcon className="h-4 w-4 inline mr-1" />
+              Gallery Images
+            </label>
+            
+            {/* Existing Gallery */}
+            {previewGallery.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">Current gallery images:</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {previewGallery.map((image, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={image.startsWith('http') ? image : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${image}`}
+                        alt={`Gallery ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upload New Gallery Images */}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleGalleryImageChange}
+                className="hidden"
+                id="gallery-image-input"
+              />
+              <label htmlFor="gallery-image-input" className="cursor-pointer flex items-center justify-center">
+                <div className="text-center">
+                  <Upload className="h-6 w-6 mx-auto text-gray-400 mb-1" />
+                  <p className="text-sm text-gray-600">Click to upload gallery images</p>
+                </div>
+              </label>
+            </div>
+            {formData.galleryImageFiles.length > 0 && (
+              <p className="text-sm text-green-600 mt-2">✓ {formData.galleryImageFiles.length} new image(s) selected</p>
+            )}
           </div>
 
           {/* Location Information */}
@@ -414,6 +612,12 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
               {isLoading ? 'Updating...' : 'Update Shop'}
             </Button>
           </div>
+
+          {errors.submit && (
+            <div className="text-red-500 text-sm p-3 bg-red-50 rounded-lg">
+              {errors.submit}
+            </div>
+          )}
         </form>
       </div>
     </div>

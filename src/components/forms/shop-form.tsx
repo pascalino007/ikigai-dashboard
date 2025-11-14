@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Upload, MapPin, Phone, Mail, Tag, Image as ImageIcon, Calendar } from 'lucide-react'
 
@@ -83,7 +83,9 @@ const SERVICE_TAGS = [
 ];
 
 
-export function ShopForm({ isOpen, onClose, onSubmit }: ShopFormProps) {
+export function ShopForm(props: ShopFormProps) {
+  const { isOpen, onClose, onSubmit } = props
+
 const [formData, setFormData] = useState<ShopFormData>({
   name: '',
   category: '',
@@ -111,6 +113,43 @@ const [formData, setFormData] = useState<ShopFormData>({
   const [isUploadingProfile, setIsUploadingProfile] = useState(false)
   const [profileUploadError, setProfileUploadError] = useState<string | null>(null)
   const [modal, setModal] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // fetched lists for selects
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
+  const [responsables, setResponsables] = useState<Array<{ id: string; name: string }>>([])
+  const [listsLoading, setListsLoading] = useState(false)
+  const [listsError, setListsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    const loadLists = async () => {
+      setListsLoading(true)
+      setListsError(null)
+      try {
+        const [catRes, provRes] = await Promise.all([
+          fetch('http://168.231.101.119:4040/categories/'),
+          fetch('http://168.231.101.119:4040/proownners')
+        ])
+        if (!catRes.ok) throw new Error(`Failed to fetch categories (${catRes.status})`)
+        if (!provRes.ok) throw new Error(`Failed to fetch responsables (${provRes.status})`)
+
+        const cats = await catRes.json()
+        const provs = await provRes.json()
+
+        if (!mounted) return
+        // normalize responses to { id, name }
+        setCategories(Array.isArray(cats) ? cats.map((c: any) => ({ id: String(c.id ?? c._id ?? c._key ?? c.name), name: c.name ?? c.Category ?? String(c) })) : [])
+        setResponsables(Array.isArray(provs) ? provs.map((p: any) => ({ id: String(p.id ?? p._id ?? p._key), name: `${p.firstname || ''} ${p.lastname || ''}`.trim() || p.email || p.name || 'Unknown' })) : [])
+      } catch (err) {
+        console.error('Error loading lists for shop form:', err)
+        if (mounted) setListsError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        if (mounted) setListsLoading(false)
+      }
+    }
+    loadLists()
+    return () => { mounted = false }
+  }, [])
 
   // Upload profile image to backend and set returned imageUrl on success
   const uploadProfileImage = async (file: File) => {
@@ -260,12 +299,14 @@ const [formData, setFormData] = useState<ShopFormData>({
         value={formData.category}
         onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
         className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.category ? 'border-red-500' : 'border-gray-300'}`}
+        disabled={listsLoading}
       >
-        <option value="">Select category</option>
-        <option value="Beaute">Beaute</option>
-        <option value="Coiffure Homme">Coiffure Homme</option>
-        <option value="Tresse">Tresse</option>
+        <option value="">{listsLoading ? 'Loading categories...' : 'Select category'}</option>
+        {categories.map(cat => (
+          <option key={cat.id} value={cat.name}>{cat.name}</option>
+        ))}
       </select>
+      {listsError && <p className="text-xs text-red-500 mt-1">Failed to load lists: {listsError}</p>}
       {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
     </div>
 
@@ -507,18 +548,23 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
   </div>
 
-   <div>s
+   <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">Responsable Shop *</label>
       <select
         value={formData.owner}
         onChange={(e) => setFormData(prev => ({ ...prev, owner: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.ville ? 'border-red-500' : 'border-gray-300'}`}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.owner ? 'border-red-500' : 'border-gray-300'}`}
+        disabled={listsLoading}
       >
-        <option >Select Owner</option>
-        <option value="Joe">Mr Joe</option>
-        <option value="Kim">Miss Kim</option>
+        <option value="">{listsLoading ? 'Loading owners...' : 'Select Owner'}</option>
+        {responsables.length === 0 && !listsLoading && (
+          <option value="">No owners available</option>
+        )}
+        {responsables.map(r => (
+          <option key={r.id} value={r.id}>{r.name}</option>
+        ))}
       </select>
-      {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
+      {errors.owner && <p className="text-red-500 text-sm mt-1">{errors.owner}</p>}
     </div>
 
   <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

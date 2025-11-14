@@ -107,79 +107,87 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
 
   // ✅ Submit handler with proper image handling
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setIsSubmitting(true);
+    e.preventDefault()
+    if (!validateForm()) return
+    setIsSubmitting(true)
 
     try {
       // Get the file from the input
-      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-      const file = fileInput?.files?.[0];
-      let finalImageUrl = formData.imageurl;
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+      const file = fileInput?.files?.[0]
+      let finalImageUrl = formData.imageurl
 
       // If there's a new file, upload it first
       if (file) {
-        const uploadForm = new FormData();
-        uploadForm.append('image', file);
+        const uploadForm = new FormData()
+        uploadForm.append('image', file)
 
-        console.log('Uploading new image...');
+        console.log('Uploading new image...')
         const uploadRes = await fetch('http://168.231.101.119:4040/upload', {
           method: 'POST',
           body: uploadForm,
-        });
+        })
 
         if (!uploadRes.ok) {
-          throw new Error('Failed to upload image');
+          throw new Error('Failed to upload image')
         }
 
-        const uploadData = await uploadRes.json();
-        finalImageUrl = uploadData.imageUrl;
-        console.log('Image uploaded successfully:', finalImageUrl);
+        const uploadData = await uploadRes.json()
+        finalImageUrl = uploadData.imageUrl
+        console.log('Image uploaded successfully:', finalImageUrl)
       }
 
-      // Prepare payload for category update
+      // Prepare payload for category
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         imageurl: finalImageUrl,
         isActive: formData.isActive
-      };
+      }
 
-      console.log('Submitting payload:', payload);
+      console.log('Submitting payload:', payload)
 
-      // Send PATCH request to update category
-      const url =  `http://168.231.101.119:4040/categories/update/${initialData.id!}` ;
-        
+      // Determine if creating or updating
+      const isUpdate = initialData && initialData.id
+      let url = 'http://168.231.101.119:4040/categories'
+      let method = 'POST'
+
+      if (isUpdate) {
+        url = `http://168.231.101.119:4040/categories/update/${initialData.id}`
+        method = 'POST'
+      }
+
+      console.log(`${isUpdate ? 'Updating' : 'Creating'} category at:`, url)
 
       const response = await fetch(url, {
-        method: 'POST' ,
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit category');
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to submit category')
       }
 
-      const result = await response.json();
-      console.log('✅ Category ' + (initialData ? 'updated' : 'created') + ':', result);
+      const result = await response.json()
+      console.log('✅ Category ' + (isUpdate ? 'updated' : 'created') + ':', result)
 
-      onSubmit(formData);
-      setFormData({ name: '', description: '', imageurl: '', isActive: true });
-      setImagePreview('');
-      onClose();
+      onSubmit(formData)
+      setFormData({ name: '', description: '', imageurl: '', isActive: true })
+      setImagePreview('')
+      onClose()
 
     } catch (error) {
-      console.error('❌ Error submitting form:', error);
+      console.error('❌ Error submitting form:', error)
       setErrors(prev => ({
         ...prev,
         submit: error instanceof Error ? error.message : 'Failed to submit category'
-      }));
+      }))
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
   }
 

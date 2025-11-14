@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Filter, Edit, Trash2, Eye, Clock, DollarSign, Tag } from 'lucide-react'
 import { ShopService } from '@/types'
@@ -85,11 +85,67 @@ const serviceSubcategories = {
 }
 
 export default function ShopServicesPage() {
-  const [shopServices, setShopServices] = useState<ShopService[]>(mockShopServices)
+  const [shopServices, setShopServices] = useState<ShopService[]>([])
+  const [shopInfo, setShopInfo] = useState<any>(null) // Adjust type as necessary
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+
+  useEffect(() => {
+    const fetchShopServices = async () => {
+      try {
+        const res = await fetch('http://168.231.101.119:4040/services/shop/2', { method: 'GET' })
+        if (!res.ok) throw new Error(`Failed to fetch services (${res.status})`)
+        const data = await res.json()
+        console.debug('raw services response:', data)
+
+        // If API returns an array of services directly, use it; otherwise try common wrappers
+        const rawArray = Array.isArray(data) ? data : (data.services ?? data.data ?? [])
+
+        const normalized = (Array.isArray(rawArray) ? rawArray : []).map((s: any, i: number) => {
+          // duration might be "30min" -> extract number
+          const durationMatch = String(s.duration ?? '').match(/(\d+)/)
+          const durationNum = durationMatch ? parseInt(durationMatch[1], 10) : Number(s.duration ?? 0)
+
+          return {
+            id: String(s.id ?? s._id ?? `${Date.now()}-${i}`),
+            name: s.name ?? 'Untitled',
+            description: s.description ?? '',
+            price: Number(String(s.price ?? '0').replace(/[^\d.-]/g, '')) || 0,
+            duration: durationNum || 0,
+            category: String(s.Category ?? s.category ?? 'Other'),
+            subcategory: String(s.sous_category ?? s.subcategory ?? ''),
+            shopId: String(s.shopId ?? s.shop_id ?? '2'),
+            shopName: String(s.shopName ?? s.shop_name ?? 'Shop'),
+            providerId: s.provider_id ? String(s.provider_id) : (s.providerId ? String(s.providerId) : ''),
+            providerName: s.provider_name ?? s.providerName ?? '',
+            isActive: typeof s.is_active !== 'undefined' ? Boolean(s.is_active) : (s.isActive ?? true),
+            tags: s.tags ? (typeof s.tags === 'string' ? s.tags.split(',').map((t:string)=>t.trim()).filter(Boolean) : s.tags) : [],
+            image: s.imageurl ?? s.image ?? s.imageUrl ?? undefined,
+            createdAt: s.createdAt ? new Date(s.createdAt) : new Date(),
+            updatedAt: s.updatedAt ? new Date(s.updatedAt) : new Date()
+          }
+        })
+
+        console.debug('normalized services:', normalized)
+        setShopServices(normalized)
+
+        // Optionally set a minimal shopInfo if API doesn't provide shop metadata
+        if (!shopInfo && normalized.length > 0) {
+          setShopInfo(prev => prev ?? ({
+            id: normalized[0].shopId,
+            name: normalized[0].shopName,
+            description: ''
+          }))
+        }
+      } catch (err) {
+        console.error('Error fetching shop services:', err)
+      }
+    }
+
+    fetchShopServices()
+  }, [])
 
   const filteredServices = shopServices.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -176,10 +232,23 @@ const toggleSelectAll = () => {
   return (
     <DashboardLayout>
       <div className="p-6">
+        {/* Shop Info Section */}
+        {shopInfo && (
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">{shopInfo.name}</h1>
+            <p className="text-gray-600 mt-2">{shopInfo.description}</p>
+            <div className="mt-4">
+              <span className="text-sm font-medium text-gray-700">Address: {shopInfo.address}</span>
+              <span className="text-sm font-medium text-gray-700 ml-4">Phone: {shopInfo.phone}</span>
+              <span className="text-sm font-medium text-gray-700 ml-4">Email: {shopInfo.email}</span>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">My Services rf</h1>
+              <h2 className="text-2xl font-bold text-gray-900">My Services</h2>
               <p className="text-gray-600 mt-2">Manage your shop's services and offerings</p>
             </div>
             <Button onClick={() => setShowAddModal(true)}>
@@ -262,40 +331,40 @@ const toggleSelectAll = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                 {filteredServices.map((service) => (
-      <tr key={service.id} className="hover:bg-gray-50">
-        {/* ✅ Checkbox column */}
-        <td className="px-6 py-4 whitespace-nowrap">
-          <input
-            type="checkbox"
-            checked={selectedServices.includes(service.id)}
-            onChange={() => handleSelect(service.id)}
-            className="h-4 w-4 text-ikigai-primary border-gray-300 rounded"
-          />
-        </td>
+                {filteredServices.map((service) => (
+                  <tr key={service.id} className="hover:bg-gray-50">
+                    {/* ✅ Checkbox column */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedServices.includes(service.id)}
+                        onChange={() => handleSelect(service.id)}
+                        className="h-4 w-4 text-ikigai-primary border-gray-300 rounded"
+                      />
+                    </td>
 
-        {/* Existing columns below */}
-        <td className="px-6 py-4 whitespace-nowrap">
-          <div className="flex items-center">
-            <div className="h-12 w-12 rounded-lg bg-ikigai-primary flex items-center justify-center overflow-hidden">
-              {service.image ? (
-                <img
-                  src={service.image}
-                  alt={service.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-sm font-medium text-white">
-                  {service.name.split(' ').map((n) => n[0]).join('')}
-                </span>
-              )}
-            </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900">{service.name}</div>
-              <div className="text-sm text-gray-500 max-w-xs truncate">{service.description}</div>
-            </div>
-          </div>
-        </td>
+                    {/* Existing columns below */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-12 w-12 rounded-lg bg-ikigai-primary flex items-center justify-center overflow-hidden">
+                          {service.image ? (
+                            <img
+                              src={service.image}
+                              alt={service.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-white">
+                              {service.name.split(' ').map((n) => n[0]).join('')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{service.name}</div>
+                          <div className="text-sm text-gray-500 max-w-xs truncate">{service.description}</div>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(service.category)}`}>
