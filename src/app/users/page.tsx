@@ -20,7 +20,7 @@ export default function UsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch('http://localhost:4040/auth')
+        const res = await fetch('http://168.231.101.119:4040/auth')
         const data = await res.json()
 
         // MAP API RESPONSE → UserType used in UI

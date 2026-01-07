@@ -32,7 +32,7 @@ export default function ProvidersPage() {
       setLoadingProviders(true)
       setProvidersError(null)
       try {
-        const res = await fetch('http://localhost:4040/proownners')
+        const res = await fetch('http://168.231.101.119:4040/proownners')
         if (!res.ok) throw new Error(`Failed to fetch providers (${res.status})`)
         const data = await res.json()
 

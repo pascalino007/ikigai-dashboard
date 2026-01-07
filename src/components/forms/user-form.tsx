@@ -110,7 +110,7 @@ export function UserForm({ isOpen, onClose, initialData }: UserFormProps) {
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await fetch("http://localhost:4040/upload", {
+  const res = await fetch("http://168.231.101.119:4040/upload", {
     method: "POST",
     body: formData
   });
@@ -153,7 +153,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       image: uploadedImageName
     };
 
-    const res = await fetch("http://localhost:4040/auth/signup", {
+    const res = await fetch("http://168.231.101.119:4040/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)

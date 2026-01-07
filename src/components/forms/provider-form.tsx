@@ -89,7 +89,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
     try {
       const fd = new FormData()
       fd.append('image', file)
-      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: fd })
+      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: fd })
       if (!res.ok) {
         const txt = await res.text().catch(() => '')
         throw new Error(txt || `Upload failed (${res.status})`)
@@ -108,7 +108,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
       const fd = new FormData()
       // backend expects multiple files under 'images' (adjust if needed)
       files.forEach((f) => fd.append('images', f))
-      const res = await fetch('http://localhost:4040/upload/multiple', { method: 'POST', body: fd })
+      const res = await fetch('http://168.231.101.119:4040/upload/multiple', { method: 'POST', body: fd })
       if (!res.ok) {
         const txt = await res.text().catch(() => '')
         throw new Error(txt || `Multiple upload failed (${res.status})`)
@@ -156,7 +156,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
       }
 
       // send to proownners endpoint
-      const res = await fetch('http://localhost:4040/proownners', {
+      const res = await fetch('http://168.231.101.119:4040/proownners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

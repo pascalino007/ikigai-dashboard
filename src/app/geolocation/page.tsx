@@ -37,7 +37,7 @@ export default function GeolocationPage() {
   const fetchZones = async () => {
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:4040/geoville')
+      const res = await fetch('http://168.231.101.119:4040/geoville')
       if (!res.ok) throw new Error('Failed to load geolocations')
       const data = await res.json()
       setZones(Array.isArray(data) ? data : [])
@@ -67,7 +67,7 @@ export default function GeolocationPage() {
     if (!confirm('Supprimer cette zone ?')) return
 
     try {
-      await fetch(`http://localhost:4040/geoville/${id}`, {
+      await fetch(`http://168.231.101.119:4040/geoville/${id}`, {
         method: 'DELETE'
       })
       setZones(prev => prev.filter(z => z.id !== id))

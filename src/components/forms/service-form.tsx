@@ -67,7 +67,7 @@ export function ServiceForm({
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true)
-        const res = await fetch('http://localhost:4040/categories')
+        const res = await fetch('http://168.231.101.119:4040/categories')
         const data = await res.json()
         setCategories(data)
         
@@ -87,7 +87,7 @@ export function ServiceForm({
       if (!formData.category) return
       try {
         setLoadingSubcategories(true)
-        const res = await fetch(`http://localhost:4040/sous-categories/subcate/${formData.category}`)
+        const res = await fetch(`http://168.231.101.119:4040/sous-categories/subcate/${formData.category}`)
         const data = await res.json()
         setSubcategories(data)
       } catch (err) {
@@ -181,7 +181,7 @@ export function ServiceForm({
 
     setIsUploadingProfile(true)
     try {
-      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: form })
+      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: form })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.message || `Upload failed (${res.status})`)
@@ -230,7 +230,7 @@ export function ServiceForm({
       if (formData.profileImageFile) {
         const fd = new FormData()
         fd.append('image', formData.profileImageFile)
-        const upRes = await fetch('http://localhost:4040/upload', { method: 'POST', body: fd })
+        const upRes = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: fd })
         if (!upRes.ok) {
           const errBody = await upRes.text().catch(() => '')
           throw new Error(errBody || `Image upload failed (${upRes.status})`)
@@ -261,8 +261,8 @@ export function ServiceForm({
       if (formData.provider_name) payload.provider_name = String(formData.provider_name)
 
       const url = initialData
-        ? `http://localhost:4040/services/${initialData.id}`
-        : 'http://localhost:4040/services'
+        ? `http://168.231.101.119:4040/services/${initialData.id}`
+        : 'http://168.231.101.119:4040/services'
       const method = initialData ? 'PATCH' : 'POST'
 
       console.log('Submitting service payload:', payload)

@@ -109,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
     try {
-      const response = await fetch('http://localhost:4040/auth/signin', {
+      const response = await fetch('http://168.231.101.119:4040/auth/signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

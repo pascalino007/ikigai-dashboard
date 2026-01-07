@@ -95,7 +95,7 @@ export default function ShopServicesPage() {
   useEffect(() => {
     const fetchShopServices = async () => {
       try {
-        const res = await fetch('http://localhost:4040/services/shop/2', { method: 'GET' })
+        const res = await fetch('http://168.231.101.119:4040/services/shop/2', { method: 'GET' })
         if (!res.ok) throw new Error(`Failed to fetch services (${res.status})`)
         const data = await res.json()
         console.debug('raw services response:', data)

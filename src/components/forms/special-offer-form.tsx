@@ -38,7 +38,7 @@ export function SpecialOfferForm({ isOpen, onClose, onSubmit, shopId }: SpecialO
     const fetchServices = async () => {
       setLoadingServices(true)
       try {
-        const res = await fetch(`http://localhost:4040/services/shop/${shopId}`)
+        const res = await fetch(`http://168.231.101.119:4040/services/shop/${shopId}`)
         if (!res.ok) throw new Error('Failed to load services')
         const data = await res.json()
         setServices(data || [])
@@ -111,7 +111,7 @@ export function SpecialOfferForm({ isOpen, onClose, onSubmit, shopId }: SpecialO
     try {
       const fd = new FormData()
       fd.append('image', file)
-      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: fd })
+      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: fd })
       if (!res.ok) {
         const errBody = await res.text().catch(() => '')
         throw new Error(errBody || `Upload failed (${res.status})`)
@@ -170,7 +170,7 @@ export function SpecialOfferForm({ isOpen, onClose, onSubmit, shopId }: SpecialO
       }
 
       console.log('Posting special payload:', payload)
-      const res = await fetch('http://localhost:4040/specials', {
+      const res = await fetch('http://168.231.101.119:4040/specials', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

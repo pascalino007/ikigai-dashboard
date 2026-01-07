@@ -30,7 +30,7 @@ export default function SpecialOffersPage() {
       setLoading(true)
       setFetchError(null)
       try {
-        const res = await fetch('http://localhost:4040/specials')
+        const res = await fetch('http://168.231.101.119:4040/specials')
         if (!res.ok) throw new Error(`Failed to fetch specials (${res.status})`)
         const data = await res.json()
 

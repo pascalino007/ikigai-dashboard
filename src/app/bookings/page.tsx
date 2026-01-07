@@ -39,7 +39,7 @@ export default function BookingsPage() {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await fetch('http://localhost:4040/bookings')
+        const res = await fetch('http://168.231.101.119:4040/bookings')
         const data = await res.json()
 
         const formatted: Booking[] = data.map((b: any) => ({

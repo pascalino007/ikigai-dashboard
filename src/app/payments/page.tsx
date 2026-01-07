@@ -36,7 +36,7 @@ export default function PaymentsPage() {
 
   // ✅ FETCH FROM API
   useEffect(() => {
-    fetch('http://localhost:4040/transactions/admin/all')
+    fetch('http://168.231.101.119:4040/transactions/admin/all')
       .then(res => res.json())
       .then(data => setPayments(data))
       .catch(err => console.error('Error fetching transactions', err))

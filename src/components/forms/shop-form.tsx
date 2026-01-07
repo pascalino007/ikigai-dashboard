@@ -127,8 +127,8 @@ const [formData, setFormData] = useState<ShopFormData>({
       setListsError(null)
       try {
         const [catRes, provRes] = await Promise.all([
-          fetch('http://localhost:4040/categories/'),
-          fetch('http://localhost:4040/proownners')
+          fetch('http://168.231.101.119:4040/categories/'),
+          fetch('http://168.231.101.119:4040/proownners')
         ])
         if (!catRes.ok) throw new Error(`Failed to fetch categories (${catRes.status})`)
         if (!provRes.ok) throw new Error(`Failed to fetch responsables (${provRes.status})`)
@@ -161,7 +161,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
     setIsUploadingProfile(true)
     try {
-      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: form })
+      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: form })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.message || `Upload failed (${res.status})`)
@@ -233,7 +233,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   setIsSubmitting(true);
     try {
-    const res = await fetch('http://localhost:4040/shops', {
+    const res = await fetch('http://168.231.101.119:4040/shops', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),

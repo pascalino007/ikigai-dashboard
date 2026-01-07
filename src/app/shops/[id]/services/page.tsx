@@ -50,7 +50,7 @@ useEffect(() => {
       setLoading(true);
       setError('');
       console.log('Fetching services for shop ID:', shopId);
-      const response = await fetch(`http://localhost:4040/services/shop/${shopId}`, {
+      const response = await fetch(`http://168.231.101.119:4040/services/shop/${shopId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
