@@ -127,8 +127,8 @@ const [formData, setFormData] = useState<ShopFormData>({
       setListsError(null)
       try {
         const [catRes, provRes] = await Promise.all([
-          fetch('http://168.231.101.119:4040/categories/'),
-          fetch('http://168.231.101.119:4040/proownners')
+          fetch('http://localhost:4040/categories/'),
+          fetch('http://localhost:4040/proownners')
         ])
         if (!catRes.ok) throw new Error(`Failed to fetch categories (${catRes.status})`)
         if (!provRes.ok) throw new Error(`Failed to fetch responsables (${provRes.status})`)
@@ -161,7 +161,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
     setIsUploadingProfile(true)
     try {
-      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: form })
+      const res = await fetch('http://localhost:4040/upload', { method: 'POST', body: form })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.message || `Upload failed (${res.status})`)
@@ -233,7 +233,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   setIsSubmitting(true);
     try {
-    const res = await fetch('http://168.231.101.119:4040/shops', {
+    const res = await fetch('http://localhost:4040/shops', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
@@ -363,6 +363,20 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Region *</label>
+      <select
+        value={formData.pays}
+        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
+      >
+        <option value="">Select Region</option>
+        <option value="maritime">Maririme</option>
+        <option value="centrale">Centrale</option>
+      </select>
+      {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
+    </div>
+
+    <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
       <select
         value={formData.pays}
@@ -387,6 +401,24 @@ const [formData, setFormData] = useState<ShopFormData>({
         <option value="">Select city</option>
         <option value="Lomé">Lomé</option>
         <option value="Kara">Kara</option>
+      </select>
+      {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Arrondissement*</label>
+      <select
+        value={formData.ville}
+        onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.ville ? 'border-red-500' : 'border-gray-300'}`}
+      >
+        <option value="">Select Arrondissement</option>
+         <option value="1">1er arrondissement</option>
+         <option value="2">2em arrondissement</option>
+         <option value="3">3em arrondissement</option>
+          <option value="4">4em arrondissement</option>
+         <option value="5">5em arrondissement</option>
+
       </select>
       {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
     </div>
@@ -548,6 +580,69 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
   </div>
 
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+        <MapPin className="h-4 w-4 mr-1" /> Address *
+      </label>
+      <input
+        type="text"
+        value={formData.address}
+        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
+        placeholder="Enter address"
+      />
+      {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Region *</label>
+      <select
+        value={formData.pays}
+        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
+      >
+        <option value="">Select Region</option>
+        <option value="maritime">Maririme</option>
+        <option value="centrale">Centrale</option>
+      </select>
+      {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Abonnement *</label>
+      <select
+        value={formData.pays}
+        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
+      >
+        <option value="">Select Abonnement</option>
+        <option value="BASIC">BASIC</option>
+        <option value="recommended">Recommended</option>
+        <option value="vip">VIP </option>
+      </select>
+      {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Duree *</label>
+      <select
+        value={formData.ville}
+        onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.ville ? 'border-red-500' : 'border-gray-300'}`}
+      >
+        <option value="">Select Duration en Mois</option>
+        <option value="6"> 6 </option>
+        <option value="12"> 12 </option>
+      </select>
+      {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
+    </div>
+
+   
+
+  
+  </div>
+
    <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">Responsable Shop *</label>
       <select
@@ -566,6 +661,8 @@ const [formData, setFormData] = useState<ShopFormData>({
       </select>
       {errors.owner && <p className="text-red-500 text-sm mt-1">{errors.owner}</p>}
     </div>
+
+
 
   <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
     <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

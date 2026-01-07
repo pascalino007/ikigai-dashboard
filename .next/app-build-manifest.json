@@ -16,50 +16,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/login/page.js"
     ],
+    "/abonnements/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/abonnements/page.js"
+    ],
+    "/marketplace/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/marketplace/page.js"
+    ],
     "/categories/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/categories/page.js"
-    ],
-    "/shop-services/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/shop-services/page.js"
-    ],
-    "/sous-categories/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/sous-categories/page.js"
-    ],
-    "/special-offers/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/special-offers/page.js"
-    ],
-    "/shops/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/shops/page.js"
-    ],
-    "/shops/[id]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/shops/[id]/page.js"
-    ],
-    "/shops/[id]/services/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/shops/[id]/services/page.js"
-    ],
-    "/providers/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/providers/page.js"
-    ],
-    "/sliders/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/sliders/page.js"
     ],
     "/not-found": [
       "static/chunks/webpack.js",

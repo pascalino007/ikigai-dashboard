@@ -59,7 +59,7 @@ export default function ShopsPage() {
   const loadShops = async () => {
   setIsLoading(true)
   try {
-    const response = await fetch(`http://168.231.101.119:4040/shops`, {
+    const response = await fetch(`http://localhost:4040/shops`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ export default function ShopsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Pays</label>
               <select
                 value={selectedCountry}
                 onChange={(e) => {
@@ -237,14 +237,12 @@ export default function ShopsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
               >
                 <option value="">All Countries</option>
-                {countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
+                <option value="Togo">Togo</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
               <select
                 value={selectedCity}
                 onChange={(e) => {
@@ -254,23 +252,34 @@ export default function ShopsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
               >
                 <option value="">All Cities</option>
-                {cities.map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
+                 <option value="">Lome</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Area</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Arrondissement</label>
               <select
                 value={selectedArea}
                 onChange={(e) => setSelectedArea(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
               >
                 <option value="">All Areas</option>
-                {areas.map(area => (
-                  <option key={area} value={area}>{area}</option>
-                ))}
+                <option value="">1</option>
+                <option value="">2</option>
+                <option value="">3</option>
+                <option value="">4</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Quartier</label>
+              <select
+                value={selectedArea}
+                onChange={(e) => setSelectedArea(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              >
+                <option value="">All Areas</option>
+                <option value="">Adidogome</option>
               </select>
             </div>
 

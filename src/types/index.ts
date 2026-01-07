@@ -121,6 +121,7 @@ export interface Payment {
 }
 
 export interface User {
+  superior: any;
   id: string;
   firstName: string;
   lastName: string;

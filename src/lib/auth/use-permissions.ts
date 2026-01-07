@@ -41,15 +41,17 @@ export function usePermissions() {
         { name: 'Categories', href: '/categories', icon: 'Scissors', roles: ['admin'] },
         { name: 'Sliders', href: '/sliders', icon: 'Scissors', roles: ['admin'] },
         { name: 'Bookings', href: '/bookings', icon: 'Calendar', roles: ['admin', 'manager'] },
-        { name: 'Payments', href: '/payments', icon: 'CreditCard', roles: ['admin', 'manager'] },
+        { name: 'Transactions', href: '/payments', icon: 'CreditCard', roles: ['admin', 'manager'] },
         { name: 'Users', href: '/users', icon: 'Users', roles: ['admin'] },
+        { name: 'Marketplace', href: '/marketplace', icon: 'Users', roles: ['admin,manager'] },
         { name: 'Enrollers', href: '/enrollers', icon: 'Users', roles: ['admin', 'manager'] },
         { name: 'Managers', href: '/managers', icon: 'Users', roles: ['admin', 'manager'] },
-        { name: 'Parrainnage', href: '/enrollers', icon: 'Users', roles: ['admin', 'manager'] },
-         { name: 'Abonnements Prestaires', href: '/enrollers', icon: 'Users', roles: ['admin', 'manager'] },
+        { name: 'Parrainnage', href: '', icon: 'Users', roles: ['admin', 'manager'] },
+         { name: 'Abonnements Prestaires', href: '/abonnements', icon: 'Users', roles: ['admin', 'manager'] },
         { name: 'Analytics', href: '/analytics', icon: 'BarChart3', roles: ['admin', 'manager'] },
         { name: 'Settings', href: '/settings', icon: 'Settings', roles: ['admin'] },
-      ]
+        { name: 'Geolocation', href: '/geolocation', icon: 'Settings', roles: ['admin'] },
+      ]  
     }
 
     if (isManager) {
@@ -58,7 +60,7 @@ export function usePermissions() {
         { name: 'Shops', href: '/shops', icon: 'Store', roles: ['admin', 'manager', 'enroller'] },
      
         { name: 'Bookings', href: '/bookings', icon: 'Calendar', roles: ['admin', 'manager'] },
-        { name: 'Payments', href: '/payments', icon: 'CreditCard', roles: ['admin', 'manager'] },
+        { name: 'Transactions', href: '/payments', icon: 'CreditCard', roles: ['admin', 'manager'] },
          { name: 'Enrollers', href: '/enrollers', icon: 'Users', roles: ['admin', 'manager'] },
         { name: 'Analytics', href: '/analytics', icon: 'BarChart3', roles: ['admin', 'manager'] },
       ]

@@ -138,7 +138,7 @@ export function LoginForm() {
           </div>
 
           <div className="text-center">
-            <div className="text-sm text-gray-600">
+           {/*  <div className="text-sm text-gray-600">
               <p className="font-medium mb-3">Demo Credentials:</p>
                <div className="space-y-2 text-left">
                 <div className="bg-blue-50 p-3 rounded-lg">
@@ -157,8 +157,8 @@ export function LoginForm() {
                   <p className="text-xs">Password: enroller123</p>
                 </div>
               </div> 
-            </div>
-            <div className="mt-4 space-x-2">
+            </div> */}
+           {/*  <div className="mt-4 space-x-2">
                <Button
                 type="button"
                 variant="outline"
@@ -192,7 +192,7 @@ export function LoginForm() {
               >
                 Enroller
               </Button>
-            </div>
+            </div> */}
           </div>
         </form>
       </div>

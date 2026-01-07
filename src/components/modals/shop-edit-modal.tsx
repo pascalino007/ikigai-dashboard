@@ -86,7 +86,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     const fd = new FormData()
     fd.append('image', file)
     
-    const res = await fetch('http://168.231.101.119:4040/upload', {
+    const res = await fetch('http://localhost:4040/upload', {
       method: 'POST',
       body: fd
     })
@@ -101,7 +101,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     const fd = new FormData()
     files.forEach(file => fd.append('images', file))
     
-    const res = await fetch('http://168.231.101.119:4040/upload/multiple', {
+    const res = await fetch('http://localhost:4040/upload/multiple', {
       method: 'POST',
       body: fd
     })
@@ -131,7 +131,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         finalGalleryUrls = [...formData.galleryImages, ...newUrls]
       }
 
-      const response = await fetch(`http://168.231.101.119:4040/shops/update/${shop.id}`, {
+      const response = await fetch(`http://localhost:4040/shops/update/${shop.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
