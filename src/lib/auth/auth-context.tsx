@@ -119,8 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json()
+        console.log('Login API Response:', data)
+
         const token = data.access_token || data.token
-        const userData = { email, token, ...data.user }
+        // Extract role directly from the signin response
+        const role = data.role || data.user?.role || 'user'
+        const userData = { email, token, ...data.user, role }
         
         localStorage.setItem('ikigai_token', token)
         localStorage.setItem('ikigai_user', JSON.stringify(userData))

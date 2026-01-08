@@ -28,6 +28,24 @@ export function usePermissions() {
   const getNavigationItems = () => {
     const baseItems = [
       { name: 'Dashboard', href: '/', icon: 'LayoutDashboard', roles: ['admin', 'manager', 'enroller'] },
+       { name: 'Service Providers', href: '/providers', icon: 'Users', roles: ['admin'] },
+        { name: 'Shops', href: '/shops', icon: 'Store', roles: ['admin', 'manager', 'enroller'] },
+        { name: 'My Services', href: '/shop-services', icon: 'Wrench', roles: ['admin', 'manager', 'enroller'] },
+        { name: 'Sous-Categories', href: '/sous-categories', icon: 'Wrench', roles: ['admin', 'manager', 'enroller'] },
+        { name: 'Special Offers', href: '/special-offers', icon: 'Percent', roles: ['admin'] },
+        { name: 'Categories', href: '/categories', icon: 'Scissors', roles: ['admin'] },
+        { name: 'Sliders', href: '/sliders', icon: 'Scissors', roles: ['admin'] },
+        { name: 'Bookings', href: '/bookings', icon: 'Calendar', roles: ['admin', 'manager'] },
+        { name: 'Transactions', href: '/payments', icon: 'CreditCard', roles: ['admin', 'manager'] },
+        { name: 'Users', href: '/users', icon: 'Users', roles: ['admin'] },
+        { name: 'Marketplace', href: '/marketplace', icon: 'Users', roles: ['admin,manager'] },
+        { name: 'Enrollers', href: '/enrollers', icon: 'Users', roles: ['admin', 'manager'] },
+        { name: 'Managers', href: '/managers', icon: 'Users', roles: ['admin', 'manager'] },
+        { name: 'Parrainnage', href: '', icon: 'Users', roles: ['admin', 'manager'] },
+         { name: 'Abonnements Prestaires', href: '/abonnements', icon: 'Users', roles: ['admin', 'manager'] },
+        { name: 'Analytics', href: '/analytics', icon: 'BarChart3', roles: ['admin', 'manager'] },
+        { name: 'Settings', href: '/settings', icon: 'Settings', roles: ['admin'] },
+        { name: 'Geolocation', href: '/geolocation', icon: 'Settings', roles: ['admin'] },
     ]
 
     if (isAdmin) {

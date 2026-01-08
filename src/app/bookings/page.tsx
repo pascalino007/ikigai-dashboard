@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/lib/auth/auth-context'
 import { Button } from '@/components/ui/button'
 import {
   Search,
@@ -26,6 +27,7 @@ type Booking = {
 }
 
 export default function BookingsPage() {
+  const { user } = useAuth()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -39,14 +41,21 @@ export default function BookingsPage() {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await fetch('http://168.231.101.119:4040/bookings')
+        const token = localStorage.getItem('ikigai_token')
+        const res = await fetch('http://168.231.101.119:4040/bookings', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        if (!res.ok) throw new Error('Failed to fetch')
         const data = await res.json()
 
         const formatted: Booking[] = data.map((b: any) => ({
           id: String(b.id),
-          userId: b.user_id,
-          providerId: b.provider_id,
-          serviceId: b.service_id,
+          userId: String(b.user_id),
+          providerId: String(b.provider_id),
+          serviceId: String(b.service_id),
 
           bookingDate: new Date(b.booking_date),
           bookingTime: new Date(b.booking_time).toLocaleTimeString([], {
@@ -91,7 +100,7 @@ export default function BookingsPage() {
   // FILTERING
   // -----------------------------
   const filteredBookings = bookings.filter((b) => {
-    const matchesSearch = b.userId.includes(searchTerm)
+    const matchesSearch = b.userId.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || b.bookingStatus === filterStatus
     const matchesShop = filterShop === 'all' || b.providerId === filterShop
     return matchesSearch && matchesStatus && matchesShop
@@ -145,7 +154,14 @@ export default function BookingsPage() {
         {/* HEADER */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Bookings</h1>
-          <p className="text-gray-600 mt-2">Manage customer bookings</p>
+          <p className="text-gray-600 mt-2">
+            Manage customer bookings 
+            {user?.role && (
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {user.role}
+              </span>
+            )}
+          </p>
         </div>
 
         {/* FILTERS */}
@@ -232,7 +248,9 @@ export default function BookingsPage() {
 
                   <td className="px-6 py-4 space-x-2">
                     <Button size="sm" variant="ghost">View</Button>
-                    <Button size="sm" variant="ghost">Edit</Button>
+                    {(user?.role === 'admin' || user?.role === 'manager') && (
+                      <Button size="sm" variant="ghost">Edit</Button>
+                    )}
                   </td>
                 </tr>
               ))}
