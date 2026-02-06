@@ -6,6 +6,7 @@ import { Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react'
 import { ServiceProvider } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ProviderForm } from '@/components/forms/provider-form'
+import { ProviderEditModal } from '@/components/modals/provider-edit-modal'
 import { AdminOnly } from '@/components/auth/route-guard'
 
 // Mock data for demonstration
@@ -24,6 +25,7 @@ export default function ProvidersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingProvider, setEditingProvider] = useState<ServiceProvider | null>(null)
 
   // fetch providers from backend
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function ProvidersPage() {
       case 'makeup_artist': return 'bg-pink-100 text-pink-800'
       case 'nail_technician': return 'bg-green-100 text-green-800'
       case 'esthetician': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-gray-100 text-gray-800 dark:text-gray-200'
     }
   }
 
@@ -139,6 +141,32 @@ export default function ProvidersPage() {
     console.log('Provider created successfully!')
   }
 
+  const handleUpdateProvider = async (providerId: string, data: any) => {
+    setProviders(prev =>
+      prev.map(p =>
+        p.id === providerId
+          ? {
+              ...p,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              name: `${data.firstName} ${data.lastName}`,
+              email: data.email,
+              phone: data.phoneNumber,
+              idCardNumber: data.idCardNumber,
+              type: data.type,
+              experience: data.experience,
+              description: data.description,
+              isActive: data.isActive,
+              profilePicture: data.profilePicture || p.profilePicture,
+              idCardPicture: data.idCardPicture || p.idCardPicture,
+              updatedAt: new Date()
+            }
+          : p
+      )
+    )
+    setEditingProvider(null)
+  }
+
   return (
     <AdminOnly>
       <DashboardLayout>
@@ -146,8 +174,8 @@ export default function ProvidersPage() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Service Providers</h1>
-            <p className="text-gray-600 mt-2">Manage barbers, hairdressers, and beauty professionals</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Service Providers</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Manage barbers, hairdressers, and beauty professionals</p>
           </div>
           <Button onClick={() => setShowAddModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -157,7 +185,7 @@ export default function ProvidersPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
@@ -200,30 +228,30 @@ export default function ProvidersPage() {
       )}
 
       {/* Providers Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden border border-gray-100 dark:border-gray-800">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Provider
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Experience
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                  Rating 
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Owner of Shop
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -247,8 +275,8 @@ export default function ProvidersPage() {
                         )}
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{provider.name}</div>
-                        <div className="text-sm text-gray-500">{provider.email}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{provider.name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{provider.email}</div>
                         {provider.idCardNumber && (
                           <div className="text-xs text-gray-400">ID: {provider.idCardNumber}</div>
                         )}
@@ -260,18 +288,18 @@ export default function ProvidersPage() {
                       {getTypeLabel(provider.type)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {provider.experience} years
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     <div className="flex items-center">
                       <span className="text-yellow-400">★</span>
                       <span className="ml-1">{provider.rating}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {provider.shopId ? (
-                      <span className="text-gray-800">{shopIdToName[provider.shopId] || provider.shopId}</span>
+                      <span className="text-gray-800 dark:text-gray-200">{shopIdToName[provider.shopId] || provider.shopId}</span>
                     ) : (
                       <span className="text-gray-400">—</span>
                     )}
@@ -290,7 +318,12 @@ export default function ProvidersPage() {
                       <Button variant="ghost" size="sm">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingProvider(provider)}
+                        title="Edit provider"
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
@@ -310,6 +343,14 @@ export default function ProvidersPage() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddProvider}
+      />
+
+      {/* Edit Provider Modal */}
+      <ProviderEditModal
+        isOpen={!!editingProvider}
+        onClose={() => setEditingProvider(null)}
+        provider={editingProvider}
+        onSubmit={handleUpdateProvider}
       />
       </div>
     </DashboardLayout>

@@ -184,7 +184,7 @@ export default function ShopsPage() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Shops</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Shops</h1>
             <p className="text-gray-600 mt-2">Manage beauty shops and salons</p>
           </div>
           <Button onClick={() => setShowAddModal(true)}>
@@ -333,7 +333,7 @@ export default function ShopsPage() {
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {shop.name}
           </h3>
           <p className="text-sm text-gray-600 mt-1">{shop.description}</p>

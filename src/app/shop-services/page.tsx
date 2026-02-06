@@ -167,7 +167,7 @@ export default function ShopServicesPage() {
       case 'Eyebrows': return 'bg-orange-100 text-orange-800'
       case 'Eyelashes': return 'bg-indigo-100 text-indigo-800'
       case 'Waxing': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-gray-100 text-gray-800 dark:text-gray-200'
     }
   }
 
@@ -234,7 +234,7 @@ const toggleSelectAll = () => {
         {/* Shop Info Section */}
         {shopInfo && (
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">{shopInfo.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{shopInfo.name}</h1>
             <p className="text-gray-600 mt-2">{shopInfo.description}</p>
             <div className="mt-4">
               <span className="text-sm font-medium text-gray-700">Address: {shopInfo.address}</span>
@@ -247,7 +247,7 @@ const toggleSelectAll = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">My Services</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Services</h2>
               <p className="text-gray-600 mt-2">Manage your shop's services and offerings</p>
             </div>
             <Button onClick={() => setShowAddModal(true)}>
@@ -359,7 +359,7 @@ const toggleSelectAll = () => {
                           )}
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{service.name}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{service.name}</div>
                           <div className="text-sm text-gray-500 max-w-xs truncate">{service.description}</div>
                         </div>
                       </div>
@@ -374,12 +374,12 @@ const toggleSelectAll = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {service.providerName || 'Any Provider'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900 flex items-center">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
                           <DollarSign className="h-3 w-3 mr-1" />
                           {service.price}
                         </div>
@@ -392,7 +392,7 @@ const toggleSelectAll = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-wrap gap-1">
                         {service.tags?.slice(0, 2).map((tag, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:text-gray-200">
                             <Tag className="h-2 w-2 mr-1" />
                             {tag}
                           </span>

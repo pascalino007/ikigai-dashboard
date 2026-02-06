@@ -1,6 +1,9 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Users, Store, Scissors, Calendar, TrendingUp, DollarSign } from 'lucide-react'
+
+const API_BASE = 'http://168.231.101.119:4040'
 
 interface StatCardProps {
   title: string
@@ -12,16 +15,16 @@ interface StatCardProps {
 
 function StatCard({ title, value, change, icon: Icon, color }: StatCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800">
       <div className="flex items-center">
         <div className={`p-3 rounded-full ${color}`}>
           <Icon className="h-6 w-6 text-white" />
         </div>
         <div className="ml-4">
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-semibold text-gray-900">{value}</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
+          <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{value}</p>
           {change && (
-            <p className="text-sm text-green-600 flex items-center">
+            <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
               <TrendingUp className="h-4 w-4 mr-1" />
               {change}
             </p>
@@ -33,10 +36,35 @@ function StatCard({ title, value, change, icon: Icon, color }: StatCardProps) {
 }
 
 export function DashboardStats() {
+  const [providersCount, setProvidersCount] = useState<number | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchProvidersCount = async () => {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
+        const headers: HeadersInit = {}
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const res = await fetch(`${API_BASE}/proownners/count`, { headers })
+        if (!res.ok) throw new Error(`Failed to fetch (${res.status})`)
+        const data = await res.json()
+        const count = typeof data === 'number' ? data : data?.count ?? data?.total ?? 0
+        setProvidersCount(count)
+      } catch (err) {
+        setStatsError(err instanceof Error ? err.message : 'Failed to load stats')
+        setProvidersCount(0)
+      } finally {
+        setStatsLoading(false)
+      }
+    }
+    fetchProvidersCount()
+  }, [])
+
   const stats = [
     {
       title: 'Total Providers',
-      value: '1,234',
+      value: statsLoading ? '...' : statsError ? '—' : (providersCount ?? 0).toLocaleString(),
       change: '+12% from last month',
       icon: Users,
       color: 'bg-ikigai-primary'

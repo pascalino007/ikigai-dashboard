@@ -134,7 +134,7 @@ export default function CategoriesPage() {
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Categories</h1>
             <p className="text-gray-600 mt-2">Manage service categories</p>
           </div>
           <Button onClick={() => setShowAddModal(true)}>
@@ -198,7 +198,7 @@ export default function CategoriesPage() {
               </div>
               <div className="p-6">
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{category.name}</h3>
                 </div>
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2">{category.description}</p>
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200">
@@ -233,7 +233,7 @@ export default function CategoriesPage() {
             <div className="mx-auto h-12 w-12 text-gray-400">
               <Tag className="h-12 w-12" />
             </div>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No categories found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No categories found</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm || filterStatus !== 'all'
                 ? 'Try adjusting your search or filter criteria.'

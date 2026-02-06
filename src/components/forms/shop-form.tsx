@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, Upload, MapPin, Phone, Mail, Tag, Image as ImageIcon, Calendar } from 'lucide-react'
+import { X, Upload, MapPin, Phone, Mail, Tag, Image as ImageIcon, Calendar, Navigation } from 'lucide-react'
 
 interface OpeningHour {
   day: string
@@ -32,6 +32,8 @@ interface ShopFormData {
   tags: string;
   owner: string;
   registered_by: string;
+  long?: number;
+  lat?: number;
 }
 
 interface ShopFormProps {
@@ -106,6 +108,8 @@ const [formData, setFormData] = useState<ShopFormData>({
   description_shop: '',
   owner: '',
   registered_by: 'admin_123',
+  long: undefined,
+  lat: undefined,
 });
 
   const [errors, setErrors] = useState<Partial<Record<keyof ShopFormData, string>>>({})
@@ -113,6 +117,8 @@ const [formData, setFormData] = useState<ShopFormData>({
   const [isUploadingProfile, setIsUploadingProfile] = useState(false)
   const [profileUploadError, setProfileUploadError] = useState<string | null>(null)
   const [modal, setModal] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // fetched lists for selects
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
@@ -193,7 +199,74 @@ const [formData, setFormData] = useState<ShopFormData>({
       : [...tagArray, tag];
     return { ...prev, tags: newTagArray.join(',') };
   });
- } 
+ }
+
+  const reverseGeocode = async (lat: number, lon: number): Promise<{ address: string; pays: string; ville: string; quartier: string } | null> => {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+    const res = await fetch(url, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'IkigaiDashboard/1.0' },
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const addr = data?.address || {}
+    const displayName = data?.display_name || ''
+    return {
+      address: displayName,
+      pays: addr.country || '',
+      ville: addr.city || addr.town || addr.village || addr.municipality || addr.state || '',
+      quartier: addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || '',
+    }
+  }
+
+  const handlePickCurrentPosition = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser')
+      return
+    }
+    setIsGettingLocation(true)
+    setLocationError(null)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        try {
+          const geo = await reverseGeocode(latitude, longitude)
+          setFormData(prev => ({
+            ...prev,
+            long: longitude,
+            lat: latitude,
+            ...(geo && {
+              address: geo.address,
+              pays: geo.pays || prev.pays,
+              ville: geo.ville || prev.ville,
+              quartier: geo.quartier || prev.quartier,
+            }),
+          }))
+        } catch {
+          setLocationError('Could not fetch address from coordinates')
+          setFormData(prev => ({ ...prev, long: longitude, lat: latitude }))
+        } finally {
+          setIsGettingLocation(false)
+        }
+      },
+      (error) => {
+        setIsGettingLocation(false)
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError('Location permission denied')
+            break
+          case error.POSITION_UNAVAILABLE:
+            setLocationError('Location information unavailable')
+            break
+          case error.TIMEOUT:
+            setLocationError('Location request timed out')
+            break
+          default:
+            setLocationError('Unable to get your location')
+        }
+      },
+      { enableHighAccuracy: true }
+    )
+  } 
 
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -273,7 +346,7 @@ const [formData, setFormData] = useState<ShopFormData>({
       <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Add New Shop</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Add New Shop</h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>
@@ -435,6 +508,29 @@ const [formData, setFormData] = useState<ShopFormData>({
         <option value="Avedji">Avedji</option>
       </select>
       {errors.quartier && <p className="text-red-500 text-sm mt-1">{errors.quartier}</p>}
+    </div>
+
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+        <MapPin className="h-4 w-4 mr-1" /> Position (long, lat)
+      </label>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handlePickCurrentPosition}
+          disabled={isGettingLocation}
+        >
+          <Navigation className="h-4 w-4 mr-2" />
+          {isGettingLocation ? 'Getting position...' : 'Use my location'}
+        </Button>
+        {(formData.lat != null && formData.long != null) && (
+          <span className="text-sm text-gray-600">
+            {formData.lat.toFixed(6)}, {formData.long.toFixed(6)}
+          </span>
+        )}
+      </div>
+      {locationError && <p className="text-red-500 text-sm mt-1">{locationError}</p>}
     </div>
   </div>
 

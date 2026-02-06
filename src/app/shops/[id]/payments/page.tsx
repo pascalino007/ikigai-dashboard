@@ -247,7 +247,7 @@ export default function ShopPaymentsPage() {
           <div className="p-6">
             <div className="text-center py-12">
               <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Shop not found</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Shop not found</h3>
               <p className="text-gray-600 mb-4">The shop you're looking for doesn't exist.</p>
               <Button onClick={() => router.push('/shops')}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -277,7 +277,7 @@ export default function ShopPaymentsPage() {
                   Back to Shop
                 </Button>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Payments - {shop.name}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Payments - {shop.name}</h1>
                   <p className="text-gray-600 mt-1">Track and manage all payments for this shop</p>
                 </div>
               </div>
@@ -293,7 +293,7 @@ export default function ShopPaymentsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Payments</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
                 </div>
               </div>
             </div>
@@ -305,7 +305,7 @@ export default function ShopPaymentsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.completed}</p>
                 </div>
               </div>
             </div>
@@ -317,7 +317,7 @@ export default function ShopPaymentsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.pending}</p>
                 </div>
               </div>
             </div>
@@ -329,7 +329,7 @@ export default function ShopPaymentsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Failed</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.failed}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.failed}</p>
                 </div>
               </div>
             </div>
@@ -341,7 +341,7 @@ export default function ShopPaymentsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Refunded</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.refunded}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.refunded}</p>
                 </div>
               </div>
             </div>
@@ -353,7 +353,7 @@ export default function ShopPaymentsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">${stats.totalAmount.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">${stats.totalAmount.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -365,7 +365,7 @@ export default function ShopPaymentsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Refunded</p>
-                  <p className="text-2xl font-bold text-gray-900">${stats.totalRefunded.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">${stats.totalRefunded.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -464,16 +464,16 @@ export default function ShopPaymentsPage() {
                     <tr key={payment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{payment.customerName}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{payment.customerName}</div>
                           <div className="text-sm text-gray-500">{payment.customerEmail}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{payment.serviceName}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{payment.serviceName}</div>
                         <div className="text-sm text-gray-500">by {payment.workerName}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           ${payment.amount.toLocaleString()}
                         </div>
                         <div className="text-sm text-gray-500">{payment.currency}</div>
@@ -481,7 +481,7 @@ export default function ShopPaymentsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           {getPaymentMethodIcon(payment.paymentMethod)}
-                          <span className="ml-2 text-sm text-gray-900">
+                          <span className="ml-2 text-sm text-gray-900 dark:text-gray-100">
                             {getPaymentMethodText(payment.paymentMethod)}
                           </span>
                         </div>
@@ -493,12 +493,12 @@ export default function ShopPaymentsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {payment.transactionId || 'N/A'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {payment.paidAt.toLocaleDateString()}
                         </div>
                         <div className="text-sm text-gray-500">
@@ -526,7 +526,7 @@ export default function ShopPaymentsPage() {
           {filteredPayments.length === 0 && (
             <div className="text-center py-12">
               <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No payments found</h3>
               <p className="text-gray-600">
                 Try adjusting your search criteria or filters.
               </p>

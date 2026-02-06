@@ -65,7 +65,7 @@ export default function AbonnementsPage() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Abonnements</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Abonnements</h1>
             <p className="text-gray-600 mt-2">Manage subscription plans and pricing</p>
           </div>
           <Button>
@@ -123,16 +123,16 @@ export default function AbonnementsPage() {
               {filteredPlans.map((plan) => (
                 <tr key={plan.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{plan.name}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{plan.name}</div>
                     <div className="text-sm text-gray-500">{plan.description}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {plan.price.toLocaleString()} FCFA
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 capitalize">
                     {plan.interval}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     {plan.features.length} features
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

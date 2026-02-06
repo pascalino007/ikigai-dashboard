@@ -147,7 +147,7 @@ export default function SpecialOffersPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Special Offers</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Special Offers</h1>
               <p className="text-gray-600 mt-2">Manage special offers and promotions for shops</p>
             </div>
             <Button onClick={() => alert('Filter modal coming soon!')} variant="outline" className="mr-4">
@@ -162,7 +162,7 @@ export default function SpecialOffersPage() {
           <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
             <div>
               <div className="text-sm text-gray-500">Active Offers</div>
-              <div className="text-2xl font-bold text-gray-900">{stats.active}</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.active}</div>
             </div>
             <div className="text-xs text-gray-400 mt-2">Currently running</div>
           </div>
@@ -170,14 +170,14 @@ export default function SpecialOffersPage() {
           <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
             <div>
               <div className="text-sm text-gray-500">Total Offers</div>
-              <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</div>
             </div>
             <div className="text-xs text-gray-400 mt-2">All specials</div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-4">
             <div className="text-sm text-gray-500 mb-2">Finished Offers</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.finished}</div>
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.finished}</div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <input
                 type="date"
@@ -261,19 +261,19 @@ export default function SpecialOffersPage() {
                       </td>
                        <td className="px-6 py-4 whitespace-nowrap">
                          <div>
-                           <div className="text-sm font-medium text-gray-900">{offer.title}</div>
+                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{offer.title}</div>
                            <div className="text-sm text-gray-500">{offer.description}</div>
                          </div>
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap">
                          <div>
-                           <div className="text-sm font-medium text-gray-900">{offer.serviceId}</div>
+                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{offer.serviceId}</div>
                            <div className="text-sm text-gray-500">{offer.shopId}</div>
                          </div>
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap">
                          <div>
-                           <div className="text-sm text-gray-900">
+                           <div className="text-sm text-gray-900 dark:text-gray-100">
                              <span className="line-through text-gray-400">${offer.originalPrice}</span>
                              <span className="ml-2 font-semibold text-green-600">${offer.discountedPrice}</span>
                            </div>
@@ -285,7 +285,7 @@ export default function SpecialOffersPage() {
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap">
                          <div>
-                           <div className="text-sm text-gray-900">
+                           <div className="text-sm text-gray-900 dark:text-gray-100">
                              <Calendar className="h-3 w-3 inline mr-1" />
                              {formatDate(offer.startDate)} - {formatDate(offer.endDate)}
                            </div>
@@ -296,7 +296,7 @@ export default function SpecialOffersPage() {
                          </div>
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap">
-                         <div className="text-sm text-gray-900">
+                         <div className="text-sm text-gray-900 dark:text-gray-100">
                            {offer.usedCount} / {offer.maxUses || '∞'}
                          </div>
                        </td>

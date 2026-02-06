@@ -314,7 +314,7 @@ export function ServiceForm({
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {initialData ? 'Edit Service' : 'Add New Service'}
             </h2>
             <Button variant="ghost" size="icon" onClick={onClose}>

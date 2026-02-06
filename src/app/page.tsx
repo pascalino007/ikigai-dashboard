@@ -20,8 +20,8 @@ export default function Dashboard() {
       <DashboardLayout>
         <div className="p-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
             Welcome back, {user?.name}! Here's your Ikigai management overview
           </p>
           <div className="mt-2">
@@ -42,10 +42,10 @@ export default function Dashboard() {
         {/* Charts and Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Revenue Chart Placeholder */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Revenue Overview</h3>
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <p className="text-gray-500">Chart will be implemented here</p>
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Revenue Overview</h3>
+            <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <p className="text-gray-500 dark:text-gray-400">Chart will be implemented here</p>
             </div>
           </div>
 
@@ -54,8 +54,8 @@ export default function Dashboard() {
         </div>
 
         {/* Role-specific Quick Actions */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {isAdmin && (
               <>

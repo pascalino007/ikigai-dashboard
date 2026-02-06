@@ -1,85 +1,91 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, Upload, User, Mail, Phone, CreditCard, Camera, FileImage } from 'lucide-react'
+import { X, User, Mail, Phone, CreditCard, Camera, FileImage, Upload } from 'lucide-react'
+import { ServiceProvider } from '@/types'
 
-interface ProviderFormData {
-  firstName: string
-  lastName: string
-  email: string
-  phoneNumber: string
-  idCardNumber: string
-  profilePicture: File | null
-  idCardPictures: File[] // changed to array
-  type: 'barber' | 'hairdresser' | 'makeup_artist' | 'nail_technician' | 'esthetician'
-  experience: number
-  description: string
-}
-
-interface ProviderFormProps {
+interface ProviderEditModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: ProviderFormData) => void
+  provider: ServiceProvider | null
+  onSubmit: (providerId: string, data: any) => Promise<void>
 }
 
-export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
-  const [formData, setFormData] = useState<ProviderFormData>({
+const SERVICE_TYPE_MAP: Record<string, number> = {
+  barber: 1,
+  hairdresser: 2,
+  makeup_artist: 3,
+  nail_technician: 4,
+  esthetician: 5
+}
+
+const mapTypeToNumber = (type: string) => SERVICE_TYPE_MAP[type] ?? 1
+
+export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: ProviderEditModalProps) {
+  const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phoneNumber: '',
     idCardNumber: '',
-    profilePicture: null,
-    idCardPictures: [],
-    type: 'barber',
+    profilePicture: null as File | null,
+    profilePictureUrl: '' as string,
+    idCardPictures: [] as File[],
+    idCardUrls: [] as string[],
+    type: 'barber' as ServiceProvider['type'],
     experience: 0,
-    description: ''
+    description: '',
+    isActive: true
   })
 
-  const [errors, setErrors] = useState<Partial<ProviderFormData>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false)
   const [uploadingProfile, setUploadingProfile] = useState(false)
   const [uploadingIdCards, setUploadingIdCards] = useState(false)
 
-  const SERVICE_TYPE_MAP: Record<string, number> = {
-    barber: 1,
-    hairdresser: 2,
-    makeup_artist: 3,
-    nail_technician: 4,
-    esthetician: 5
-  }
-
-  const handleInputChange = (field: keyof ProviderFormData, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value } as any))
-    if ((errors as any)[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }))
+  useEffect(() => {
+    if (provider) {
+      setFormData({
+        firstName: provider.firstName || provider.name?.split(' ')[0] || '',
+        lastName: provider.lastName || provider.name?.split(' ').slice(1).join(' ') || '',
+        email: provider.email || '',
+        phoneNumber: provider.phone || '',
+        idCardNumber: provider.idCardNumber || '',
+        profilePicture: null,
+        profilePictureUrl: provider.profilePicture || '',
+        idCardPictures: [],
+        idCardUrls: provider.idCardPicture ? [provider.idCardPicture] : [],
+        type: provider.type || 'barber',
+        experience: provider.experience || 0,
+        description: provider.description || '',
+        isActive: provider.isActive ?? true
+      })
+      setErrors({})
     }
+  }, [provider])
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
   }
 
   const handleFileChange = (field: 'profilePicture' | 'idCardPictures', files: FileList | null) => {
     if (field === 'profilePicture') {
       setFormData(prev => ({ ...prev, profilePicture: files?.[0] || null }))
-      if (errors.profilePicture) setErrors(prev => ({ ...prev, profilePicture: '' }))
     } else {
-      const arr = files ? Array.from(files) : []
-      setFormData(prev => ({ ...prev, idCardPictures: arr }))
-      if (errors.idCardPicture) setErrors(prev => ({ ...prev, idCardPicture: '' }))
+      setFormData(prev => ({ ...prev, idCardPictures: files ? Array.from(files) : [] }))
     }
   }
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<ProviderFormData> = {}
-
+    const newErrors: Record<string, string> = {}
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required'
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required'
     if (!formData.email.trim()) newErrors.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid'
     if (!formData.phoneNumber.trim()) newErrors.phoneNumber = 'Phone number is required'
     if (!formData.idCardNumber.trim()) newErrors.idCardNumber = 'ID card number is required'
-    if (!formData.profilePicture) newErrors.profilePicture = 'Profile picture is required'
-    if (!formData.idCardPictures || formData.idCardPictures.length === 0) newErrors.idCardPicture = 'At least one ID card image is required'
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -90,12 +96,8 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
       const fd = new FormData()
       fd.append('image', file)
       const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: fd })
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '')
-        throw new Error(txt || `Upload failed (${res.status})`)
-      }
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`)
       const data = await res.json()
-      // handle different possible keys
       return (data.imageUrl || data.url || data.path || '') as string
     } finally {
       setUploadingProfile(false)
@@ -106,15 +108,10 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
     setUploadingIdCards(true)
     try {
       const fd = new FormData()
-      // backend expects multiple files under 'images' (adjust if needed)
-      files.forEach((f) => fd.append('images', f))
+      files.forEach(f => fd.append('images', f))
       const res = await fetch('http://168.231.101.119:4040/upload/multiple', { method: 'POST', body: fd })
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '')
-        throw new Error(txt || `Multiple upload failed (${res.status})`)
-      }
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`)
       const data = await res.json()
-      // expect array of urls in data.imageUrls or data.urls or data.images
       return data.imageUrls || data.urls || data.images || []
     } finally {
       setUploadingIdCards(false)
@@ -123,204 +120,168 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validateForm()) return
+    if (!validateForm() || !provider) return
 
-    setIsSubmitting(true)
+    setIsLoading(true)
     try {
-      // upload profile picture -> get URL
-      let profileImageUrl = ''
+      let profileImageUrl = formData.profilePictureUrl
       if (formData.profilePicture) {
         profileImageUrl = await uploadSingle(formData.profilePicture)
-        if (!profileImageUrl) throw new Error('Failed to upload profile image')
       }
 
-      // upload id card pictures -> get array of URLs
-      let idcards: string[] = []
-      if (formData.idCardPictures && formData.idCardPictures.length > 0) {
-        idcards = await uploadMultiple(formData.idCardPictures)
-        if (!Array.isArray(idcards) || idcards.length === 0) throw new Error('Failed to upload ID card images')
+      let idcards: string[] = [...formData.idCardUrls]
+      if (formData.idCardPictures.length > 0) {
+        const uploaded = await uploadMultiple(formData.idCardPictures)
+        idcards = [...formData.idCardUrls, ...uploaded]
       }
 
-      // build payload that backend expects
       const payload = {
         firstname: formData.firstName.trim(),
         lastname: formData.lastName.trim(),
         email: formData.email.trim(),
         phone_number: formData.phoneNumber.trim(),
         CNI_number: formData.idCardNumber.trim(),
-        service_type: SERVICE_TYPE_MAP[formData.type] || 0,
+        service_type: mapTypeToNumber(formData.type),
         year_expe: formData.experience,
-        profileImageUrl: profileImageUrl,
-        idcards: idcards,
-        registered_by: 'admin' // set as required - replace as needed
+        description: formData.description?.trim() || '',
+        profileImageUrl,
+        idcards,
+        is_active: formData.isActive ? 1 : 0
       }
 
-      // send to proownners endpoint
-      const res = await fetch('http://168.231.101.119:4040/proownners', {
-        method: 'POST',
+      const res = await fetch(`http://168.231.101.119:4040/proownners/${provider.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
       if (!res.ok) {
         const err = await res.text().catch(() => '')
-        throw new Error(err || `Create provider failed (${res.status})`)
+        throw new Error(err || `Update failed (${res.status})`)
       }
 
-      // success: call parent onSubmit with original form data (or response if needed)
-      onSubmit(formData)
-      // reset
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phoneNumber: '',
-        idCardNumber: '',
-        profilePicture: null,
-        idCardPictures: [],
-        type: 'barber',
-        experience: 0,
-        description: ''
+      await onSubmit(provider.id, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        idCardNumber: formData.idCardNumber,
+        type: formData.type,
+        experience: formData.experience,
+        description: formData.description,
+        isActive: formData.isActive,
+        profilePicture: profileImageUrl,
+        idCardPicture: idcards[0]
       })
-      onClose()
+      handleClose()
     } catch (error) {
-      console.error('Error submitting provider:', error)
+      console.error('Error updating provider:', error)
       setErrors(prev => ({ ...prev, submit: (error as Error).message }))
     } finally {
-      setIsSubmitting(false)
+      setIsLoading(false)
     }
   }
 
-  if (!isOpen) return null
+  const handleClose = () => {
+    setErrors({})
+    onClose()
+  }
+
+  if (!isOpen || !provider) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Add New Service Provider</h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Edit Provider</h2>
+            <Button variant="ghost" size="icon" onClick={handleClose}>
               <X className="h-5 w-5" />
             </Button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
                 <User className="h-5 w-5 mr-2" />
                 Personal Information
               </h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
                   <input
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
-                      errors.firstName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter first name"
                   />
-                  {errors.firstName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
-                  )}
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
                   <input
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
-                      errors.lastName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter last name"
                   />
-                  {errors.lastName && (
-                    <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
-                  )}
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <Mail className="h-4 w-4 mr-1" />
-                    Email Address *
+                    <Mail className="h-4 w-4 mr-1" /> Email Address *
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter email address"
                   />
-                  {errors.email && (
-                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                  )}
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                    <Phone className="h-4 w-4 mr-1" />
-                    Phone Number *
+                    <Phone className="h-4 w-4 mr-1" /> Phone Number *
                   </label>
                   <input
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
-                      errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'}`}
                     placeholder="Enter phone number"
                   />
-                  {errors.phoneNumber && (
-                    <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
-                  )}
+                  {errors.phoneNumber && <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>}
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                  <CreditCard className="h-4 w-4 mr-1" />
-                  ID Card Number *
+                  <CreditCard className="h-4 w-4 mr-1" /> ID Card Number *
                 </label>
                 <input
                   type="text"
                   value={formData.idCardNumber}
                   onChange={(e) => handleInputChange('idCardNumber', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
-                    errors.idCardNumber ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.idCardNumber ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="Enter ID card number"
                 />
-                {errors.idCardNumber && (
-                  <p className="text-red-500 text-sm mt-1">{errors.idCardNumber}</p>
-                )}
+                {errors.idCardNumber && <p className="text-red-500 text-sm mt-1">{errors.idCardNumber}</p>}
               </div>
             </div>
 
-            {/* Professional Information */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Professional Information</h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Service Type *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Service Type *</label>
                   <select
                     value={formData.type}
-                    onChange={(e) => handleInputChange('type', e.target.value as any)}
+                    onChange={(e) => handleInputChange('type', e.target.value as ServiceProvider['type'])}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
                   >
                     <option value="barber">Barber</option>
@@ -330,11 +291,8 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
                     <option value="esthetician">Esthetician</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Years of Experience
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
                   <input
                     type="number"
                     min="0"
@@ -348,9 +306,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
@@ -359,53 +315,58 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
                   placeholder="Brief description of skills and specialties..."
                 />
               </div>
+
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-ikigai-primary focus:ring-ikigai-primary"
+                    checked={formData.isActive}
+                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">Active</span>
+                </label>
+              </div>
             </div>
 
-            {/* File Uploads */}
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
                 <Camera className="h-5 w-5 mr-2" />
-                Required Documents
+                Documents (optional – upload to replace)
               </h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Profile Picture */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Profile Picture *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">
                     <input
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleFileChange('profilePicture', e.target.files)}
                       className="hidden"
-                      id="profile-picture"
+                      id="edit-profile-picture"
                     />
-                    <label htmlFor="profile-picture" className="cursor-pointer">
+                    <label htmlFor="edit-profile-picture" className="cursor-pointer">
                       {formData.profilePicture ? (
                         <div className="space-y-2">
                           <FileImage className="h-8 w-8 mx-auto text-green-500" />
                           <p className="text-sm text-gray-600">{formData.profilePicture.name}</p>
                         </div>
+                      ) : formData.profilePictureUrl ? (
+                        <div className="space-y-2">
+                          <img src={formData.profilePictureUrl} alt="Current" className="h-16 w-16 mx-auto rounded object-cover" />
+                          <p className="text-sm text-gray-500">Click to replace</p>
+                        </div>
                       ) : (
                         <div className="space-y-2">
                           <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                          <p className="text-sm text-gray-600">Click to upload profile picture</p>
+                          <p className="text-sm text-gray-600">Click to upload new picture</p>
                         </div>
                       )}
                     </label>
                   </div>
-                  {errors.profilePicture && (
-                    <p className="text-red-500 text-sm mt-1">{errors.profilePicture}</p>
-                  )}
                 </div>
-
-                {/* ID Card Pictures (multiple) */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    ID Card Pictures * (front & back)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Card Pictures</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">
                     <input
                       type="file"
@@ -413,40 +374,39 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
                       multiple
                       onChange={(e) => handleFileChange('idCardPictures', e.target.files)}
                       className="hidden"
-                      id="id-card-pictures"
+                      id="edit-id-card-pictures"
                     />
-                    <label htmlFor="id-card-pictures" className="cursor-pointer">
-                      {formData.idCardPictures && formData.idCardPictures.length > 0 ? (
+                    <label htmlFor="edit-id-card-pictures" className="cursor-pointer">
+                      {formData.idCardPictures.length > 0 ? (
                         <div className="space-y-2">
                           <FileImage className="h-8 w-8 mx-auto text-green-500" />
                           <p className="text-sm text-gray-600">{formData.idCardPictures.map(f => f.name).join(', ')}</p>
                         </div>
+                      ) : formData.idCardUrls.length > 0 ? (
+                        <div className="space-y-2">
+                          <p className="text-sm text-gray-600">{formData.idCardUrls.length} image(s) on file</p>
+                          <p className="text-sm text-gray-500">Click to add or replace</p>
+                        </div>
                       ) : (
                         <div className="space-y-2">
                           <Upload className="h-8 w-8 mx-auto text-gray-400" />
-                          <p className="text-sm text-gray-600">Click to upload ID card images (front & back)</p>
+                          <p className="text-sm text-gray-600">Click to upload ID card images</p>
                         </div>
                       )}
                     </label>
                   </div>
-                  {errors.idCardPicture && (
-                    <p className="text-red-500 text-sm mt-1">{errors.idCardPicture}</p>
-                  )}
                 </div>
               </div>
             </div>
 
-            {/* Form Actions */}
+            {errors.submit && <p className="text-red-500 text-sm">{errors.submit}</p>}
+
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting || uploadingProfile || uploadingIdCards}>
-                {isSubmitting ? 'Creating...' : 'Create Provider'}
+              <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button type="submit" disabled={isLoading || uploadingProfile || uploadingIdCards}>
+                {isLoading ? 'Updating...' : 'Update Provider'}
               </Button>
             </div>
-
-            {errors.submit && <p className="text-red-500 text-sm mt-2">{errors.submit}</p>}
           </form>
         </div>
       </div>

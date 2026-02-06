@@ -156,7 +156,7 @@ useEffect(() => {
           
           <div className="flex items-center space-x-4 justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Services</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Services</h1>
               <p className="text-gray-600 mt-2">
                 Manage services for <strong>{shopId}</strong>
               </p>
@@ -221,7 +221,7 @@ useEffect(() => {
       <div className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{service.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{service.name}</h3>
             <p className="text-sm text-gray-600 mt-1">{service.description}</p>
           </div>
           <span
@@ -237,22 +237,22 @@ useEffect(() => {
         <div className="space-y-2 mb-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Category:</span>
-            <span className="font-medium text-gray-900">{service.category}</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">{service.category}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Subcategory:</span>
-            <span className="font-medium text-gray-900">{service.subcategory}</span>
+            <span className="font-medium text-gray-900 dark:text-gray-100">{service.subcategory}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Price:</span>
-            <span className="font-medium text-gray-900 flex items-center">
+            <span className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
              
               {service.price}  XOF
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Duration:</span>
-            <span className="font-medium text-gray-900 flex items-center">
+            <span className="font-medium text-gray-900 dark:text-gray-100 flex items-center">
               <Clock className="h-4 w-4 mr-1" />
               {service.duration} 
             </span>
@@ -287,7 +287,7 @@ useEffect(() => {
             <div className="mx-auto h-12 w-12 text-gray-400">
               <Scissors className="h-12 w-12" />
             </div>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No services found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No services found</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm || filterCategory !== 'all' 
                 ? 'Try adjusting your search or filter criteria.'

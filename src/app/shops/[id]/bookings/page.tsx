@@ -191,7 +191,7 @@ export default function ShopBookingsPage() {
           <div className="p-6">
             <div className="text-center py-12">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Shop not found</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Shop not found</h3>
               <p className="text-gray-600 mb-4">The shop you're looking for doesn't exist.</p>
               <Button onClick={() => router.push('/shops')}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -221,7 +221,7 @@ export default function ShopBookingsPage() {
                   Back to Shop
                 </Button>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">Bookings - {shop.name}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Bookings - {shop.name}</h1>
                   <p className="text-gray-600 mt-1">Manage and track all bookings for this shop</p>
                 </div>
               </div>
@@ -237,7 +237,7 @@ export default function ShopBookingsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
                 </div>
               </div>
             </div>
@@ -249,7 +249,7 @@ export default function ShopBookingsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.completed}</p>
                 </div>
               </div>
             </div>
@@ -261,7 +261,7 @@ export default function ShopBookingsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Confirmed</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.confirmed}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.confirmed}</p>
                 </div>
               </div>
             </div>
@@ -273,7 +273,7 @@ export default function ShopBookingsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.pending}</p>
                 </div>
               </div>
             </div>
@@ -285,7 +285,7 @@ export default function ShopBookingsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Cancelled</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.cancelled}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.cancelled}</p>
                 </div>
               </div>
             </div>
@@ -297,7 +297,7 @@ export default function ShopBookingsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">${stats.totalRevenue.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -385,30 +385,30 @@ export default function ShopBookingsPage() {
                     <tr key={booking.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{booking.customerName}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{booking.customerName}</div>
                           <div className="text-sm text-gray-500">{booking.customerEmail}</div>
                           <div className="text-sm text-gray-500">{booking.customerPhone}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{booking.serviceName}</div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{booking.serviceName}</div>
                         {booking.notes && (
                           <div className="text-sm text-gray-500">{booking.notes}</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{booking.workerName}</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">{booking.workerName}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-gray-900 dark:text-gray-100">
                           {booking.date.toLocaleDateString()}
                         </div>
                         <div className="text-sm text-gray-500">{booking.time}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {booking.duration} min
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         ${booking.price}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -438,7 +438,7 @@ export default function ShopBookingsPage() {
           {filteredBookings.length === 0 && (
             <div className="text-center py-12">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No bookings found</h3>
               <p className="text-gray-600">
                 Try adjusting your search criteria or filters.
               </p>

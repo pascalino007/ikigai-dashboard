@@ -150,7 +150,7 @@ export default function ShopDetailPage() {
           <div className="p-6">
             <div className="text-center py-12">
               <Store className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Shop not found</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Shop not found</h3>
               <p className="text-gray-600 mb-4">The shop you're looking for doesn't exist.</p>
               <Button onClick={() => router.push('/shops')}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -180,7 +180,7 @@ export default function ShopDetailPage() {
                   Back to Shops
                 </Button>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{shop.name}</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{shop.name}</h1>
                   <p className="text-gray-600 mt-1">{shop.address}, {shop.city}</p>
                 </div>
               </div>
@@ -246,10 +246,10 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
     <div className="space-y-6">
       {/* Shop Info */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Shop Information</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-4">Shop Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-medium text-gray-900 mb-2">Contact Details</h4>
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Contact Details</h4>
             <div className="space-y-2 text-sm text-gray-600">
               <p><strong>Address:</strong> {shop.address}</p>
               <p><strong>City:</strong> {shop.city}, {shop.area}</p>
@@ -258,7 +258,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
             </div>
           </div>
           <div>
-            <h4 className="font-medium text-gray-900 mb-2">Description</h4>
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Description</h4>
             <p className="text-sm text-gray-600">{shop.description}</p>
           </div>
         </div>
@@ -273,7 +273,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Workers</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalWorkers}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{stats.totalWorkers}</p>
             </div>
           </div>
         </div>
@@ -285,7 +285,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Active Workers</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeWorkers}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{stats.activeWorkers}</p>
             </div>
           </div>
         </div>
@@ -297,7 +297,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Available</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.availableWorkers}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{stats.availableWorkers}</p>
             </div>
           </div>
         </div>
@@ -309,7 +309,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-              <p className="text-2xl font-bold text-gray-900">${stats.totalEarnings.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">${stats.totalEarnings.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -321,7 +321,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Bookings</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalBookings}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{stats.totalBookings}</p>
             </div>
           </div>
         </div>
@@ -333,7 +333,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Avg Rating</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.averageRating.toFixed(1)}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 dark:text-gray-100">{stats.averageRating.toFixed(1)}</p>
             </div>
           </div>
         </div>
@@ -341,7 +341,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
 
       {/* Recent Workers */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Workers</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-4">Recent Workers</h3>
         <div className="space-y-4">
           {workers.slice(0, 3).map((worker) => (
             <div key={worker.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
@@ -352,7 +352,7 @@ function ShopOverviewTab({ shop, workers }: { shop: Shop | null, workers: Worker
                   </span>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{worker.firstName} {worker.lastName}</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">{worker.firstName} {worker.lastName}</p>
                   <p className="text-sm text-gray-600">{worker.specialization}</p>
                 </div>
               </div>
@@ -369,7 +369,7 @@ function ShopWorkersTab({ shopId, workers }: { shopId: string, workers: Worker[]
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Workers Management</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Workers Management</h3>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
           Add Worker
@@ -400,23 +400,23 @@ function ShopWorkersTab({ shopId, workers }: { shopId: string, workers: Worker[]
                         </span>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100">
                           {worker.firstName} {worker.lastName}
                         </div>
                         <div className="text-sm text-gray-500">{worker.email}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 dark:text-gray-100">
                     {worker.specialization}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <WorkerStatusBadge status={worker.status} size="sm" />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 dark:text-gray-100">
                     {worker.rating}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 dark:text-gray-100">
                     {worker.totalBookings}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -438,11 +438,11 @@ function ShopWorkersTab({ shopId, workers }: { shopId: string, workers: Worker[]
 function ShopPerformanceTab({ shopId, shop }: { shopId: string, shop: Shop | null }) {
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Shop Performance</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Shop Performance</h3>
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-12">
           <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h4 className="text-lg font-medium text-gray-900 mb-2">Performance Analytics</h4>
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Performance Analytics</h4>
           <p className="text-gray-600">Detailed performance metrics and analytics will be displayed here.</p>
         </div>
       </div>
@@ -456,7 +456,7 @@ function ShopBookingsTab({ shopId, shop }: { shopId: string, shop: Shop | null }
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Shop Bookings</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Shop Bookings</h3>
         <Button onClick={() => router.push(`/shops/${shopId}/bookings`)}>
           <Calendar className="h-4 w-4 mr-2" />
           View All Bookings
@@ -465,7 +465,7 @@ function ShopBookingsTab({ shopId, shop }: { shopId: string, shop: Shop | null }
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-12">
           <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h4 className="text-lg font-medium text-gray-900 mb-2">Booking History</h4>
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Booking History</h4>
           <p className="text-gray-600 mb-4">View detailed booking history and management.</p>
           <Button onClick={() => router.push(`/shops/${shopId}/bookings`)}>
             Go to Bookings Page
@@ -482,7 +482,7 @@ function ShopPaymentsTab({ shopId, shop }: { shopId: string, shop: Shop | null }
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Shop Payments</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Shop Payments</h3>
         <Button onClick={() => router.push(`/shops/${shopId}/payments`)}>
           <CreditCard className="h-4 w-4 mr-2" />
           View All Payments
@@ -491,7 +491,7 @@ function ShopPaymentsTab({ shopId, shop }: { shopId: string, shop: Shop | null }
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-12">
           <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h4 className="text-lg font-medium text-gray-900 mb-2">Payment History</h4>
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Payment History</h4>
           <p className="text-gray-600 mb-4">View detailed payment history and transaction management.</p>
           <Button onClick={() => router.push(`/shops/${shopId}/payments`)}>
             Go to Payments Page
@@ -505,11 +505,11 @@ function ShopPaymentsTab({ shopId, shop }: { shopId: string, shop: Shop | null }
 function ShopSettingsTab({ shop }: { shop: Shop | null }) {
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Shop Settings</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 dark:text-gray-100">Shop Settings</h3>
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-12">
           <Settings className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h4 className="text-lg font-medium text-gray-900 mb-2">Shop Configuration</h4>
+          <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 dark:text-gray-100 mb-2">Shop Configuration</h4>
           <p className="text-gray-600">Shop settings and configuration options will be available here.</p>
         </div>
       </div>

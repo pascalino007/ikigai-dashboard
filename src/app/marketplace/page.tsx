@@ -113,7 +113,7 @@ export default function ProductsPage() {
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Products</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Products</h1>
             <p className="text-gray-600 mt-2">Manage your e-commerce inventory</p>
           </div>
           <Button onClick={handleOpenAdd}>
@@ -158,7 +158,7 @@ export default function ProductsPage() {
             <div className="p-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <h3 className="font-semibold text-gray-900 line-clamp-1">{product.name}</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-1">{product.name}</h3>
                   <p className="text-sm text-gray-500 flex items-center mt-1">
                     <Tag className="h-3 w-3 mr-1" />
                     {product.category}

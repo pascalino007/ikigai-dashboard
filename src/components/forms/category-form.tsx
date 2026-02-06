@@ -198,7 +198,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {initialData ? 'Edit Category' : 'Add New Category'}
             </h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
@@ -209,7 +209,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Category Details */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 flex items-center">
                 <Tag className="h-5 w-5 mr-2" /> Category Details
               </h3>
 

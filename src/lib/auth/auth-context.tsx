@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current)
     }
-    router.push('/auth/login')
+    router.push('/login')
   }, [router])
 
   const resetInactivityTimer = useCallback(() => {
@@ -122,9 +122,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log('Login API Response:', data)
 
         const token = data.access_token || data.token
-        // Extract role directly from the signin response
-        const role = data.role || data.user?.role || 'user'
-        const userData = { email, token, ...data.user, role }
+        // Handle potential flat response structure where user data is at root
+        const rawUser = data.user || data
+
+        // Check if user is active based on DB column 'is_active' (1 = active, 0 = inactive)
+        if (rawUser.is_active === 0 || rawUser.is_active === false) {
+          console.warn('Login blocked: User is inactive')
+          return false
+        }
+
+        // Map DB fields to App User Interface
+        // DB: firstname, lastname, image, role
+        // App: name, avatar, role
+        const userData: User = {
+          id: rawUser.id?.toString() || rawUser.userId?.toString(),
+          email: rawUser.email || email,
+          token,
+          role: rawUser.role || 'user',
+          name: rawUser.name || `${rawUser.firstname || ''} ${rawUser.lastname || ''}`.trim(),
+          avatar: rawUser.image || rawUser.avatar,
+          enrolledShops: rawUser.enrolledShops
+        }
         
         localStorage.setItem('ikigai_token', token)
         localStorage.setItem('ikigai_user', JSON.stringify(userData))

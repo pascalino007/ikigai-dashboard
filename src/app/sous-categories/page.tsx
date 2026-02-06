@@ -6,6 +6,7 @@ import { Plus, Search, Filter, Edit, Trash2, Eye, Tag } from 'lucide-react'
 import { ShopService } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { SousCategoryForm } from '@/components/forms/sous-category-form'
+import { SousCategoryEditModal, type SousCategoryItem } from '@/components/modals/sous-category-edit-modal'
 
 export default function ShopServicesPage() {
   const [shopServices, setShopServices] = useState<ShopService[]>([])
@@ -13,6 +14,7 @@ export default function ShopServicesPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingItem, setEditingItem] = useState<SousCategoryItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -116,13 +118,34 @@ export default function ShopServicesPage() {
     }
   }
 
+  const handleUpdateSousCategory = async (
+    id: string,
+    data: { name: string; category: string; tags: string; isActive: boolean }
+  ) => {
+    const tagsArray = data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : []
+    setShopServices((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              name: data.name,
+              category: data.category,
+              tags: tagsArray,
+              isActive: data.isActive
+            }
+          : s
+      )
+    )
+    setEditingItem(null)
+  }
+
   return (
     <DashboardLayout>
       <div className="p-6">
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Les Sous Categories</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Les Sous Categories</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
               Manage your shop's services and offerings
             </p>
           </div>
@@ -133,7 +156,7 @@ export default function ShopServicesPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -176,7 +199,7 @@ export default function ShopServicesPage() {
         </div>
 
         {/* Table Section */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden border border-gray-100 dark:border-gray-800">
           {loading ? (
             <div className="p-6 text-center text-gray-500">Loading services...</div>
           ) : error ? (
@@ -213,7 +236,7 @@ export default function ShopServicesPage() {
                           <div className="h-10 w-10 rounded-md bg-ikigai-primary flex items-center justify-center text-white font-bold">
                             {service.name.charAt(0).toUpperCase()}
                           </div>
-                          <div className="ml-4 text-sm font-medium text-gray-900">
+                          <div className="ml-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                             {service.name}
                           </div>
                         </div>
@@ -248,7 +271,20 @@ export default function ShopServicesPage() {
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setEditingItem({
+                                id: service.id,
+                                name: service.name,
+                                category: service.category,
+                                tags: service.tags,
+                                isActive: service.isActive
+                              })
+                            }
+                            title="Edit sous category"
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
@@ -290,6 +326,13 @@ export default function ShopServicesPage() {
           onSubmit={handleAddService}
           serviceCategories={serviceCategories}
           serviceSubcategories={serviceSubcategories}
+        />
+
+        <SousCategoryEditModal
+          isOpen={!!editingItem}
+          onClose={() => setEditingItem(null)}
+          item={editingItem}
+          onSubmit={handleUpdateSousCategory}
         />
       </div>
     </DashboardLayout>

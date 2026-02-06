@@ -194,7 +194,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
               {initialData ? 'Edit User' : 'Add New User'}
             </h2>
             <Button variant="ghost" size="icon" onClick={onClose}>
@@ -209,7 +209,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
             {/* USER DETAILS */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium flex items-center text-gray-900">
+              <h3 className="text-lg font-medium flex items-center text-gray-900 dark:text-gray-100">
                 <User className="h-5 w-5 mr-2" />
                 User Details
               </h3>
@@ -308,7 +308,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
             {/* ROLE + STATUS */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium flex items-center text-gray-900">
+              <h3 className="text-lg font-medium flex items-center text-gray-900 dark:text-gray-100">
                 <Shield className="h-5 w-5 mr-2" />
                 Role & Status
               </h3>

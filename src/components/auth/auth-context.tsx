@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current)
     }
-    router.push('/auth/login')
+    router.push('/login')
   }, [router])
 
   const resetInactivityTimer = useCallback(() => {

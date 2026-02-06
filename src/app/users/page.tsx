@@ -135,9 +135,9 @@ export default function UsersPage() {
       case 'provider':
         return 'bg-green-100 text-green-800'
       case 'customer':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
     }
   }
 
@@ -169,7 +169,7 @@ export default function UsersPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Users</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Users</h1>
               <p className="text-gray-600 mt-2">Manage system users and their roles</p>
             </div>
             <Button onClick={() => setShowAddModal(true)}>
@@ -258,7 +258,7 @@ export default function UsersPage() {
                         </div>
 
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {user.firstName} {user.lastName}
                           </div>
                           <div className="text-sm text-gray-500">ID: {user.id}</div>
@@ -268,7 +268,7 @@ export default function UsersPage() {
 
                     {/* CONTACT */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 flex items-center">
+                      <div className="text-sm text-gray-900 dark:text-gray-100 flex items-center">
                         <Mail className="h-4 w-4 mr-2" />
                         {user.email}
                       </div>
@@ -308,7 +308,7 @@ export default function UsersPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.lastLogin ? (
                         <>
-                          <div className="text-sm text-gray-900 flex items-center">
+                          <div className="text-sm text-gray-900 dark:text-gray-100 flex items-center">
                             <Calendar className="h-4 w-4 mr-2" />
                             {user.lastLogin.toLocaleDateString()}
                           </div>
@@ -370,7 +370,7 @@ export default function UsersPage() {
               <User className="h-12 w-12" />
             </div>
 
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No users found</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm || filterRole !== 'all' || filterStatus !== 'all'
                 ? 'Try adjusting your search or filter criteria.'

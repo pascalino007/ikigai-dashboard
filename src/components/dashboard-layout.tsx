@@ -11,7 +11,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps) {
   return (
     <ProtectedRoute requiredRole={requiredRole}>
-      <div className="min-h-screen bg-gray-50 flex">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
         <Sidebar />
         <main className="flex-1">
           {children}
