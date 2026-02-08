@@ -191,7 +191,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -226,6 +226,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md ${
                       errors.firstName ? "border-red-500" : "border-gray-300"
+                    className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+                      errors.firstName ? "border-red-500" : "border-gray-300 dark:border-gray-700"
                     }`}
                     placeholder="Enter first name"
                   />
@@ -241,6 +243,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     className={`w-full px-3 py-2 border rounded-md ${
                       errors.lastName ? "border-red-500" : "border-gray-300"
+                    className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+                      errors.lastName ? "border-red-500" : "border-gray-300 dark:border-gray-700"
                     }`}
                     placeholder="Enter last name"
                   />
@@ -258,6 +262,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md ${
                     errors.email ? "border-red-500" : "border-gray-300"
+                  className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+                    errors.email ? "border-red-500" : "border-gray-300 dark:border-gray-700"
                   }`}
                   placeholder="Enter email"
                 />
@@ -273,6 +279,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   placeholder="Enter phone number"
                 />
               </div>
@@ -291,6 +298,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 )}
 
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800">
                   <Upload className="w-8 h-8 mb-2 text-gray-500" />
                   <p className="mb-2 text-sm text-gray-500">
                     <span className="font-semibold">Click to upload</span> or drag and drop
@@ -323,6 +331,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   value={formData.role}
                   onChange={(e) => handleInputChange("role", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   
                   <option value="enroller">Enroller</option>
@@ -341,6 +350,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   value={formData.role}
                   onChange={(e) => handleInputChange("superior", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="1">Mrs Eric</option>
                   <option value="2"> Mrs John Doe</option>

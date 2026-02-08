@@ -10,7 +10,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 
@@ -33,18 +34,20 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Transaction[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [isLoading, setIsLoading] = useState(true)
 
   // ✅ FETCH FROM API
   useEffect(() => {
     fetch('http://168.231.101.119:4040/transactions/admin/all')
       .then(res => res.json())
-      .then(data => setPayments(data))
+      .then(data => setPayments(Array.isArray(data) ? data : []))
       .catch(err => console.error('Error fetching transactions', err))
+      .finally(() => setIsLoading(false))
   }, [])
 
-  const filteredPayments = payments.filter(p => {
+  const filteredPayments = (Array.isArray(payments) ? payments : []).filter(p => {
     const matchSearch =
-      p.transactionRef.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.transactionRef || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       String(p.fromUserId).includes(searchTerm)
 
     const matchStatus =
@@ -78,7 +81,7 @@ export default function PaymentsPage() {
   }
 
   const getTotalAmount = () =>
-    payments
+    (Array.isArray(payments) ? payments : [])
       .filter(p => p.status === 1)
       .reduce((sum, p) => sum + p.amount, 0)
 
@@ -92,26 +95,32 @@ export default function PaymentsPage() {
           <p className="text-gray-600">Admin transaction history</p>
         </div>
 
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+          </div>
+        ) : (
+        <>
         {/* STATS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white p-6 rounded shadow">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded shadow">
             <p className="text-sm text-gray-500">Completed Amount</p>
             <p className="text-2xl font-bold">XOF{getTotalAmount()}</p>
           </div>
-          <div className="bg-white p-6 rounded shadow">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded shadow">
             <p className="text-sm text-gray-500">Total Transactions</p>
-            <p className="text-2xl font-bold">{payments.length}</p>
+            <p className="text-2xl font-bold">{(Array.isArray(payments) ? payments : []).length}</p>
           </div>
-          <div className="bg-white p-6 rounded shadow">
+          <div className="bg-white dark:bg-gray-900 p-6 rounded shadow">
             <p className="text-sm text-gray-500">Pending</p>
             <p className="text-2xl font-bold">
-              {payments.filter(p => p.status === 0).length}
+              {(Array.isArray(payments) ? payments : []).filter(p => p.status === 0).length}
             </p>
           </div>
         </div>
 
         {/* FILTER */}
-        <div className="bg-white p-4 rounded shadow mb-6 flex gap-4">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded shadow mb-6 flex gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <input
@@ -134,7 +143,7 @@ export default function PaymentsPage() {
         </div>
 
         {/* TABLE */}
-        <div className="bg-white rounded shadow overflow-x-auto">
+        <div className="bg-white dark:bg-gray-900 rounded shadow overflow-x-auto">
           <table className="min-w-full divide-y">
             <thead className="bg-gray-50">
               <tr>
@@ -186,6 +195,8 @@ export default function PaymentsPage() {
             </tbody>
           </table>
         </div>
+        </>
+        )}
 
       </div>
     </DashboardLayout>

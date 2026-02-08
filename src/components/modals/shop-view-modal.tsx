@@ -29,7 +29,7 @@ export function ShopViewModal({ isOpen, onClose, shop, onEdit, onDelete }: ShopV
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-2xl font-semibold text-gray-900">Shop Details</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>

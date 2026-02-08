@@ -161,7 +161,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900">Edit Worker</h2>
           <Button variant="ghost" size="sm" onClick={handleClose}>
@@ -173,7 +173,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
           {/* Personal Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <User className="h-4 w-4 inline mr-1" />
                 First Name *
               </label>
@@ -190,7 +190,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <User className="h-4 w-4 inline mr-1" />
                 Last Name *
               </label>
@@ -210,7 +210,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
           {/* Contact Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <Mail className="h-4 w-4 inline mr-1" />
                 Email Address *
               </label>
@@ -227,7 +227,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <Phone className="h-4 w-4 inline mr-1" />
                 Phone Number *
               </label>
@@ -247,7 +247,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
           {/* Professional Information */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Specialization *
               </label>
               <select
@@ -266,7 +266,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Experience (years)
               </label>
               <input
@@ -283,7 +283,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 <DollarSign className="h-4 w-4 inline mr-1" />
                 Hourly Rate *
               </label>
@@ -304,7 +304,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
 
           {/* Profile Picture */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               <ImageIcon className="h-4 w-4 inline mr-1" />
               Profile Picture
             </label>
@@ -318,14 +318,14 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
 
           {/* Working Hours */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
               <Clock className="h-4 w-4 inline mr-1" />
               Working Hours
             </label>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Time</label>
                 <input
                   type="time"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
@@ -338,7 +338,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Time</label>
                 <input
                   type="time"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
@@ -352,7 +352,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Working Days</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Working Days</label>
               <div className="flex flex-wrap gap-2">
                 {DAYS_OF_WEEK.map(day => (
                   <button
@@ -362,7 +362,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
                     className={`px-3 py-1 rounded-full text-sm border ${
                       formData.workingHours.days.includes(day)
                         ? 'bg-ikigai-primary text-white border-ikigai-primary'
-                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     {day}
@@ -381,7 +381,7 @@ export function WorkerEditModal({ isOpen, onClose, worker, onSubmit }: WorkerEdi
                 checked={formData.isActive}
                 onChange={(e) => handleInputChange('isActive', e.target.checked)}
               />
-              <span className="ml-2 text-sm font-medium text-gray-700">Active</span>
+              <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
             </label>
           </div>
 

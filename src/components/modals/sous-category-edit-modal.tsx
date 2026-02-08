@@ -109,7 +109,7 @@ export function SousCategoryEditModal({ isOpen, onClose, item, onSubmit }: SousC
       }
 
       const res = await fetch(`http://168.231.101.119:4040/sous-categories/${item.id}`, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })

@@ -17,6 +17,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     name: '',
     description: '',
     category: '',
+    type: 'Salon',
     tags: '',
     address: '',
     country: '',
@@ -43,6 +44,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         name: shop.name || '',
         description: shop.description || '',
         category: shop.category || '',
+        type: shop.type || 'Salon',
         tags: Array.isArray(shop.tags) ? shop.tags.join(', ') : shop.tags || '',
         address: shop.address || '',
         country: shop.country || '',
@@ -131,6 +133,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         finalGalleryUrls = [...formData.galleryImages, ...newUrls]
       }
 
+      const formattedWorkingHours = formData.openingHours.map(h => [h.day, `${h.open} - ${h.close}`])
+
       const response = await fetch(`http://168.231.101.119:4040/shops/update/${shop.id}`, {
         method: 'POST',
         headers: {
@@ -138,24 +142,27 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         },
         body: JSON.stringify({
           name: formData.name.trim(),
-          description: formData.description.trim(),
           category: formData.category,
-          tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [],
+          type: formData.type,
           address: formData.address.trim(),
-          country: formData.country.trim(),
-          city: formData.city.trim(),
-          area: formData.area.trim(),
+          pays: formData.country.trim(),
+          ville: formData.city.trim(),
+          quartier: formData.area.trim(),
           phone: formData.phone.trim(),
           email: formData.email.trim(),
-          isActive: formData.isActive,
-          openingHours: formData.openingHours,
+          description_shop: formData.description.trim(),
           profileImageUrl: finalProfileUrl,
-          images: finalGalleryUrls
+          galleryImages: finalGalleryUrls,
+          workingHours: formattedWorkingHours,
+          tags: formData.tags,
+          registered_by: 'admin',
+          is_active: formData.isActive ? 1 : 0
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update shop')
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.message || 'Failed to update shop')
       }
 
       const result = await response.json()
@@ -258,7 +265,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Edit Shop</h2>
           <Button variant="ghost" size="sm" onClick={handleClose}>
@@ -302,6 +309,21 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
                 <option value="Beauty Center">Beauty Center</option>
                 <option value="Massage">Massage</option>
                 <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                value={formData.type}
+                onChange={(e) => handleInputChange('type', e.target.value)}
+              >
+                <option value="Salon">Salon</option>
+                <option value="Institut">Institut</option>
+                <option value="Freelance">Freelance</option>
               </select>
             </div>
           </div>

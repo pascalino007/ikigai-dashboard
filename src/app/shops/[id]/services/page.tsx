@@ -35,6 +35,7 @@ export default function ShopServicesPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showSpecialModal, setShowSpecialModal] = useState(false)
   const [shopName, setShopName] = useState('')
+  const [editingService, setEditingService] = useState<Service | null>(null)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -138,6 +139,24 @@ useEffect(() => {
     router.push(`/shops/${shopId}`)
   }
 
+  const handleUpdateService = (updatedService: any) => {
+    setServices(prev => prev.map(s => s.id === updatedService.id ? updatedService : s))
+    setEditingService(null)
+  }
+
+  const handleDeleteService = async (serviceId: string) => {
+    if (!confirm('Are you sure you want to delete this service?')) return
+    try {
+      const res = await fetch(`http://168.231.101.119:4040/services/${serviceId}`, {
+        method: 'DELETE'
+      })
+      if (!res.ok) throw new Error('Failed to delete service')
+      setServices(prev => prev.filter(s => s.id !== serviceId))
+    } catch (err) {
+      console.error('Error deleting service:', err)
+    }
+  }
+
   return (
     <DashboardLayout>
       <div className="p-6">
@@ -174,7 +193,7 @@ useEffect(() => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -206,7 +225,7 @@ useEffect(() => {
         {/* Services Grid */}
        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
   {filteredServices.map((service) => (
-    <div key={service.id} className="bg-white rounded-lg shadow overflow-hidden">
+    <div key={service.id} className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
       
       {/* 🖼️ Service Image */}
       <div className="h-48 w-full overflow-hidden">
@@ -267,10 +286,10 @@ useEffect(() => {
             <Button variant="ghost" size="sm">
               <Eye className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={() => setEditingService(service)}>
               <Edit className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteService(service.id)}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -320,6 +339,17 @@ useEffect(() => {
           //shopServices={services}
           shopId={shopId}
         />
+
+        {editingService && (
+          <ServiceForm
+            isOpen={!!editingService}
+            onClose={() => setEditingService(null)}
+            onSubmit={handleUpdateService}
+            shops={[{ id: shopId, name: shopName || shopId }]}
+            selectedShopId={shopId}
+            initialData={editingService}
+          />
+        )}
       </div>
     </DashboardLayout>
   )
@@ -335,4 +365,3 @@ function setError(arg0: string) {
 function setLoading(arg0: boolean) {
   throw new Error('Function not implemented.')
 }
-

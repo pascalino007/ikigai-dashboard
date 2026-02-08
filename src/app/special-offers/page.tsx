@@ -159,7 +159,7 @@ export default function SpecialOffersPage() {
 
         {/* Stats + Date range filter */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 flex flex-col justify-between">
             <div>
               <div className="text-sm text-gray-500">Active Offers</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.active}</div>
@@ -167,7 +167,7 @@ export default function SpecialOffersPage() {
             <div className="text-xs text-gray-400 mt-2">Currently running</div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4 flex flex-col justify-between">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4 flex flex-col justify-between">
             <div>
               <div className="text-sm text-gray-500">Total Offers</div>
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</div>
@@ -175,7 +175,7 @@ export default function SpecialOffersPage() {
             <div className="text-xs text-gray-400 mt-2">All specials</div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-4">
             <div className="text-sm text-gray-500 mb-2">Finished Offers</div>
             <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.finished}</div>
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -209,16 +209,16 @@ export default function SpecialOffersPage() {
 
         {/* Special Offers Table */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">Loading specials...</div>
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">Loading specials...</div>
         ) : fetchError ? (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-6">
             Error loading specials: {fetchError}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Image
@@ -246,7 +246,7 @@ export default function SpecialOffersPage() {
                      </th>
                    </tr>
                  </thead>
-                 <tbody className="bg-white divide-y divide-gray-200">
+                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                    {filteredOffers.map((offer) => (
                      <tr key={offer.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">

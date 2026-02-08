@@ -194,7 +194,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Add New Service Provider</h2>
@@ -213,7 +213,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     First Name *
                   </label>
                   <input
@@ -231,7 +231,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Last Name *
                   </label>
                   <input
@@ -251,7 +251,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <Mail className="h-4 w-4 mr-1" />
                     Email Address *
                   </label>
@@ -270,7 +270,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <Phone className="h-4 w-4 mr-1" />
                     Phone Number *
                   </label>
@@ -290,7 +290,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                   <CreditCard className="h-4 w-4 mr-1" />
                   ID Card Number *
                 </label>
@@ -315,7 +315,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Service Type *
                   </label>
                   <select
@@ -332,7 +332,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Years of Experience
                   </label>
                   <input
@@ -348,7 +348,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Description
                 </label>
                 <textarea
@@ -371,7 +371,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Profile Picture */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Profile Picture *
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">
@@ -403,7 +403,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
 
                 {/* ID Card Pictures (multiple) */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     ID Card Pictures * (front & back)
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">

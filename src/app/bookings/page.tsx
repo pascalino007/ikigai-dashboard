@@ -165,7 +165,7 @@ export default function BookingsPage() {
         </div>
 
         {/* FILTERS */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6 flex flex-col md:flex-row gap-4">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6 flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -202,9 +202,9 @@ export default function BookingsPage() {
         </div>
 
         {/* TABLE */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase">Provider</th>

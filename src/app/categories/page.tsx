@@ -144,7 +144,7 @@ export default function CategoriesPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -174,7 +174,7 @@ export default function CategoriesPage() {
         {/* Categories Grid */}
         <div className="grid grid-cols-1 xs:grid-cols-2  md:grid-cols-4 lg:grid-cols-5  gap-1">
           {filteredCategories.map(category => (
-            <div key={category.id} className="bg-white rounded-lg shadow overflow-hidden w-72">
+            <div key={category.id} className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden w-72">
               <div className="relative">
                 <img
                   src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+category.imageurl}

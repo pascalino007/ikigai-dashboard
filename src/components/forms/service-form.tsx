@@ -110,7 +110,10 @@ export function ServiceForm({
         sous_category: initialData.subcategory || '',
         price: initialData.price,
         duration: initialData.duration,
-        imageurl: initialData.imageurl || 'https://cdn.example.com/default-service.jpg'
+        imageurl: initialData.imageurl || 'https://cdn.example.com/default-service.jpg',
+        tags: (initialData as any).tags || '',
+        provider_id: initialData.providerId ? Number(initialData.providerId) : 0,
+        provider_name: (initialData as any).providerName || ''
       })
     } else {
       setFormData({
@@ -263,7 +266,7 @@ export function ServiceForm({
       const url = initialData
         ? `http://168.231.101.119:4040/services/${initialData.id}`
         : 'http://168.231.101.119:4040/services'
-      const method = initialData ? 'PATCH' : 'POST'
+      const method = 'POST'
 
       console.log('Submitting service payload:', payload)
       const res = await fetch(url, {
@@ -311,7 +314,7 @@ export function ServiceForm({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -325,14 +328,14 @@ export function ServiceForm({
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Shop Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {selectedShopId ? 'Shop' : 'Select Shop'} *
               </label>
               <select
                 value={formData.shopId}
                 onChange={(e) => handleInputChange('shopId', e.target.value)}
                 disabled={!!selectedShopId}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               >
                 {selectedShopId ? (
                   <option value={selectedShopId}>{selectedShopId}</option>
@@ -352,7 +355,7 @@ export function ServiceForm({
             {/* Categories (Dynamic) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label>Main Category *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Main Category *</label>
                 <select
                   value={formData.category}
                   onChange={(e) => {
@@ -373,7 +376,7 @@ export function ServiceForm({
                     }))
 }}
                   disabled={loadingCategories}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">Select category...</option>
                   {categories.map((cat) => (
@@ -385,7 +388,7 @@ export function ServiceForm({
               </div>
 
               <div>
-                <label>Subcategory *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subcategory *</label>
                 <select
                   value={formData.sous_category}
                   onChange={(e) => {
@@ -394,7 +397,7 @@ export function ServiceForm({
                     updateNameFromCategorySub(formData.category, subId)
                   }}
                   disabled={!formData.category || loadingSubcategories}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="">Select subcategory...</option>
                   {subcategories.map((sub) => (
@@ -408,11 +411,12 @@ export function ServiceForm({
 
             {/* Other fields remain unchanged */}
             <div>
-              <label>Service Name *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service Name *</label>
               <input
                 type="text"
+                value={formData.name}
                onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full px-3 py-2 border rounded-md bg-gray-50"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 placeholder=""
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -420,38 +424,38 @@ export function ServiceForm({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label>Price *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price *</label>
                 <input
                   type="number"
                   value={formData.price}
                   onChange={(e) => handleInputChange('price', parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
               <div>
-                <label>Duration (min) *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duration (min) *</label>
                 <input
                   type="number"
                   value={formData.duration}
                   onChange={(e) => handleInputChange('duration', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
 
             <div>
-              <label>Description *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
               <textarea
                 rows={3}
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               />
             </div>
 
             {/* File Uploads */}
             <div>
-              <label>Profile Image *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Image *</label>
               <input
                 type="file"
                 accept="image/*"
@@ -471,7 +475,7 @@ export function ServiceForm({
             </div>
 
             <div>
-              <label>Gallery Images</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gallery Images</label>
               <input
                 type="file"
                 accept="image/*"

@@ -50,7 +50,7 @@ export function Toast({ message, type, duration = 3000, onClose }: ToastProps) {
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 max-w-sm w-full bg-white border rounded-lg shadow-lg transform transition-all duration-300 ${
+      className={`fixed top-4 right-4 z-50 max-w-sm w-full bg-white dark:bg-gray-900 border dark:border-gray-700 rounded-lg shadow-lg transform transition-all duration-300 ${
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       } ${getBgColor()}`}
     >
@@ -60,7 +60,7 @@ export function Toast({ message, type, duration = 3000, onClose }: ToastProps) {
             {getIcon()}
           </div>
           <div className="ml-3 flex-1">
-            <p className="text-sm font-medium text-gray-900">{message}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{message}</p>
           </div>
           <div className="ml-4 flex-shrink-0">
             <button

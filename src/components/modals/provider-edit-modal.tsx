@@ -146,11 +146,12 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
         description: formData.description?.trim() || '',
         profileImageUrl,
         idcards,
-        is_active: formData.isActive ? 1 : 0
+        is_active: formData.isActive ? 1 : 0,
+        registered_by: 'admin'
       }
 
       const res = await fetch(`http://168.231.101.119:4040/proownners/${provider.id}`, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
@@ -207,23 +208,23 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name *</label>
                   <input
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${errors.firstName ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
                     placeholder="Enter first name"
                   />
                   {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name *</label>
                   <input
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${errors.lastName ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
                     placeholder="Enter last name"
                   />
                   {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
@@ -232,27 +233,27 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <Mail className="h-4 w-4 mr-1" /> Email Address *
                   </label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
                     placeholder="Enter email address"
                   />
                   {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                     <Phone className="h-4 w-4 mr-1" /> Phone Number *
                   </label>
                   <input
                     type="tel"
                     value={formData.phoneNumber}
                     onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
                     placeholder="Enter phone number"
                   />
                   {errors.phoneNumber && <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>}
@@ -260,14 +261,14 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
                   <CreditCard className="h-4 w-4 mr-1" /> ID Card Number *
                 </label>
                 <input
                   type="text"
                   value={formData.idCardNumber}
                   onChange={(e) => handleInputChange('idCardNumber', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.idCardNumber ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${errors.idCardNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
                   placeholder="Enter ID card number"
                 />
                 {errors.idCardNumber && <p className="text-red-500 text-sm mt-1">{errors.idCardNumber}</p>}
@@ -278,11 +279,11 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Professional Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Service Type *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service Type *</label>
                   <select
                     value={formData.type}
                     onChange={(e) => handleInputChange('type', e.target.value as ServiceProvider['type'])}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   >
                     <option value="barber">Barber</option>
                     <option value="hairdresser">Hairdresser</option>
@@ -292,26 +293,26 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Years of Experience</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Years of Experience</label>
                   <input
                     type="number"
                     min="0"
                     max="50"
                     value={formData.experience}
                     onChange={(e) => handleInputChange('experience', parseInt(e.target.value) || 0)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                     placeholder="0"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   placeholder="Brief description of skills and specialties..."
                 />
               </div>
@@ -324,7 +325,7 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
                     checked={formData.isActive}
                     onChange={(e) => handleInputChange('isActive', e.target.checked)}
                   />
-                  <span className="ml-2 text-sm font-medium text-gray-700">Active</span>
+                  <span className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
                 </label>
               </div>
             </div>
@@ -336,8 +337,8 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Picture</label>
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">
                     <input
                       type="file"
                       accept="image/*"
@@ -366,8 +367,8 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Card Pictures</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID Card Pictures</label>
+                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-4 text-center hover:border-ikigai-primary transition-colors">
                     <input
                       type="file"
                       accept="image/*"

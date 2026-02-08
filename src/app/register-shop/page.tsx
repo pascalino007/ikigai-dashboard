@@ -188,7 +188,7 @@ export default function RegisterShopPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Information */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Basic Information</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -233,7 +233,7 @@ export default function RegisterShopPage() {
             </div>
 
             {/* Location Information */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Location Information</h2>
               
               <div className="space-y-6">
@@ -292,7 +292,7 @@ export default function RegisterShopPage() {
             </div>
 
             {/* Contact Information */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Contact Information</h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -329,7 +329,7 @@ export default function RegisterShopPage() {
             </div>
 
             {/* Opening Hours */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">
                 <Calendar className="h-5 w-5 inline mr-2" />
                 Opening Hours

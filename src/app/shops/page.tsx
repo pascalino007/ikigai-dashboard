@@ -195,7 +195,7 @@ export default function ShopsPage() {
       </div>
 
       {/* Search and Location Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
         <div className="space-y-4">
           {/* Search */}
           <div className="relative">
@@ -308,7 +308,7 @@ export default function ShopsPage() {
         {filteredShops.map((shop) => (
          <div
   key={shop.id}
-  className="bg-white rounded-lg shadow overflow-hidden flex flex-col md:flex-row"
+  className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden flex flex-col md:flex-row"
 >
   {/* Left: Image Section */}
   <div className="md:w-1/2 w-full h-48 md:h-auto relative">

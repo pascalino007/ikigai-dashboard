@@ -1,20 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Tag } from 'lucide-react'
 
-interface AreaCountryFormProps {
+export interface Geoville {
+  id: string
+  countryId: string
+  regionId: string
+  cityId?: string
+  districtId?: string
+  name: string
+  zoneName?: string
+  tags?: string | string[]
+}
+
+interface AreaEditModalProps {
   isOpen: boolean
   onClose: () => void
+  area: Geoville | null
   onSuccess?: () => void
 }
 
-export function AreaCountryForm({
-  isOpen,
-  onClose,
-  onSuccess
-}: AreaCountryFormProps) {
+export function AreaEditModal({ isOpen, onClose, area, onSuccess }: AreaEditModalProps) {
   const [formData, setFormData] = useState({
     countryId: '',
     regionId: '',
@@ -28,7 +36,28 @@ export function AreaCountryForm({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
 
-  if (!isOpen) return null
+  useEffect(() => {
+    if (area) {
+      let tagsStr = ''
+      if (Array.isArray(area.tags)) {
+        tagsStr = area.tags.join(', ')
+      } else if (typeof area.tags === 'string') {
+        tagsStr = area.tags
+      }
+
+      setFormData({
+        countryId: area.countryId || '',
+        regionId: area.regionId || '',
+        cityId: area.cityId || '',
+        districtId: area.districtId || '',
+        name: area.name || '',
+        zoneName: area.zoneName || '',
+        tags: tagsStr
+      })
+    }
+  }, [area])
+
+  if (!isOpen || !area) return null
 
   /* ---------------- VALIDATION ---------------- */
   const validate = () => {
@@ -60,51 +89,37 @@ export function AreaCountryForm({
         tags: formData.tags || undefined
       }
 
-      const res = await fetch('http://168.231.101.119:4040/geoville', {
-        method: 'POST',
+      const res = await fetch(`http://168.231.101.119:4040/geoville/${area.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
 
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.message || 'Erreur serveur')
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Erreur lors de la mise à jour')
       }
 
       onSuccess?.()
-      handleClose()
+      onClose()
     } catch (err: any) {
+      console.error(err)
       alert(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleClose = () => {
-    setFormData({
-      countryId: '',
-      regionId: '',
-      cityId: '',
-      districtId: '',
-      name: '',
-      zoneName: '',
-      tags: ''
-    })
-    setErrors({})
-    onClose()
-  }
-
   const update = (field: string, value: string) =>
     setFormData(prev => ({ ...prev, [field]: value }))
 
-  /* ---------------- UI ---------------- */
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl shadow-xl">
+      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-lg font-semibold">Ajouter un quartier</h2>
-          <Button variant="ghost" size="sm" onClick={handleClose}>
+          <h2 className="text-lg font-semibold">Modifier le quartier</h2>
+          <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
         </div>
@@ -122,14 +137,13 @@ export function AreaCountryForm({
                 onChange={e => update('countryId', e.target.value)}
               >
                 <option value="">Sélectionner un pays</option>
-                 <option value="togo">TOGO</option>
-        <option value="benin">BENIN</option>
-        <option value="Burkina">BURKINA</option>
-        <option value="mali">MALI</option>
-        <option value="ghana">GHANA</option>
-        <option value="niger">NIGER</option>
-        <option value="coteivoire">COTE D'IVOIRE</option>
-                {/* YOU fill these */}
+                <option value="togo">TOGO</option>
+                <option value="benin">BENIN</option>
+                <option value="Burkina">BURKINA</option>
+                <option value="mali">MALI</option>
+                <option value="ghana">GHANA</option>
+                <option value="niger">NIGER</option>
+                <option value="coteivoire">COTE D'IVOIRE</option>
               </select>
               {errors.countryId && (
                 <p className="text-red-500 text-xs mt-1">{errors.countryId}</p>
@@ -145,14 +159,12 @@ export function AreaCountryForm({
                 value={formData.regionId}
                 onChange={e => update('regionId', e.target.value)}
               >
-               <option value="">-- Sélectionner une région --</option>
-    <option value="maritime">Région Maritime</option>
-    <option value="plateaux">Région des Plateaux</option>
-    <option value="centrale">Région Centrale</option>
-    <option value="kara">Région de la Kara</option>
-    <option value="savanes">Région des Savanes</option>
-
-                {/* YOU fill these */}
+                <option value="">-- Sélectionner une région --</option>
+                <option value="maritime">Région Maritime</option>
+                <option value="plateaux">Région des Plateaux</option>
+                <option value="centrale">Région Centrale</option>
+                <option value="kara">Région de la Kara</option>
+                <option value="savanes">Région des Savanes</option>
               </select>
               {errors.regionId && (
                 <p className="text-red-500 text-xs mt-1">{errors.regionId}</p>
@@ -170,52 +182,42 @@ export function AreaCountryForm({
                 onChange={e => update('cityId', e.target.value)}
               >
                 <option value="">Sélectionner une ville</option>
-                 <optgroup label="Région Maritime">
-        <option value="tsevie">Tsévié</option>
-        <option value="aneho">Aného</option>
-        <option value="vogan">Vogan</option>
-        <option value="tabligbo">Tabligbo</option>
-        <option value="afagnan">Afagnan</option>
-    </optgroup>
-
-   
-    <optgroup label="Région des Plateaux">
-        <option value="atakpame">Atakpamé</option>
-        <option value="kpaltime">Kpalimé</option>
-        <option value="badou">Badou</option>
-        <option value="notse">Notsè</option>
-        <option value="agnegble">Agou Nyogbo</option>
-    </optgroup>
-
-   
-    <optgroup label="Région Centrale">
-        <option value="sokode">Sokodé</option>
-        <option value="tchamba">Tchamba</option>
-        <option value="blitta">Blitta</option>
-        <option value="sotouboua">Sotouboua</option>
-    </optgroup>
-
-    <optgroup label="Région de la Kara">
-        <option value="kara">Kara</option>
-        <option value="bassar">Bassar</option>
-        <option value="bafilo">Bafilo</option>
-        <option value="niamtougou">Niamtougou</option>
-        <option value="kanté">Kantè</option>
-    </optgroup>
-
-
-    <optgroup label="Région des Savanes">
-        <option value="dapaong">Dapaong</option>
-        <option value="mango">Mango</option>
-        <option value="tandjouare">Tandjouaré</option>
-        <option value="cinkasse">Cinkassé</option>
-    </optgroup>
-
-   
-    <optgroup label="District Autonome du Grand Lomé">
-        <option value="lome">Lomé</option>
-    </optgroup>
-                {/* YOU fill these */}
+                <optgroup label="Région Maritime">
+                  <option value="tsevie">Tsévié</option>
+                  <option value="aneho">Aného</option>
+                  <option value="vogan">Vogan</option>
+                  <option value="tabligbo">Tabligbo</option>
+                  <option value="afagnan">Afagnan</option>
+                </optgroup>
+                <optgroup label="Région des Plateaux">
+                  <option value="atakpame">Atakpamé</option>
+                  <option value="kpaltime">Kpalimé</option>
+                  <option value="badou">Badou</option>
+                  <option value="notse">Notsè</option>
+                  <option value="agnegble">Agou Nyogbo</option>
+                </optgroup>
+                <optgroup label="Région Centrale">
+                  <option value="sokode">Sokodé</option>
+                  <option value="tchamba">Tchamba</option>
+                  <option value="blitta">Blitta</option>
+                  <option value="sotouboua">Sotouboua</option>
+                </optgroup>
+                <optgroup label="Région de la Kara">
+                  <option value="kara">Kara</option>
+                  <option value="bassar">Bassar</option>
+                  <option value="bafilo">Bafilo</option>
+                  <option value="niamtougou">Niamtougou</option>
+                  <option value="kanté">Kantè</option>
+                </optgroup>
+                <optgroup label="Région des Savanes">
+                  <option value="dapaong">Dapaong</option>
+                  <option value="mango">Mango</option>
+                  <option value="tandjouare">Tandjouaré</option>
+                  <option value="cinkasse">Cinkassé</option>
+                </optgroup>
+                <optgroup label="District Autonome du Grand Lomé">
+                  <option value="lome">Lomé</option>
+                </optgroup>
               </select>
             </div>
 
@@ -226,14 +228,14 @@ export function AreaCountryForm({
                 value={formData.districtId}
                 onChange={e => update('districtId', e.target.value)}
               >
-                <option value="1">1 arrondissement</option>
-                <option value="2">2  eme  arrondissement</option>
-                <option value="3"> 3  eme  arrondissement</option>
-                <option value="4"> 4 eme  arrondissement</option>
-                <option value="5"> 5  eme Sélectionner un arrondissement</option>
-                <option value="6"> 6  eme  arrondissement</option>
-                <option value="7"> 7 eme  arrondissement</option>
-                {/* YOU fill these */}
+                <option value="">Sélectionner un arrondissement</option>
+                <option value="1">1er arrondissement</option>
+                <option value="2">2ème arrondissement</option>
+                <option value="3">3ème arrondissement</option>
+                <option value="4">4ème arrondissement</option>
+                <option value="5">5ème arrondissement</option>
+                <option value="6">6ème arrondissement</option>
+                <option value="7">7ème arrondissement</option>
               </select>
             </div>
           </div>
@@ -282,11 +284,11 @@ export function AreaCountryForm({
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" type="button" onClick={handleClose}>
+            <Button variant="outline" type="button" onClick={onClose}>
               Annuler
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Enregistrement...' : 'Ajouter'}
+              {loading ? 'Enregistrement...' : 'Mettre à jour'}
             </Button>
           </div>
         </form>

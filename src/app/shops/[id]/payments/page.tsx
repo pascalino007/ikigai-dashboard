@@ -286,7 +286,7 @@ export default function ShopPaymentsPage() {
 
           {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-7 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <CreditCard className="h-6 w-6 text-blue-600" />
@@ -298,7 +298,7 @@ export default function ShopPaymentsPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <CheckCircle className="h-6 w-6 text-green-600" />
@@ -310,7 +310,7 @@ export default function ShopPaymentsPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-yellow-100 rounded-lg">
                   <Clock className="h-6 w-6 text-yellow-600" />
@@ -322,7 +322,7 @@ export default function ShopPaymentsPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-red-100 rounded-lg">
                   <XCircle className="h-6 w-6 text-red-600" />
@@ -334,7 +334,7 @@ export default function ShopPaymentsPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-gray-100 rounded-lg">
                   <XCircle className="h-6 w-6 text-gray-600" />
@@ -346,7 +346,7 @@ export default function ShopPaymentsPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <DollarSign className="h-6 w-6 text-purple-600" />
@@ -358,7 +358,7 @@ export default function ShopPaymentsPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <DollarSign className="h-6 w-6 text-orange-600" />
@@ -372,7 +372,7 @@ export default function ShopPaymentsPage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
@@ -428,10 +428,10 @@ export default function ShopPaymentsPage() {
           </div>
 
           {/* Payments Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Customer
@@ -459,7 +459,7 @@ export default function ShopPaymentsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredPayments.map((payment) => (
                     <tr key={payment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">

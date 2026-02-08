@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { AreaCountryForm } from '@/components/forms/area-form'
+import { AreaEditModal } from '@/components/modals/area-edit-modal'
 
 /* ---------------- TYPES ---------------- */
 interface GeoVille {
@@ -28,6 +29,7 @@ export default function GeolocationPage() {
   const [loading, setLoading] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [editingZone, setEditingZone] = useState<GeoVille | null>(null)
 
   /* ---------------- FETCH ---------------- */
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function GeolocationPage() {
         </div>
 
         {/* Search */}
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
             <input
@@ -106,7 +108,7 @@ export default function GeolocationPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-x-auto">
           <table className="min-w-full divide-y">
             <thead className="bg-gray-50">
               <tr>
@@ -165,7 +167,7 @@ export default function GeolocationPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => setEditingZone(zone)}>
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
@@ -196,6 +198,13 @@ export default function GeolocationPage() {
         <AreaCountryForm
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
+          onSuccess={fetchZones}
+        />
+
+        <AreaEditModal
+          isOpen={!!editingZone}
+          onClose={() => setEditingZone(null)}
+          area={editingZone as any}
           onSuccess={fetchZones}
         />
       </div>

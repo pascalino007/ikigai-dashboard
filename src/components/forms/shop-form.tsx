@@ -343,7 +343,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Add New Shop</h2>
@@ -355,7 +355,7 @@ const [formData, setFormData] = useState<ShopFormData>({
           <form onSubmit={handleSubmit} className="space-y-6">
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Shop Name *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Shop Name *</label>
       <input
         type="text"
         value={formData.name}
@@ -367,7 +367,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
       <select
         value={formData.category}
         onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
@@ -384,7 +384,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type *</label>
       <select
         value={formData.type}
         onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
@@ -401,7 +401,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   {/* Tags */}
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
       <Tag className="h-4 w-4 mr-2" /> Service Tags
     </label>
     <div className="flex flex-wrap gap-2">
@@ -410,7 +410,7 @@ const [formData, setFormData] = useState<ShopFormData>({
           key={tag}
           type="button"
           onClick={() => toggleTag(tag)}
-          className={`px-3 py-1 rounded-full text-sm border ${formData.tags.includes(tag) ? 'bg-ikigai-primary text-white border-ikigai-primary' : 'bg-white text-gray-700 border-gray-300'}`}
+          className={`px-3 py-1 rounded-full text-sm border ${formData.tags.includes(tag) ? 'bg-ikigai-primary text-white border-ikigai-primary' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 dark:text-gray-300 border-gray-300 dark:border-gray-600'}`}
         >
           {tag}
         </button>
@@ -422,7 +422,7 @@ const [formData, setFormData] = useState<ShopFormData>({
   {/* Address / Pays / Ville / Quartier */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
         <MapPin className="h-4 w-4 mr-1" /> Address *
       </label>
       <input
@@ -436,7 +436,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Region *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Region *</label>
       <select
         value={formData.pays}
         onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
@@ -450,7 +450,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pays *</label>
       <select
         value={formData.pays}
         onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
@@ -465,7 +465,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Ville *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ville *</label>
       <select
         value={formData.ville}
         onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))}
@@ -479,7 +479,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Arrondissement*</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arrondissement*</label>
       <select
         value={formData.ville}
         onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))}
@@ -497,7 +497,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Quartier *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quartier *</label>
       <select
         value={formData.quartier}
         onChange={(e) => setFormData(prev => ({ ...prev, quartier: e.target.value }))}
@@ -511,7 +511,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div className="md:col-span-2">
-      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
         <MapPin className="h-4 w-4 mr-1" /> Position (long, lat)
       </label>
       <div className="flex items-center gap-2">
@@ -535,7 +535,7 @@ const [formData, setFormData] = useState<ShopFormData>({
   </div>
 
    <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">Non loin de  *</label>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Non loin de  *</label>
     <textarea
       rows={3}
       value={formData.non_loin_de}
@@ -548,7 +548,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   {/* Description Shop */}
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">Description le Boutique *</label>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description le Boutique *</label>
     <textarea
       rows={3}
       value={formData.description_shop}
@@ -562,7 +562,7 @@ const [formData, setFormData] = useState<ShopFormData>({
   {/* Phone / Email */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
         <Phone className="h-4 w-4 mr-1" /> Phone *
       </label>
       <input
@@ -576,7 +576,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
         <Mail className="h-4 w-4 mr-1" /> Email
       </label>
       <input
@@ -594,7 +594,7 @@ const [formData, setFormData] = useState<ShopFormData>({
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     {/* Profile Image */}
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
         <ImageIcon className="h-4 w-4 mr-1" /> Profile Image *
       </label>
       <input
@@ -619,7 +619,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
     {/* Gallery Images */}
   <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">Gallery Images *</label>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gallery Images *</label>
   <input
     type="file"
     accept="image/*"
@@ -639,13 +639,13 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   {/* Working Hours */}
   <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
       <Calendar className="h-4 w-4 mr-2" /> Working Hours *
     </label>
     <div className="space-y-3">
       {formData.workingHours.map((wh, idx) => (
         <div key={idx} className="grid grid-cols-12 gap-2 items-center">
-          <div className="col-span-4 text-sm text-gray-700">{wh[0]}</div>
+          <div className="col-span-4 text-sm text-gray-700 dark:text-gray-300">{wh[0]}</div>
           <div className="col-span-4">
             <input
               type="text"
@@ -678,7 +678,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
         <MapPin className="h-4 w-4 mr-1" /> Address *
       </label>
       <input
@@ -692,7 +692,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Region *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Region *</label>
       <select
         value={formData.pays}
         onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
@@ -706,7 +706,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Abonnement *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Abonnement *</label>
       <select
         value={formData.pays}
         onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
@@ -721,7 +721,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
 
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Duree *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duree *</label>
       <select
         value={formData.ville}
         onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))}
@@ -740,7 +740,7 @@ const [formData, setFormData] = useState<ShopFormData>({
   </div>
 
    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Responsable Shop *</label>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Responsable Shop *</label>
       <select
         value={formData.owner}
         onChange={(e) => setFormData(prev => ({ ...prev, owner: e.target.value }))}
@@ -770,11 +770,11 @@ const [formData, setFormData] = useState<ShopFormData>({
 
 {modal && (
   <div className={`fixed inset-0 flex items-center justify-center bg-black/50`}>
-    <div className="bg-white rounded-xl p-6 shadow-lg text-center w-80">
+    <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-lg text-center w-80">
       <h2 className="text-lg font-semibold mb-2">
         {modal.type === 'success' ? '✅ Success' : '❌ Error'}
       </h2>
-      <p className="text-gray-700 mb-4">{modal.message}</p>
+      <p className="text-gray-700 dark:text-gray-300 mb-4">{modal.message}</p>
       <button
         className="bg-blue-600 text-white rounded-lg px-4 py-2"
         onClick={() => setModal(null)}

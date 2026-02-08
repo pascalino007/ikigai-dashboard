@@ -88,7 +88,7 @@ export function RecentActivity() {
       <div className="px-6 py-4 border-b border-gray-200">
         <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
       </div>
-      <div className="divide-y divide-gray-200">
+      <div className="divide-y divide-gray-200 dark:divide-gray-700">
         {activities.map((activity) => (
           <div key={activity.id} className="px-6 py-4">
             <div className="flex items-start">

@@ -117,7 +117,7 @@ export default function EnrolledShopsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Users className="h-6 w-6 text-blue-600" />
@@ -129,7 +129,7 @@ export default function EnrolledShopsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
                 <TrendingUp className="h-6 w-6 text-green-600" />
@@ -141,7 +141,7 @@ export default function EnrolledShopsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Calendar className="h-6 w-6 text-purple-600" />
@@ -155,7 +155,7 @@ export default function EnrolledShopsPage() {
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -171,7 +171,7 @@ export default function EnrolledShopsPage() {
         {/* Enrolled Shops Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredShops.map((shop) => (
-            <div key={shop.id} className="bg-white rounded-lg shadow overflow-hidden">
+            <div key={shop.id} className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>

@@ -149,6 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData)
         return true
       }
+
+      // Log the specific error message from the backend to the console
+      const errorData = await response.json().catch(() => null)
+      console.error('Login failed details:', response.status, errorData)
       return false
     } catch (error) {
       console.error('Login error:', error)

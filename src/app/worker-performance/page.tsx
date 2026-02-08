@@ -137,7 +137,7 @@ export default function WorkerPerformancePage() {
           </div>
 
           {/* Filters */}
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
@@ -178,7 +178,7 @@ export default function WorkerPerformancePage() {
 
           {/* Overall Stats */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Calendar className="h-6 w-6 text-blue-600" />
@@ -190,7 +190,7 @@ export default function WorkerPerformancePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <DollarSign className="h-6 w-6 text-green-600" />
@@ -202,7 +202,7 @@ export default function WorkerPerformancePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-yellow-100 rounded-lg">
                   <Star className="h-6 w-6 text-yellow-600" />
@@ -214,7 +214,7 @@ export default function WorkerPerformancePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Clock className="h-6 w-6 text-purple-600" />
@@ -226,7 +226,7 @@ export default function WorkerPerformancePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <TrendingUp className="h-6 w-6 text-indigo-600" />
@@ -244,7 +244,7 @@ export default function WorkerPerformancePage() {
             {filteredPerformance.map((perf) => {
               const worker = workers.find(w => w.id === perf.workerId)
               return (
-                <div key={perf.workerId} className="bg-white rounded-lg shadow p-6">
+                <div key={perf.workerId} className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
                       <div className="h-12 w-12 rounded-full bg-ikigai-primary flex items-center justify-center overflow-hidden">
