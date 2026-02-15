@@ -224,8 +224,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      errors.firstName ? "border-red-500" : "border-gray-300"
                     className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
                       errors.firstName ? "border-red-500" : "border-gray-300 dark:border-gray-700"
                     }`}
@@ -241,8 +239,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-md ${
-                      errors.lastName ? "border-red-500" : "border-gray-300"
                     className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
                       errors.lastName ? "border-red-500" : "border-gray-300 dark:border-gray-700"
                     }`}
@@ -260,8 +256,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    errors.email ? "border-red-500" : "border-gray-300"
                   className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
                     errors.email ? "border-red-500" : "border-gray-300 dark:border-gray-700"
                   }`}
@@ -278,7 +272,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                   placeholder="Enter phone number"
                 />
@@ -297,7 +290,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                   />
                 )}
 
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50">
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800">
                   <Upload className="w-8 h-8 mb-2 text-gray-500" />
                   <p className="mb-2 text-sm text-gray-500">
@@ -330,12 +322,9 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <select
                   value={formData.role}
                   onChange={(e) => handleInputChange("role", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
-                  
                   <option value="enroller">Enroller</option>
-          
                   <option value="manager">Manager</option>
                   <option value="admin">Admin</option>
                 </select>
@@ -347,9 +336,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                  Superieur Herachique*
                 </label>
                 <select
-                  value={formData.role}
+                  value={formData.superior}
                   onChange={(e) => handleInputChange("superior", e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <option value="1">Mrs Eric</option>

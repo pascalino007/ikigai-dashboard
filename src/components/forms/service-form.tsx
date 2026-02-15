@@ -48,13 +48,13 @@ export function ServiceForm({
     duration: 30,
     tags: '',
     imageurl: '',
-    provider_id: selectedShopId ? parseInt(selectedShopId) : 0 ,
+    provider_id: selectedShopId ? parseInt(selectedShopId) : 0,
     provider_name: '',
+    profileImageFile: undefined,
+    galleryImages: undefined,
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isUploadingProfile, setIsUploadingProfile] = useState(false)
-  const [profileUploadError, setProfileUploadError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
   const [subcategories, setSubcategories] = useState<Array<{ id: string; name: string }>>([])
@@ -112,8 +112,10 @@ export function ServiceForm({
         duration: initialData.duration,
         imageurl: initialData.imageurl || 'https://cdn.example.com/default-service.jpg',
         tags: (initialData as any).tags || '',
-        provider_id: initialData.providerId ? Number(initialData.providerId) : 0,
-        provider_name: (initialData as any).providerName || ''
+        provider_id: initialData.providerId ? Number(initialData.providerId) : undefined,
+        provider_name: (initialData as any).providerName || '',
+        profileImageFile: undefined, // Reset file input on open
+        galleryImages: undefined,
       })
     } else {
       setFormData({
@@ -128,6 +130,8 @@ export function ServiceForm({
         imageurl: '',
         provider_id: selectedShopId ? parseInt(selectedShopId) : 0,
         provider_name: '',
+        profileImageFile: undefined, // Reset file input on open
+        galleryImages: undefined,
       })
     }
   }, [initialData, selectedShopId, isOpen])
@@ -173,37 +177,22 @@ export function ServiceForm({
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }))
   }
 
-  // Upload profile image to backend and set returned imageUrl on success
-  const uploadProfileImage = async (file: File) => {
-    setProfileUploadError(null)
-    // show immediate local preview (will be replaced by returned URL)
-    setFormData(prev => ({ ...prev, imageurl: URL.createObjectURL(file) }))
+  // Handle file selection and local preview
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    handleInputChange('profileImageFile', file || null);
 
-    const form = new FormData()
-    form.append('image', file) // backend expects 'image'
-
-    setIsUploadingProfile(true)
-    try {
-      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: form })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.message || `Upload failed (${res.status})`)
-      }
-      const data = await res.json()
-      if (!data?.imageUrl) throw new Error('No imageUrl in upload response')
-
-      // use the returned full URL for preview/submission
-      setFormData(prev => ({ ...prev, imageurl: data.imageUrl }))
-      console.log('✅ Profile image uploaded:', data.imageUrl)
-    } catch (err) {
-      console.error('❌ Profile upload error:', err)
-      setProfileUploadError(err instanceof Error ? err.message : 'Upload failed')
-      setFormData(prev => ({ ...prev, imageurl: '' }))
-      setErrors(prev => ({ ...prev, profileImageFile: err instanceof Error ? err.message : 'Failed to upload profile image' }))
-    } finally {
-      setIsUploadingProfile(false)
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        handleInputChange('imageurl', event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Revert to original image if file is cleared
+      handleInputChange('imageurl', initialData?.imageurl || '');
     }
-  }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -277,7 +266,7 @@ export function ServiceForm({
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: 'Unknown error' }))
-        throw new Error(JSON.stringify(err))
+        throw new Error(err.message || 'Failed to save service. Please check the details and try again.')
       }
 
       const result = await res.json()
@@ -296,8 +285,10 @@ export function ServiceForm({
         tags: '',
         imageurl: '',
         provider_id: selectedShopId ? parseInt(selectedShopId) : 0,
-        provider_name: ''
-      })
+        provider_name: '',
+      });
+      // Also reset file inputs
+      handleInputChange('profileImageFile', null);
       setErrors({})
       onClose()
     } catch (error) {
@@ -338,7 +329,10 @@ export function ServiceForm({
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               >
                 {selectedShopId ? (
-                  <option value={selectedShopId}>{selectedShopId}</option>
+                  <option value={selectedShopId}>p...</option>
+                  <option value={selectedShopId}>
+                    {shops.find((s) => s.id === selectedShopId)?.name || '...'}
+                  </option>
                 ) : (
                   <>
                     <option value="">Choose a shop...</option>
@@ -459,16 +453,12 @@ export function ServiceForm({
               <input
                 type="file"
                 accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) return
-                  // keep File reference
-                  handleInputChange('profileImageFile', file)
-                  await uploadProfileImage(file)
-                }}
+                onChange={handleProfileImageChange}
               />
-              {isUploadingProfile && <p className="text-xs text-gray-600 mt-1">Uploading profile image...</p>}
-              {profileUploadError && <p className="text-red-500 text-sm mt-1">{profileUploadError}</p>}
+              {errors.submit && (
+                <p className="text-red-500 text-sm mt-2">{errors.submit}</p>
+              )}
+              {errors.profileImageFile && <p className="text-red-500 text-sm mt-1">{errors.profileImageFile}</p>}
               {formData.imageurl && (
                 <img src={formData.imageurl} alt="Profile preview" className="mt-2 w-32 h-32 object-cover rounded" />
               )}
@@ -492,7 +482,7 @@ export function ServiceForm({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting || isUploadingProfile}>
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting
                   ? initialData
                     ? 'Updating...'

@@ -56,6 +56,7 @@ export interface Category {
 }
 
 export interface Service {
+  imageurl: string;
   id: string;
   name: string;
   description: string;
