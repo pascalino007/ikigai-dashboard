@@ -1,5 +1,9 @@
 {
-  "/login/page": "app/login/page.js",
-  "/page": "app/page.js",
-  "/users/page": "app/users/page.js"
+  "/bookings/page": "app/bookings/page.js",
+  "/payments/page": "app/payments/page.js",
+  "/users/page": "app/users/page.js",
+  "/marketplace/page": "app/marketplace/page.js",
+  "/enrollers/page": "app/enrollers/page.js",
+  "/managers/page": "app/managers/page.js",
+  "/geolocation/page": "app/geolocation/page.js"
 }

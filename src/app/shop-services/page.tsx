@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Filter, Edit, Trash2, Eye, Clock, DollarSign, Tag } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Trash2, Eye, Clock, DollarSign, Tag, List, Grid } from 'lucide-react'
 import { ShopService } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ShopServiceForm } from '@/components/forms/shop-service-form'
@@ -91,6 +91,7 @@ export default function ShopServicesPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
 
   useEffect(() => {
     const fetchShopServices = async () => {
@@ -300,149 +301,305 @@ const toggleSelectAll = () => {
           </div>
         </div>
 
-        {/* Services Table */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service Details
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Provider
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price & Duration
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tags
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredServices.map((service) => (
-                  <tr key={service.id} className="hover:bg-gray-50">
-                    {/* ✅ Checkbox column */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedServices.includes(service.id)}
-                        onChange={() => handleSelect(service.id)}
-                        className="h-4 w-4 text-ikigai-primary border-gray-300 rounded"
-                      />
-                    </td>
-
-                    {/* Existing columns below */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-12 w-12 rounded-lg bg-ikigai-primary flex items-center justify-center overflow-hidden">
-                          {service.image ? (
-                            <img
-                              src={service.image}
-                              alt={service.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-sm font-medium text-white">
-                              {service.name.split(' ').map((n) => n[0]).join('')}
-                            </span>
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{service.name}</div>
-                          <div className="text-sm text-gray-500 max-w-xs truncate">{service.description}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(service.category)}`}>
-                          {service.category}
-                        </span>
-                        {service.subcategory && (
-                          <div className="text-xs text-gray-500 mt-1">{service.subcategory}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                      {service.providerName || 'Any Provider'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          {service.price}
-                        </div>
-                        <div className="text-sm text-gray-500 flex items-center">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {service.duration} min
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-wrap gap-1">
-                        {service.tags?.slice(0, 2).map((tag, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:text-gray-200">
-                            <Tag className="h-2 w-2 mr-1" />
-                            {tag}
-                          </span>
-                        ))}
-                        {service.tags && service.tags.length > 2 && (
-                          <span className="text-xs text-gray-500">+{service.tags.length - 2} more</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        service.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {service.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleToggleServiceStatus(service.id)}
-                          className={service.isActive ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
-                        >
-                          {service.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDeleteService(service.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* View Mode Toggle */}
+        <div className="flex justify-end mb-4">
+          <div className="flex space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className={`${
+                viewMode === 'grid'
+                  ? 'bg-ikigai-primary text-white'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+              }`}
+            >
+              <Grid className="h-4 w-4 mr-2" />
+              Grid
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className={`${
+                viewMode === 'list'
+                  ? 'bg-ikigai-primary text-white'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+              }`}
+            >
+              <List className="h-4 w-4 mr-2" />
+              List
+            </Button>
           </div>
         </div>
+
+        {/* Services Display */}
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {filteredServices.map((service) => (
+              <div
+                key={service.id}
+                className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden flex flex-col"
+              >
+                {/* Image Section */}
+                <div className="h-32 relative">
+                  <div className="h-full w-full bg-ikigai-primary flex items-center justify-center">
+                    {service.image ? (
+                      <img
+                        src={service.image}
+                        alt={service.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xl font-medium text-white">
+                        {service.name.split(' ').map((n) => n[0]).join('')}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shadow-md ${
+                      service.isActive
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {service.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                {/* Content Section */}
+                <div className="p-4 flex flex-col justify-between flex-1">
+                  <div>
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          {service.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">{service.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mt-4">
+                      <div className="flex items-center text-sm text-gray-600">
+                        <DollarSign className="h-4 w-4 mr-2 text-gray-500" />
+                        {service.price} - {service.duration} min
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Tag className="h-4 w-4 mr-2 text-gray-500" />
+                        {service.category} {service.subcategory && `• ${service.subcategory}`}
+                      </div>
+                      {service.providerName && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <span className="h-4 w-4 mr-2 bg-gray-500 rounded-full flex items-center justify-center text-xs text-white">
+                            P
+                          </span>
+                          {service.providerName}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-200">
+                    <div className="text-xs text-gray-500">
+                      Updated {service.updatedAt.toString().slice(0, 10)}
+                    </div>
+
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {/* View details */}}
+                        title="View Service Details"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {/* Edit service */}}
+                        title="Edit Service"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleServiceStatus(service.id)}
+                        className={service.isActive ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
+                        title={service.isActive ? 'Deactivate' : 'Activate'}
+                      >
+                        {service.isActive ? 'Deactivate' : 'Activate'}
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteService(service.id)}
+                        title="Delete Service"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 text-ikigai-primary border-gray-300 rounded"
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Service Details
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Provider
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price & Duration
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tags
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                  {filteredServices.map((service) => (
+                    <tr key={service.id} className="hover:bg-gray-50">
+                      {/* Checkbox column */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedServices.includes(service.id)}
+                          onChange={() => handleSelect(service.id)}
+                          className="h-4 w-4 text-ikigai-primary border-gray-300 rounded"
+                        />
+                      </td>
+
+                      {/* Service Details */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-12 w-12 rounded-lg bg-ikigai-primary flex items-center justify-center overflow-hidden">
+                            {service.image ? (
+                              <img
+                                src={service.image}
+                                alt={service.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-sm font-medium text-white">
+                                {service.name.split(' ').map((n) => n[0]).join('')}
+                              </span>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{service.name}</div>
+                            <div className="text-sm text-gray-500 max-w-xs truncate">{service.description}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(service.category)}`}>
+                            {service.category}
+                          </span>
+                          {service.subcategory && (
+                            <div className="text-xs text-gray-500 mt-1">{service.subcategory}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                        {service.providerName || 'Any Provider'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            {service.price}
+                          </div>
+                          <div className="text-sm text-gray-500 flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {service.duration} min
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {service.tags?.slice(0, 2).map((tag, index) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:text-gray-200">
+                              <Tag className="h-2 w-2 mr-1" />
+                              {tag}
+                            </span>
+                          ))}
+                          {service.tags && service.tags.length > 2 && (
+                            <span className="text-xs text-gray-500">+{service.tags.length - 2} more</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          service.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {service.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleToggleServiceStatus(service.id)}
+                            className={service.isActive ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
+                          >
+                            {service.isActive ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteService(service.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Add Service Form */}
         <ShopServiceForm

@@ -42,6 +42,8 @@ export interface Shop {
   createdAt: Date;
   updatedAt: Date;
   services: Service[];
+  longitude?: number;
+  latitude?: number;
 }
 
 export interface Category {
@@ -53,6 +55,15 @@ export interface Category {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface SousCategory {
+  id: string;
+  name: string;
+  category: string;
+  tags: string;
+  isActive: boolean;
+  createdAt: Date;
 }
 
 export interface Service {

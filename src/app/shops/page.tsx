@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors, Filter } from 'lucide-react'
+import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors, Filter, List, Grid } from 'lucide-react'
 import { Shop } from '@/types'
 import { ShopForm } from '@/components/forms/shop-form'
 import { ShopViewModal } from '@/components/modals/shop-view-modal'
@@ -26,6 +26,7 @@ export default function ShopsPage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   // Get unique values for filters
   const categories = Array.from(new Set(shops.map(shop => shop.category).filter(Boolean)))
@@ -59,7 +60,7 @@ export default function ShopsPage() {
   const loadShops = async () => {
   setIsLoading(true)
   try {
-    const response = await fetch(`http://168.231.101.119:4040/shops`, {
+    const response = await fetch(`http://localhost:4040/shops`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -303,22 +304,62 @@ export default function ShopsPage() {
       </div>
       
 
-      {/* Shops Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* View Mode Toggle */}
+      <div className="flex justify-end mb-4">
+        <div className="flex space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className={`${
+              viewMode === 'grid'
+                ? 'bg-ikigai-primary text-white'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+            }`}
+          >
+            <Grid className="h-4 w-4 mr-2" />
+            Grid
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className={`${
+              viewMode === 'list'
+                ? 'bg-ikigai-primary text-white'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+            }`}
+          >
+            <List className="h-4 w-4 mr-2" />
+            List
+          </Button>
+        </div>
+      </div>
+
+      {/* Shops Display */}
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
         {filteredShops.map((shop) => (
          <div
   key={shop.id}
-  className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden flex flex-col md:flex-row"
+  className={`bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden ${
+    viewMode === 'grid' ? 'flex flex-col md:flex-row' : 'flex flex-row'
+  }`}
 >
   {/* Left: Image Section */}
-  <div className="md:w-1/2 w-full h-48 md:h-auto relative">
+  <div className={`${
+    viewMode === 'grid' ? 'md:w-1/2 w-full h-48 md:h-auto' : 'w-24 h-24 flex-shrink-0'
+  } relative`}>
     <img
       src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+shop.profileImageUrl}
       alt={shop.name}
       className="object-cover w-full h-full"
     />
     <span
-      className={`absolute top-3 right-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium shadow-md ${
+      className={`absolute ${
+        viewMode === 'grid' ? 'top-3 right-3' : 'top-1 right-1'
+      } inline-flex items-center ${
+        viewMode === 'grid' ? 'px-2.5 py-0.5' : 'px-1.5 py-0.5'
+      } rounded-full text-xs font-medium shadow-md ${
         shop.isActive
           ? 'bg-green-100 text-green-800'
           : 'bg-red-100 text-red-800'
@@ -329,7 +370,9 @@ export default function ShopsPage() {
   </div>
 
   {/* Right: Content Section */}
-  <div className="md:w-2/3 w-full p-6 flex flex-col justify-between">
+  <div className={`${
+    viewMode === 'grid' ? 'md:w-2/3 w-full p-6' : 'flex-1 p-4'
+  } flex flex-col justify-between`}>
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>

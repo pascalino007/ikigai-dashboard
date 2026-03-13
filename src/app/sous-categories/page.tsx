@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Filter, Edit, Trash2, Eye, Tag } from 'lucide-react'
-import { ShopService } from '@/types'
-import { DashboardLayout } from '@/components/dashboard-layout'
+import { SousCategory } from '@/types'
 import { SousCategoryForm } from '@/components/forms/sous-category-form'
 import { SousCategoryEditModal, type SousCategoryItem } from '@/components/modals/sous-category-edit-modal'
+import { DashboardLayout } from '@/components/dashboard-layout'
 
 export default function ShopServicesPage() {
-  const [shopServices, setShopServices] = useState<ShopService[]>([])
+  const [shopServices, setShopServices] = useState<SousCategory[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -30,7 +30,7 @@ export default function ShopServicesPage() {
     const fetchServices = async () => {
       setLoading(true)
       try {
-        const res = await fetch(`http://168.231.101.119:4040/sous-categories`, {
+        const res = await fetch(`http://localhost:4040/sous-categories`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         })
@@ -88,14 +88,15 @@ export default function ShopServicesPage() {
 
   // ✅ Add new service (local only for now)
   const handleAddService = (formData: any) => {
-    const newService: ShopService = {
+    const newService: SousCategory = {
       id: Date.now().toString(),
       name: formData.name,
       category: formData.category,
-      isActive: true,
       tags: formData.tags
-        ? formData.tags.split(',').map((tag: string) => tag.trim())
-        : [],
+        ? formData.tags.split(',').map((tag: string) => tag.trim()).join(',')
+        : '',
+      isActive: true,
+      createdAt: new Date(),
     }
 
     setShopServices((prev) => [newService, ...prev])
@@ -122,21 +123,46 @@ export default function ShopServicesPage() {
     id: string,
     data: { name: string; category: string; tags: string; isActive: boolean }
   ) => {
-    const tagsArray = data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : []
-    setShopServices((prev) =>
-      prev.map((s) =>
-        s.id === id
-          ? {
-              ...s,
-              name: data.name,
-              category: data.category,
-              tags: tagsArray,
-              isActive: data.isActive
-            }
-          : s
-      )
-    )
-    setEditingItem(null)
+    try {
+      // Make API call to update the sous category
+      const response = await fetch(`http://localhost:4040/sous-categories/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          category: data.category,
+          tags: data.tags,
+          isActive: data.isActive
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update sous category: ${response.status}`);
+      }
+
+      // Update local state if API call succeeds
+      const tagsArray = data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : [];
+      setShopServices((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                name: data.name,
+                category: data.category,
+                tags: tagsArray,
+                isActive: data.isActive,
+                updatedAt: new Date()
+              }
+            : s
+        )
+      );
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Error updating sous category:', error);
+      alert('Failed to update sous category. Please try again.');
+    }
   }
 
   return (

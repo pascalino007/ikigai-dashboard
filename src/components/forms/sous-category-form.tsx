@@ -12,9 +12,15 @@ interface Category {
 export function SousCategoryForm({
   isOpen,
   onClose,
+  onSubmit,
+  serviceCategories,
+  serviceSubcategories,
 }: {
   isOpen: boolean
   onClose: () => void
+  onSubmit: (data: any) => void
+  serviceCategories: string[]
+  serviceSubcategories: { [key: string]: string[] }
 }) {
   const [formData, setFormData] = useState({
     name: '',
@@ -57,20 +63,14 @@ export function SousCategoryForm({
     return Object.keys(newErrors).length === 0
   }
 
-  // ✅ Handle submit (POST to API)
+  // ✅ Handle submit (call onSubmit)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm()) return
 
     setIsSubmitting(true)
     try {
-      const res = await fetch(`http://168.231.101.119:4040/sous-categories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-      if (!res.ok) throw new Error('Failed to submit sous category')
-      alert('Sous category added successfully!')
+      onSubmit(formData)
       handleClose()
     } catch (err) {
       console.error(err)
