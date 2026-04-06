@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react'
@@ -34,7 +35,7 @@ export default function ProvidersPage() {
       setLoadingProviders(true)
       setProvidersError(null)
       try {
-        const res = await fetch('http://168.231.101.119:4040/proownners')
+        const res = await fetch(`${API_BASE_URL}/proownners`)
         if (!res.ok) throw new Error(`Failed to fetch providers (${res.status})`)
         const data = await res.json()
 

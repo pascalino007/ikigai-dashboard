@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, User, Mail, Phone, CreditCard, Camera, FileImage, Upload } from 'lucide-react'
@@ -95,7 +96,7 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
     try {
       const fd = new FormData()
       fd.append('image', file)
-      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: fd })
+      const res = await fetch(`${API_BASE_URL}/upload`, { method: 'POST', body: fd })
       if (!res.ok) throw new Error(`Upload failed (${res.status})`)
       const data = await res.json()
       return (data.imageUrl || data.url || data.path || '') as string
@@ -109,7 +110,7 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
     try {
       const fd = new FormData()
       files.forEach(f => fd.append('images', f))
-      const res = await fetch('http://168.231.101.119:4040/upload/multiple', { method: 'POST', body: fd })
+      const res = await fetch(`${API_BASE_URL}/upload/multiple`, { method: 'POST', body: fd })
       if (!res.ok) throw new Error(`Upload failed (${res.status})`)
       const data = await res.json()
       return data.imageUrls || data.urls || data.images || []
@@ -150,7 +151,7 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
         registered_by: 'admin'
       }
 
-      const res = await fetch(`http://168.231.101.119:4040/proownners/${provider.id}`, {
+      const res = await fetch(`${API_BASE_URL}/proownners/${provider.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

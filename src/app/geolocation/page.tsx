@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2 } from 'lucide-react'
@@ -39,7 +40,7 @@ export default function GeolocationPage() {
   const fetchZones = async () => {
     setLoading(true)
     try {
-      const res = await fetch('http://168.231.101.119:4040/geoville')
+      const res = await fetch(`${API_BASE_URL}/geoville`)
       if (!res.ok) throw new Error('Failed to load geolocations')
       const data = await res.json()
       setZones(Array.isArray(data) ? data : [])
@@ -69,7 +70,7 @@ export default function GeolocationPage() {
     if (!confirm('Supprimer cette zone ?')) return
 
     try {
-      await fetch(`http://168.231.101.119:4040/geoville/${id}`, {
+      await fetch(`${API_BASE_URL}/geoville/${id}`, {
         method: 'DELETE'
       })
       setZones(prev => prev.filter(z => z.id !== id))

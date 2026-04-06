@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, Percent, Clock } from 'lucide-react'
@@ -30,7 +31,7 @@ export default function SpecialOffersPage() {
       setLoading(true)
       setFetchError(null)
       try {
-        const res = await fetch('http://168.231.101.119:4040/specials')
+        const res = await fetch(`${API_BASE_URL}/specials`)
         if (!res.ok) throw new Error(`Failed to fetch specials (${res.status})`)
         const data = await res.json()
 

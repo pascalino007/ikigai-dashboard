@@ -1,15 +1,34 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Filter, Edit, Trash2, Eye, Tag } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Tag, Layers, CheckCircle, XCircle } from 'lucide-react'
 import { SousCategory } from '@/types'
 import { SousCategoryForm } from '@/components/forms/sous-category-form'
 import { SousCategoryEditModal, type SousCategoryItem } from '@/components/modals/sous-category-edit-modal'
 import { DashboardLayout } from '@/components/dashboard-layout'
 
-export default function ShopServicesPage() {
-  const [shopServices, setShopServices] = useState<SousCategory[]>([])
+const BADGE_COLORS = [
+  'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-400',
+  'bg-pink-100 text-pink-800 dark:bg-pink-500/15 dark:text-pink-400',
+  'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400',
+  'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
+  'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400',
+  'bg-orange-100 text-orange-800 dark:bg-orange-500/15 dark:text-orange-400',
+  'bg-indigo-100 text-indigo-800 dark:bg-indigo-500/15 dark:text-indigo-400',
+  'bg-teal-100 text-teal-800 dark:bg-teal-500/15 dark:text-teal-400',
+]
+
+function categoryColor(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return BADGE_COLORS[Math.abs(hash) % BADGE_COLORS.length]
+}
+
+export default function SousCategoriesPage() {
+  const [items, setItems] = useState<SousCategory[]>([])
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -18,105 +37,79 @@ export default function ShopServicesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Example categories
-  const serviceCategories = ['Hair', 'Nails', 'Skincare', 'Makeup', 'Massage']
-  const serviceSubcategories = {
-    Hair: ['Cut', 'Color', 'Styling'],
-    Nails: ['Manicure', 'Pedicure'],
+  const loadAll = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [scRes, catRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/sous-categories`),
+        fetch(`${API_BASE_URL}/categories/`),
+      ])
+      if (!scRes.ok) throw new Error('Failed to fetch sous-categories')
+      const scData = await scRes.json()
+      setItems(Array.isArray(scData) ? scData : [])
+      if (catRes.ok) {
+        const catData = await catRes.json()
+        setCategories(Array.isArray(catData) ? catData.map((c: any) => ({ id: String(c.id), name: c.name })) : [])
+      }
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // ✅ Fetch data from your API
-  useEffect(() => {
-    const fetchServices = async () => {
-      setLoading(true)
-      try {
-        const res = await fetch(`http://localhost:4040/sous-categories`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        })
+  useEffect(() => { loadAll() }, [])
 
-        if (!res.ok) throw new Error('Failed to fetch services')
-
-        const data = await res.json()
-        setShopServices(data)
-      } catch (err: any) {
-        setError(err.message || 'Something went wrong')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchServices()
-  }, [])
-
-  // ✅ Filtering logic
-  const filteredServices = shopServices.filter((service) => {
+  const filtered = items.filter((s) => {
+    const displayName = (s.categoryName || s.category).toLowerCase()
     const matchesSearch =
-      service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.tags?.some((tag) =>
-        tag.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-
-    const matchesCategory =
-      filterCategory === 'all' || service.category === filterCategory
-
+      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      displayName.includes(searchTerm.toLowerCase()) ||
+      (typeof s.tags === 'string' ? s.tags : '').toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = filterCategory === 'all' || s.category === filterCategory || s.categoryName === filterCategory
     const matchesStatus =
       filterStatus === 'all' ||
-      (filterStatus === 'active' && service.isActive) ||
-      (filterStatus === 'inactive' && !service.isActive)
-
+      (filterStatus === 'active' && s.isActive) ||
+      (filterStatus === 'inactive' && !s.isActive)
     return matchesSearch && matchesCategory && matchesStatus
   })
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'Hair':
-        return 'bg-purple-100 text-purple-800'
-      case 'Nails':
-        return 'bg-pink-100 text-pink-800'
-      case 'Skincare':
-        return 'bg-green-100 text-green-800'
-      case 'Makeup':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'Massage':
-        return 'bg-blue-100 text-blue-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
+  const totalActive = items.filter(s => s.isActive).length
+  const totalInactive = items.length - totalActive
+
+  const handleAddService = async (formData: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/sous-categories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.name, category: formData.category, tags: formData.tags || '' }),
+      })
+      if (!res.ok) throw new Error('Failed to create sous-category')
+      await loadAll()
+      setShowAddModal(false)
+    } catch (err: any) {
+      alert(err.message || 'Failed to add sous-category')
     }
   }
 
-  // ✅ Add new service (local only for now)
-  const handleAddService = (formData: any) => {
-    const newService: SousCategory = {
-      id: Date.now().toString(),
-      name: formData.name,
-      category: formData.category,
-      tags: formData.tags
-        ? formData.tags.split(',').map((tag: string) => tag.trim()).join(',')
-        : '',
-      isActive: true,
-      createdAt: new Date(),
-    }
-
-    setShopServices((prev) => [newService, ...prev])
-    setShowAddModal(false)
+  const handleToggleStatus = async (item: SousCategory) => {
+    try {
+      await fetch(`${API_BASE_URL}/sous-categories/${item.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !item.isActive }),
+      })
+      setItems(prev => prev.map(s => s.id === item.id ? { ...s, isActive: !s.isActive } : s))
+    } catch { /* silent */ }
   }
 
-  const handleToggleServiceStatus = (serviceId: string) => {
-    setShopServices((prev) =>
-      prev.map((service) =>
-        service.id === serviceId
-          ? { ...service, isActive: !service.isActive }
-          : service
-      )
-    )
-  }
-
-  const handleDeleteService = (serviceId: string) => {
-    if (confirm('Are you sure you want to delete this service?')) {
-      setShopServices((prev) => prev.filter((service) => service.id !== serviceId))
-    }
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this sous-category?')) return
+    try {
+      await fetch(`${API_BASE_URL}/sous-categories/${id}`, { method: 'DELETE' })
+      setItems(prev => prev.filter(s => s.id !== id))
+    } catch { /* silent */ }
   }
 
   const handleUpdateSousCategory = async (
@@ -124,234 +117,218 @@ export default function ShopServicesPage() {
     data: { name: string; category: string; tags: string; isActive: boolean }
   ) => {
     try {
-      // Make API call to update the sous category
-      const response = await fetch(`http://localhost:4040/sous-categories/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: data.name,
-          category: data.category,
-          tags: data.tags,
-          isActive: data.isActive
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update sous category: ${response.status}`);
-      }
-
-      // Update local state if API call succeeds
-      const tagsArray = data.tags ? data.tags.split(',').map((t) => t.trim()).filter(Boolean) : [];
-      setShopServices((prev) =>
-        prev.map((s) =>
-          s.id === id
-            ? {
-                ...s,
-                name: data.name,
-                category: data.category,
-                tags: tagsArray,
-                isActive: data.isActive,
-                updatedAt: new Date()
-              }
-            : s
-        )
-      );
-      setEditingItem(null);
-    } catch (error) {
-      console.error('Error updating sous category:', error);
-      alert('Failed to update sous category. Please try again.');
+      const res = await fetch(`${API_BASE_URL}/sous-categories/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: data.name, category: data.category, tags: data.tags, is_active: data.isActive }),
+      })
+      if (!res.ok) throw new Error(`Update failed (${res.status})`)
+      await loadAll()
+      setEditingItem(null)
+    } catch (err: any) {
+      alert(err.message || 'Failed to update')
     }
   }
 
   return (
     <DashboardLayout>
-      <div className="p-6">
-        <div className="mb-8 flex justify-between items-center">
+      <div className="p-6 space-y-6">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Les Sous Categories</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Manage your shop's services and offerings
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Sous-Catégories</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gérez les sous-catégories de services</p>
           </div>
-          <Button onClick={() => setShowAddModal(true)}>
+          <Button onClick={() => setShowAddModal(true)} className="bg-ikigai-primary hover:bg-ikigai-primary/90 self-start sm:self-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Add Sous Categories
+            Ajouter
           </Button>
         </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-ikigai-primary/10 flex items-center justify-center">
+              <Layers className="h-5 w-5 text-ikigai-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{items.length}</p>
+              <p className="text-xs text-gray-500">Total</p>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalActive}</p>
+              <p className="text-xs text-gray-500">Actives</p>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+              <XCircle className="h-5 w-5 text-red-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalInactive}</p>
+              <p className="text-xs text-gray-500">Inactives</p>
+            </div>
+          </div>
+        </div>
+
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search services..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                placeholder="Rechercher..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-ikigai-primary dark:focus:ring-ikigai-teal focus:border-transparent outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                {serviceCategories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                More Filters
-              </Button>
-            </div>
+            <select
+              className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ikigai-primary dark:focus:ring-ikigai-teal focus:border-transparent outline-none"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+            >
+              <option value="all">Toutes catégories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ikigai-primary dark:focus:ring-ikigai-teal focus:border-transparent outline-none"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="all">Tous statuts</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+            </select>
           </div>
         </div>
 
-        {/* Table Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden border border-gray-100 dark:border-gray-800">
+        {/* Table */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
           {loading ? (
-            <div className="p-6 text-center text-gray-500">Loading services...</div>
+            <div className="flex items-center justify-center py-16 text-gray-400">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ikigai-primary mr-3" />
+              Chargement...
+            </div>
           ) : error ? (
-            <div className="p-6 text-center text-red-500">{error}</div>
-          ) : filteredServices.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">No services found.</div>
+            <div className="py-16 text-center text-red-500">{error}</div>
+          ) : filtered.length === 0 ? (
+            <div className="py-16 text-center">
+              <Tag className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400 font-medium">Aucune sous-catégorie trouvée</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Ajoutez votre première sous-catégorie</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Sous Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Tags
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Actions
-                    </th>
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tags</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredServices.map((service) => (
-                    <tr key={service.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-md bg-ikigai-primary flex items-center justify-center text-white font-bold">
-                            {service.name.charAt(0).toUpperCase()}
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                  {filtered.map((service) => {
+                    const displayCategory = service.categoryName || service.category
+                    const tags = typeof service.tags === 'string'
+                      ? service.tags.split(',').map(t => t.trim()).filter(Boolean)
+                      : Array.isArray(service.tags) ? service.tags : []
+                    return (
+                      <tr key={service.id} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-lg bg-ikigai-primary flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                              {service.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{service.name}</span>
                           </div>
-                          <div className="ml-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {service.name}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${categoryColor(displayCategory)}`}>
+                            {displayCategory}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-1 max-w-xs">
+                            {tags.length > 0 ? tags.slice(0, 3).map((tag, i) => (
+                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                {tag}
+                              </span>
+                            )) : <span className="text-gray-400 text-xs">—</span>}
+                            {tags.length > 3 && (
+                              <span className="text-xs text-gray-400">+{tags.length - 3}</span>
+                            )}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(
-                            service.category
-                          )}`}
-                        >
-                          {service.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-wrap gap-1">
-                          {service.tags}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            service.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {service.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              setEditingItem({
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            service.isActive ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'
+                          }`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${service.isActive ? 'bg-green-500' : 'bg-red-400'}`} />
+                            {service.isActive ? 'Actif' : 'Inactif'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-gray-500 hover:text-ikigai-primary dark:hover:text-ikigai-teal"
+                              onClick={() => setEditingItem({
                                 id: service.id,
                                 name: service.name,
                                 category: service.category,
                                 tags: service.tags,
-                                isActive: service.isActive
-                              })
-                            }
-                            title="Edit sous category"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              handleToggleServiceStatus(service.id)
-                            }
-                            className={
-                              service.isActive
-                                ? 'text-orange-600 hover:text-orange-700'
-                                : 'text-green-600 hover:text-green-700'
-                            }
-                          >
-                            {service.isActive ? 'Deactivate' : 'Activate'}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteService(service.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                                isActive: service.isActive,
+                              })}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`h-8 px-2 text-xs ${service.isActive ? 'text-orange-500 hover:text-orange-700 dark:text-orange-400' : 'text-green-600 hover:text-green-700 dark:text-green-400'}`}
+                              onClick={() => handleToggleStatus(service)}
+                            >
+                              {service.isActive ? 'Désactiver' : 'Activer'}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-red-500 hover:text-red-700"
+                              onClick={() => handleDelete(service.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
 
-        {/* Add Service Form */}
         <SousCategoryForm
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddService}
-          serviceCategories={serviceCategories}
-          serviceSubcategories={serviceSubcategories}
+          serviceCategories={[]}
+          serviceSubcategories={{}}
         />
 
         <SousCategoryEditModal

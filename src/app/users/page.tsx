@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2, User, Mail, Phone, Shield, Calendar } from 'lucide-react'
@@ -20,7 +21,7 @@ export default function UsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await fetch('http://168.231.101.119:4040/auth')
+        const res = await fetch(`${API_BASE_URL}/auth`)
         const data = await res.json()
 
         // MAP API RESPONSE → UserType used in UI

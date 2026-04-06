@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, MapPin, Phone, Mail, Clock, Image as ImageIcon, Tag, Upload, Trash2 } from 'lucide-react'
@@ -36,25 +37,34 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [previewGallery, setPreviewGallery] = useState<string[]>([])
+  const [categories, setCategories] = useState<Array<{id:string; name:string}>>([])
+  const [editingCategory, setEditingCategory] = useState(false)
 
   // Initialize form data when shop changes
   useEffect(() => {
     if (shop) {
+      const parseHours = (raw: any): Array<{day:string;open:string;close:string}> => {
+        if (!Array.isArray(raw)) return []
+        return raw.map((h: any) => Array.isArray(h)
+          ? { day: h[0]||'', open: (h[1]||'').split(' - ')[0]?.trim()||'', close: (h[1]||'').split(' - ')[1]?.trim()||'' }
+          : { day: h.day||'', open: h.open||'', close: h.close||'' }
+        )
+      }
       setFormData({
         name: shop.name || '',
-        description: shop.description || '',
+        description: shop.description || (shop as any).description_shop || '',
         category: shop.category || '',
-        type: shop.type || 'Salon',
+        type: (shop as any).type || 'Salon',
         tags: Array.isArray(shop.tags) ? shop.tags.join(', ') : shop.tags || '',
         address: shop.address || '',
-        country: shop.country || '',
-        city: shop.city || '',
-        area: shop.area || '',
+        country: shop.country || (shop as any).pays || '',
+        city: shop.city || (shop as any).ville || '',
+        area: shop.area || (shop as any).quartier || '',
         phone: shop.phone || '',
         email: shop.email || '',
-        isActive: shop.isActive,
-        openingHours: shop.openingHours || [],
-        profileImageUrl: shop.profileImageUrl || '',
+        isActive: shop.isActive !== undefined ? Boolean(shop.isActive) : Number((shop as any).is_active) === 1,
+        openingHours: parseHours((shop as any).workingHours || shop.openingHours || []),
+        profileImageUrl: (shop as any).profileImageUrl || shop.profileImage || '',
         profileImageFile: null,
         galleryImages: Array.isArray(shop.images) ? shop.images : [],
         galleryImageFiles: []
@@ -62,6 +72,13 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       setPreviewGallery(Array.isArray(shop.images) ? shop.images : [])
     }
   }, [shop])
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/categories/`)
+      .then(r => r.json())
+      .then(data => setCategories(Array.isArray(data) ? data.map((c:any) => ({ id: String(c.id), name: c.name })) : []))
+      .catch(() => {})
+  }, [])
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -88,7 +105,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     const fd = new FormData()
     fd.append('image', file)
     
-    const res = await fetch('http://168.231.101.119:4040/upload', {
+    const res = await fetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
       body: fd
     })
@@ -103,7 +120,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     const fd = new FormData()
     files.forEach(file => fd.append('images', file))
     
-    const res = await fetch('http://168.231.101.119:4040/upload/multiple', {
+    const res = await fetch(`${API_BASE_URL}/upload/multiple`, {
       method: 'POST',
       body: fd
     })
@@ -135,7 +152,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
 
       const formattedWorkingHours = formData.openingHours.map(h => [h.day, `${h.open} - ${h.close}`])
 
-      const response = await fetch(`http://168.231.101.119:4040/shops/update/${shop.id}`, {
+      const response = await fetch(`${API_BASE_URL}/shops/update/${shop.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,6 +201,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       name: '',
       description: '',
       category: '',
+      type: 'Salon',
       tags: '',
       address: '',
       country: '',
@@ -200,6 +218,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     })
     setErrors({})
     setPreviewGallery([])
+    setEditingCategory(false)
     onClose()
   }
 
@@ -296,20 +315,43 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Category
               </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                value={formData.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
-              >
-                <option value="">Select category</option>
-                <option value="Hair Salon">Hair Salon</option>
-                <option value="Nail Salon">Nail Salon</option>
-                <option value="Spa">Spa</option>
-                <option value="Barbershop">Barbershop</option>
-                <option value="Beauty Center">Beauty Center</option>
-                <option value="Massage">Massage</option>
-                <option value="Other">Other</option>
-              </select>
+              {!editingCategory ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800">
+                    {formData.category || <span className="text-gray-400">No category set</span>}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingCategory(true)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                    value={formData.category}
+                    onChange={(e) => handleInputChange('category', e.target.value)}
+                    autoFocus
+                  >
+                    <option value="">Select category</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingCategory(false)}
+                  >
+                    Done
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div>

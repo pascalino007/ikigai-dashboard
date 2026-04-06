@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { API_BASE_URL } from '@/services/api'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors, Filter, List, Grid } from 'lucide-react'
+import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors, Filter, List, Grid, Calendar, Tag, Star, ToggleLeft, ToggleRight } from 'lucide-react'
 import { Shop } from '@/types'
 import { ShopForm } from '@/components/forms/shop-form'
 import { ShopViewModal } from '@/components/modals/shop-view-modal'
@@ -13,14 +14,20 @@ import { shopApi, handleApiError, handleApiSuccess } from '@/services/api'
 import { RouteGuard } from '@/components/auth/route-guard'
 
 
+interface GeoEntry { id: string; countryId: string; regionId: string; cityId?: string; districtId?: string; name: string }
+interface GeoCategory { id: string; name: string }
+
 export default function ShopsPage() {
   const router = useRouter()
   const [shops, setShops] = useState<Shop[]>([])
+  const [geovilles, setGeovilles] = useState<GeoEntry[]>([])
+  const [geoCategories, setGeoCategories] = useState<GeoCategory[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
-  const [selectedArea, setSelectedArea] = useState('')
+  const [selectedArrondissement, setSelectedArrondissement] = useState('')
+  const [selectedQuartier, setSelectedQuartier] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -28,31 +35,62 @@ export default function ShopsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
-  // Get unique values for filters
-  const categories = Array.from(new Set(shops.map(shop => shop.category).filter(Boolean)))
-  const countries = Array.from(new Set(shops.map(shop => shop.country)))
-  const cities = selectedCountry 
-    ? Array.from(new Set(shops.filter(shop => shop.country === selectedCountry).map(shop => shop.city)))
-    : Array.from(new Set(shops.map(shop => shop.city)))
-  const areas = selectedCity
-    ? Array.from(new Set(shops.filter(shop => shop.city === selectedCity).map(shop => shop.area)))
-    : Array.from(new Set(shops.map(shop => shop.area)))
+  // --- Derived geo options with cascading ---
+  const paysList = useMemo(() =>
+    Array.from(new Set(geovilles.map(g => g.countryId).filter(Boolean))).sort(),
+    [geovilles])
 
-  const filteredShops = shops.filter(shop => {
+  const villesList = useMemo(() =>
+    Array.from(new Set(
+      geovilles
+        .filter(g => !selectedCountry || g.countryId === selectedCountry)
+        .map(g => g.regionId)
+        .filter(Boolean)
+    )).sort(),
+    [geovilles, selectedCountry])
+
+  const arrondissementsList = useMemo(() =>
+    Array.from(new Set(
+      geovilles
+        .filter(g => (!selectedCountry || g.countryId === selectedCountry) &&
+                     (!selectedCity || g.regionId === selectedCity))
+        .map(g => g.districtId)
+        .filter(Boolean) as string[]
+    )).sort(),
+    [geovilles, selectedCountry, selectedCity])
+
+  const quartiersList = useMemo(() =>
+    geovilles
+      .filter(g => (!selectedCountry || g.countryId === selectedCountry) &&
+                   (!selectedCity || g.regionId === selectedCity) &&
+                   (!selectedArrondissement || g.districtId === selectedArrondissement))
+      .map(g => g.name)
+      .filter(Boolean)
+      .sort(),
+    [geovilles, selectedCountry, selectedCity, selectedArrondissement])
+
+  const filteredShops = useMemo(() => shops.filter(shop => {
     const matchesSearch = shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          shop.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          shop.address.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = !selectedCategory || shop.category === selectedCategory
     const matchesCountry = !selectedCountry || shop.country === selectedCountry
     const matchesCity = !selectedCity || shop.city === selectedCity
-    const matchesArea = !selectedArea || shop.area === selectedArea
-    
-    return matchesSearch && matchesCategory && matchesCountry && matchesCity && matchesArea
-  })
+    const matchesArrondissement = !selectedArrondissement || (shop as any).arrondissement === selectedArrondissement
+    const matchesQuartier = !selectedQuartier || shop.area === selectedQuartier
+    return matchesSearch && matchesCategory && matchesCountry && matchesCity && matchesArrondissement && matchesQuartier
+  }), [shops, searchTerm, selectedCategory, selectedCountry, selectedCity, selectedArrondissement, selectedQuartier])
 
-  // Load shops from API on component mount
+  // Load shops + geo data on mount
   useEffect(() => {
     loadShops()
+    Promise.all([
+      fetch(`${API_BASE_URL}/geoville`).then(r => r.ok ? r.json() : []),
+      fetch(`${API_BASE_URL}/categories/`).then(r => r.ok ? r.json() : []),
+    ]).then(([gv, cats]) => {
+      setGeovilles(Array.isArray(gv) ? gv.map((g: any) => ({ id: String(g.id), countryId: g.countryId || '', regionId: g.regionId || '', cityId: g.cityId, districtId: g.districtId, name: g.name || '' })) : [])
+      setGeoCategories(Array.isArray(cats) ? cats.map((c: any) => ({ id: String(c.id), name: c.name })) : [])
+    }).catch(() => {})
   }, [])
 
 
@@ -60,7 +98,7 @@ export default function ShopsPage() {
   const loadShops = async () => {
   setIsLoading(true)
   try {
-    const response = await fetch(`http://localhost:4040/shops`, {
+    const response = await fetch(`${API_BASE_URL}/shops`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -72,7 +110,15 @@ export default function ShopsPage() {
     }
 
     const data = await response.json()
-    setShops(data)
+    setShops((data as any[]).map(s => ({
+      ...s,
+      isActive: s.isActive !== undefined ? Boolean(s.isActive) : Number(s.is_active) === 1,
+      country: s.country || s.pays || '',
+      city: s.city || s.ville || '',
+      area: s.area || s.quartier || '',
+      profileImage: s.profileImage || s.profileImageUrl || '',
+      profileImageUrl: s.profileImageUrl || s.profileImage || '',
+    })))
   } catch (error) {
     console.error('Error loading shops:', error)
     // Fallback to mock data if API fails
@@ -170,6 +216,16 @@ export default function ShopsPage() {
     }
   }
 
+  const handleToggleActive = async (shopId: string, currentActive: boolean) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/shops/${shopId}/toggle-active`, { method: 'PATCH' })
+      if (!res.ok) throw new Error('Failed to toggle')
+      setShops(prev => prev.map(s => s.id === shopId ? { ...s, isActive: !currentActive } : s))
+    } catch (error) {
+      console.error('Error toggling shop visibility:', error)
+    }
+  }
+
   const handleManageServices = (shopId: string) => {
     router.push(`/shops/${shopId}/services`)
   }
@@ -196,110 +252,123 @@ export default function ShopsPage() {
       </div>
 
       {/* Search and Location Filters */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-5 mb-6">
         <div className="space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search shops..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              placeholder="Rechercher un salon..."
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Catégorie</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800"
               >
-                <option value="">All Categories</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                <option value="">Toutes</option>
+                {geoCategories.map(c => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Pays</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Pays</label>
               <select
                 value={selectedCountry}
                 onChange={(e) => {
                   setSelectedCountry(e.target.value)
-                  setSelectedCity('') // Reset city when country changes
-                  setSelectedArea('') // Reset area when country changes
+                  setSelectedCity('')
+                  setSelectedArrondissement('')
+                  setSelectedQuartier('')
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800"
               >
-                <option value="">All Countries</option>
-                <option value="Togo">Togo</option>
+                <option value="">Tous</option>
+                {paysList.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Ville</label>
               <select
                 value={selectedCity}
                 onChange={(e) => {
                   setSelectedCity(e.target.value)
-                  setSelectedArea('') // Reset area when city changes
+                  setSelectedArrondissement('')
+                  setSelectedQuartier('')
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                disabled={villesList.length === 0}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 disabled:opacity-50"
               >
-                <option value="">All Cities</option>
-                 <option value="">Lome</option>
+                <option value="">Toutes</option>
+                {villesList.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Arrondissement</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Arrondissement</label>
               <select
-                value={selectedArea}
-                onChange={(e) => setSelectedArea(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                value={selectedArrondissement}
+                onChange={(e) => {
+                  setSelectedArrondissement(e.target.value)
+                  setSelectedQuartier('')
+                }}
+                disabled={arrondissementsList.length === 0}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 disabled:opacity-50"
               >
-                <option value="">All Areas</option>
-                <option value="">1</option>
-                <option value="">2</option>
-                <option value="">3</option>
-                <option value="">4</option>
+                <option value="">Tous</option>
+                {arrondissementsList.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Quartier</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Quartier</label>
               <select
-                value={selectedArea}
-                onChange={(e) => setSelectedArea(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                value={selectedQuartier}
+                onChange={(e) => setSelectedQuartier(e.target.value)}
+                disabled={quartiersList.length === 0}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 disabled:opacity-50"
               >
-                <option value="">All Areas</option>
-                <option value="">Adidogome</option>
+                <option value="">Tous</option>
+                {quartiersList.map(q => <option key={q} value={q}>{q}</option>)}
               </select>
             </div>
 
             <div className="flex items-end">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setSelectedCategory('')
                   setSelectedCountry('')
                   setSelectedCity('')
-                  setSelectedArea('')
+                  setSelectedArrondissement('')
+                  setSelectedQuartier('')
                   setSearchTerm('')
                 }}
-                className="w-full"
+                className="w-full text-sm"
               >
-                Clear Filters
+                Réinitialiser
               </Button>
             </div>
           </div>
+
+          {/* Active filter count */}
+          {(selectedCategory || selectedCountry || selectedCity || selectedArrondissement || selectedQuartier || searchTerm) && (
+            <p className="text-xs text-gray-500 pt-1 border-t border-gray-100">
+              <span className="font-semibold text-ikigai-primary">{filteredShops.length}</span> salon{filteredShops.length !== 1 ? 's' : ''} trouvé{filteredShops.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
       </div>
       
@@ -350,7 +419,7 @@ export default function ShopsPage() {
     viewMode === 'grid' ? 'md:w-1/2 w-full h-48 md:h-auto' : 'w-24 h-24 flex-shrink-0'
   } relative`}>
     <img
-      src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+shop.profileImageUrl}
+      src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/` + ((shop as any).profileImageUrl || shop.profileImage || '')}
       alt={shop.name}
       className="object-cover w-full h-full"
     />
@@ -374,12 +443,29 @@ export default function ShopsPage() {
     viewMode === 'grid' ? 'md:w-2/3 w-full p-6' : 'flex-1 p-4'
   } flex flex-col justify-between`}>
     <div>
-      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {shop.name}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">{shop.description}</p>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {shop.category && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-ikigai-primary/10 text-ikigai-primary text-xs rounded-full font-medium">
+                <Tag className="h-2.5 w-2.5" />{shop.category}
+              </span>
+            )}
+            {(shop as any).grade && (() => {
+              const g = (shop as any).grade as 'basic' | 'pro' | 'elite'
+              const cfg = { basic: { stars: 1, color: 'bg-gray-100 text-gray-700' }, pro: { stars: 3, color: 'bg-blue-100 text-blue-700' }, elite: { stars: 5, color: 'bg-yellow-100 text-yellow-700' } }
+              const { stars, color } = cfg[g]
+              return (
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-bold ${color}`}>
+                  {Array(stars).fill('★').join('')}{Array(5 - stars).fill('☆').join('')} {g.charAt(0).toUpperCase() + g.slice(1)}
+                </span>
+              )
+            })()}
+          </div>
+          <p className="text-sm text-gray-500 mt-1 line-clamp-2">{shop.description}</p>
         </div>
       </div>
 
@@ -400,8 +486,9 @@ export default function ShopsPage() {
     </div>
 
     <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-200">
-      <div className="text-xs text-gray-500">
-        Created on {shop.createdAt.toString().slice(0, 10)}
+      <div className="flex items-center gap-1 text-xs text-gray-400">
+        <Calendar className="h-3 w-3" />
+        {new Date(shop.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
       </div>
 
       <div className="flex space-x-2">
@@ -431,6 +518,16 @@ export default function ShopsPage() {
           title="Edit Shop"
         >
           <Edit className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => handleToggleActive(shop.id, shop.isActive ?? false)}
+          title={shop.isActive ? 'Désactiver la boutique' : 'Activer la boutique'}
+          className={shop.isActive ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-gray-600'}
+        >
+          {shop.isActive ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
         </Button>
 
         <Button

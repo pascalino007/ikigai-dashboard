@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2, Tag } from 'lucide-react'
@@ -19,7 +20,7 @@ export default function CategoriesPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://168.231.101.119:4040/categories/')
+        const res = await fetch(`${API_BASE_URL}/categories/`)
         if (!res.ok) throw new Error('Failed to fetch categories')
         const data: Category[] = await res.json()
         setCategories(data)
@@ -56,7 +57,7 @@ export default function CategoriesPage() {
       formData.append('isActive', data.isActive !== false ? 'true' : 'false')
       if (data.image) formData.append('image', data.image)
 
-      const res = await fetch('http://168.231.101.119:4040/categories/', {
+      const res = await fetch(`${API_BASE_URL}/categories/`, {
         method: 'POST',
         body: formData,
       })
@@ -79,7 +80,7 @@ export default function CategoriesPage() {
       if (data.image) formData.append('image', data.image)
 
       const res = await fetch(
-        `http://168.231.101.119:4040/categories/${editingCategory.id}`,
+        `${API_BASE_URL}/categories/${editingCategory.id}`,
         {
           method: 'PUT',
           body: formData,
@@ -99,7 +100,7 @@ export default function CategoriesPage() {
   const handleDeleteCategory = async (categoryId: string) => {
     if (!window.confirm('Are you sure you want to delete this category?')) return
     try {
-      await fetch(`http://168.231.101.119:4040/categories/${categoryId}`, {
+      await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
         method: 'DELETE',
       })
       setCategories(prev => prev.filter(cat => cat.id !== categoryId))
@@ -114,7 +115,7 @@ export default function CategoriesPage() {
     if (!category) return
 
     try {
-      const res = await fetch(`http://168.231.101.119:4040/categories/${categoryId}`, {
+      const res = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !category.isActive }),
@@ -128,126 +129,169 @@ export default function CategoriesPage() {
     }
   }
 
+  const totalActive = categories.filter(c => c.isActive).length
+  const totalInactive = categories.length - totalActive
+
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <div className="p-6 space-y-6">
+
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Categories</h1>
-            <p className="text-gray-600 mt-2">Manage service categories</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Catégories</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Gérez les catégories de services</p>
           </div>
-          <Button onClick={() => setShowAddModal(true)}>
+          <Button onClick={() => setShowAddModal(true)} className="bg-ikigai-primary hover:bg-ikigai-primary/90 self-start sm:self-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Add Category
+            Ajouter
           </Button>
         </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-ikigai-primary/10 flex items-center justify-center">
+              <Tag className="h-5 w-5 text-ikigai-primary" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{categories.length}</p>
+              <p className="text-xs text-gray-500">Total</p>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
+              <span className="h-3 w-3 rounded-full bg-green-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalActive}</p>
+              <p className="text-xs text-gray-500">Actives</p>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
+            <div className="h-10 w-10 rounded-lg bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+              <span className="h-3 w-3 rounded-full bg-red-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalInactive}</p>
+              <p className="text-xs text-gray-500">Inactives</p>
+            </div>
+          </div>
+        </div>
+
         {/* Filters */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search categories..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                placeholder="Rechercher une catégorie..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-ikigai-primary dark:focus:ring-ikigai-teal focus:border-transparent outline-none"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
             <select
-              className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+              className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ikigai-primary dark:focus:ring-ikigai-teal focus:border-transparent outline-none"
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">Tous statuts</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
             </select>
           </div>
         </div>
 
         {/* Loading */}
-        {loading && <p className="text-center text-gray-500">Loading categories...</p>}
+        {loading && (
+          <div className="flex items-center justify-center py-16 text-gray-400">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ikigai-primary mr-3" />
+            Chargement...
+          </div>
+        )}
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 xs:grid-cols-2  md:grid-cols-4 lg:grid-cols-5  gap-1">
-          {filteredCategories.map(category => (
-            <div key={category.id} className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden w-72">
-              <div className="relative">
-                <img
-                  src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+category.imageurl}
-                  alt={category.name}
-                  className="w-full h-48 object-cover"
-                  onError={e => {
-                    const target = e.target as HTMLImageElement
-                    target.src =
-                      'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
-                  }}
-                />
-                <div className="absolute top-3 right-3">
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      category.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {category.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{category.name}</h3>
-                </div>
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{category.description}</p>
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
-                  <div className="text-xs text-gray-500">
-                    Created {new Date(category.createdAt).toLocaleDateString()}
+        {!loading && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {filteredCategories.map(category => (
+                <div key={category.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                  <div className="relative h-40 flex-shrink-0">
+                    <img
+                      src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/` + category.imageurl}
+                      alt={category.name}
+                      className="w-full h-full object-cover"
+                      onError={e => {
+                        const target = e.target as HTMLImageElement
+                        target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
+                      }}
+                    />
+                    <span className={`absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shadow-sm ${
+                      category.isActive ? 'bg-green-50 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-50 text-red-600 dark:bg-red-500/20 dark:text-red-400'
+                    }`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${category.isActive ? 'bg-green-500' : 'bg-red-400'}`} />
+                      {category.isActive ? 'Actif' : 'Inactif'}
+                    </span>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleToggleStatus(category.id)}>
-                      {category.isActive ? 'Deactivate' : 'Activate'}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setEditingCategory(category)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => handleDeleteCategory(category.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="p-4 flex flex-col flex-1">
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1 truncate">{category.name}</h3>
+                    <p className="text-xs text-gray-500 line-clamp-2 flex-1 mb-3">{category.description || '—'}</p>
+                    <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                      <span className="text-xs text-gray-400">
+                        {new Date(category.createdAt).toLocaleDateString('fr-FR')}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          title={category.isActive ? 'Désactiver' : 'Activer'}
+                          onClick={() => handleToggleStatus(category.id)}
+                          className={`h-7 w-7 rounded-md flex items-center justify-center text-xs transition-colors ${
+                            category.isActive
+                              ? 'text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10'
+                              : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-500/10'
+                          }`}
+                        >
+                          {category.isActive ? '●' : '○'}
+                        </button>
+                        <button
+                          title="Modifier"
+                          onClick={() => setEditingCategory(category)}
+                          className="h-7 w-7 rounded-md flex items-center justify-center text-gray-400 hover:text-ikigai-primary dark:hover:text-ikigai-teal hover:bg-ikigai-primary/5 dark:hover:bg-ikigai-teal/10 transition-colors"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          title="Supprimer"
+                          onClick={() => handleDeleteCategory(category.id)}
+                          className="h-7 w-7 rounded-md flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Empty State */}
-        {!loading && filteredCategories.length === 0 && (
-          <div className="text-center py-12">
-            <div className="mx-auto h-12 w-12 text-gray-400">
-              <Tag className="h-12 w-12" />
-            </div>
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No categories found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm || filterStatus !== 'all'
-                ? 'Try adjusting your search or filter criteria.'
-                : 'Get started by adding your first category.'}
-            </p>
-            {!searchTerm && filterStatus === 'all' && (
-              <div className="mt-6">
-                <Button onClick={() => setShowAddModal(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add First Category
-                </Button>
+            {/* Empty State */}
+            {filteredCategories.length === 0 && (
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 py-16 text-center shadow-sm">
+                <Tag className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600 dark:text-gray-400 font-medium">Aucune catégorie trouvée</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
+                  {searchTerm || filterStatus !== 'all' ? 'Essayez de modifier vos filtres.' : 'Commencez par ajouter une catégorie.'}
+                </p>
+                {!searchTerm && filterStatus === 'all' && (
+                  <Button onClick={() => setShowAddModal(true)} className="mt-4 bg-ikigai-primary hover:bg-ikigai-primary/90">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter une catégorie
+                  </Button>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* Add Category Form */}

@@ -1,22 +1,21 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, DollarSign, Clock, Tag, Loader2, ImageIcon, Upload, Trash2 } from 'lucide-react'
+import { X, DollarSign, Clock, Tag, Loader2 } from 'lucide-react'
 import { API_BASE_URL } from '@/services/api'
+import { ShopService } from '@/types'
 
-interface ShopServiceFormProps {
-  isOpen: boolean
+interface ShopServiceEditModalProps {
+  service: ShopService | null
   onClose: () => void
-  onSubmit: (data: any) => Promise<void>
-  serviceCategories?: string[]
-  serviceSubcategories?: Record<string, string[]>
+  onSaved: () => void
 }
 
 interface ApiCategory { id: string; name: string }
 interface ApiSousCategory { id: string; name: string; category: string }
 
-export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormProps) {
+export function ShopServiceEditModal({ service, onClose, onSaved }: ShopServiceEditModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -32,15 +31,18 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
   const [allSousCategories, setAllSousCategories] = useState<ApiSousCategory[]>([])
   const [loadingData, setLoadingData] = useState(false)
 
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [imageUrl, setImageUrl] = useState<string>('')
-  const [uploadingImage, setUploadingImage] = useState(false)
-  const [uploadError, setUploadError] = useState<string>('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
   useEffect(() => {
-    if (!isOpen) return
+    if (!service) return
+    setFormData({
+      name: service.name ?? '',
+      description: service.description ?? '',
+      price: String(service.price ?? ''),
+      duration: String(service.duration ?? ''),
+      category: service.category ?? '',
+      sous_category: service.subcategory ?? '',
+      tags: Array.isArray(service.tags) ? service.tags.join(', ') : (service.tags ?? ''),
+    })
+    setErrors({})
     setLoadingData(true)
     Promise.all([
       fetch(`${API_BASE_URL}/categories/`).then(r => r.json()),
@@ -49,49 +51,9 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
       setCategories(Array.isArray(cats) ? cats.map((c: any) => ({ id: String(c.id), name: c.name })) : [])
       setAllSousCategories(Array.isArray(scs) ? scs.map((s: any) => ({ id: String(s.id), name: s.name, category: String(s.category) })) : [])
     }).catch(() => {}).finally(() => setLoadingData(false))
-  }, [isOpen])
+  }, [service])
 
   const filteredSousCategories = allSousCategories.filter(s => s.category === formData.category)
-
-  const handleImageChange = async (file: File) => {
-    setUploadError('')
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
-    setUploadingImage(true)
-    try {
-      const fd = new FormData()
-      fd.append('image', file)
-      const res = await fetch(`${API_BASE_URL}/upload`, { method: 'POST', body: fd })
-      if (!res.ok) throw new Error(`Erreur ${res.status}`)
-      const data = await res.json()
-      setImageUrl(data.imageUrl ?? '')
-    } catch (e: any) {
-      setUploadError("Échec de l'upload. Réessayez.")
-      setImageFile(null)
-      setImagePreview(null)
-    } finally {
-      setUploadingImage(false)
-    }
-  }
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) handleImageChange(file)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files?.[0]
-    if (file && file.type.startsWith('image/')) handleImageChange(file)
-  }
-
-  const clearImage = () => {
-    setImageFile(null)
-    setImagePreview(null)
-    setImageUrl('')
-    setUploadError('')
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
 
   const validate = () => {
     const e: Record<string, string> = {}
@@ -106,34 +68,34 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!validate()) return
-    if (uploadingImage) return
+    if (!validate() || !service) return
     setSubmitting(true)
     try {
-      await onSubmit({
-        name: formData.name,
-        description: formData.description,
-        Category: formData.category,
-        sous_category: formData.sous_category || '',
-        price: formData.price,
-        duration: formData.duration,
-        tags: formData.tags || '',
-        provider_name: 'admin',
-        ...(imageUrl ? { imageurl: imageUrl } : {}),
+      const res = await fetch(`${API_BASE_URL}/services/${service.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          Category: formData.category,
+          sous_category: formData.sous_category || '',
+          price: formData.price,
+          duration: formData.duration,
+          tags: formData.tags || '',
+          provider_name: service.providerName ?? 'admin',
+        }),
       })
-      handleClose()
-    } catch {
-      /* error handled by parent */
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.message ?? `Erreur ${res.status}`)
+      }
+      onSaved()
+      onClose()
+    } catch (err: any) {
+      setErrors({ _global: err.message ?? 'Une erreur est survenue' })
     } finally {
       setSubmitting(false)
     }
-  }
-
-  const handleClose = () => {
-    setFormData({ name: '', description: '', price: '', duration: '', category: '', sous_category: '', tags: '' })
-    setErrors({})
-    clearImage()
-    onClose()
   }
 
   const set = (field: string, value: string) => {
@@ -145,70 +107,25 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
   }
 
-  if (!isOpen) return null
+  if (!service) return null
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Nouveau Service</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Créé par <span className="font-medium text-ikigai-primary">admin</span> · Actif par défaut</p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Modifier le service</h2>
+            <p className="text-xs text-gray-400 mt-0.5">ID #{service.id}</p>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleClose}>
+          <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          {/* Image upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <ImageIcon className="h-3.5 w-3.5 inline mr-1" />Image (optionnel)
-            </label>
-            {imagePreview ? (
-              <div className="relative w-full h-40 rounded-lg overflow-hidden border border-gray-200 group">
-                <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
-                {uploadingImage && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Loader2 className="h-6 w-6 text-white animate-spin" />
-                    <span className="text-white text-xs ml-2">Upload en cours...</span>
-                  </div>
-                )}
-                {!uploadingImage && (
-                  <button
-                    type="button"
-                    onClick={clearImage}
-                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                {!uploadingImage && imageUrl && (
-                  <span className="absolute bottom-2 left-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">✓ Uploadé</span>
-                )}
-              </div>
-            ) : (
-              <div
-                onDrop={handleDrop}
-                onDragOver={e => e.preventDefault()}
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-32 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-ikigai-primary hover:bg-ikigai-primary/5 transition-colors"
-              >
-                <Upload className="h-6 w-6 text-gray-400" />
-                <span className="text-sm text-gray-500">Glisser une image ou <span className="text-ikigai-primary font-medium">parcourir</span></span>
-                <span className="text-xs text-gray-400">PNG, JPG, WEBP — max 10 MB</span>
-              </div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileInput}
-            />
-            {uploadError && <p className="text-red-500 text-xs mt-1">{uploadError}</p>}
-          </div>
+          {errors._global && (
+            <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{errors._global}</div>
+          )}
 
           {/* Name */}
           <div>
@@ -216,7 +133,6 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
             <input
               type="text"
               className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.name ? 'border-red-400' : 'border-gray-200'}`}
-              placeholder="ex: Coupe + Brushing"
               value={formData.name}
               onChange={e => set('name', e.target.value)}
             />
@@ -229,7 +145,6 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
             <textarea
               className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent resize-none ${errors.description ? 'border-red-400' : 'border-gray-200'}`}
               rows={3}
-              placeholder="Décrivez le service..."
               value={formData.description}
               onChange={e => set('description', e.target.value)}
             />
@@ -267,7 +182,9 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
                 onChange={e => set('sous_category', e.target.value)}
                 disabled={!formData.category || filteredSousCategories.length === 0}
               >
-                <option value="">{!formData.category ? 'Choisir une catégorie d\'abord' : filteredSousCategories.length === 0 ? 'Aucune sous-catégorie' : 'Sélectionner...'}</option>
+                <option value="">
+                  {!formData.category ? "Choisir une catégorie d'abord" : filteredSousCategories.length === 0 ? 'Aucune sous-catégorie' : 'Sélectionner...'}
+                </option>
                 {filteredSousCategories.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -286,7 +203,6 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
                 step="0.01"
                 min="0"
                 className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.price ? 'border-red-400' : 'border-gray-200'}`}
-                placeholder="2500"
                 value={formData.price}
                 onChange={e => set('price', e.target.value)}
               />
@@ -301,7 +217,6 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
                 type="number"
                 min="1"
                 className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.duration ? 'border-red-400' : 'border-gray-200'}`}
-                placeholder="30"
                 value={formData.duration}
                 onChange={e => set('duration', e.target.value)}
               />
@@ -325,11 +240,11 @@ export function ShopServiceForm({ isOpen, onClose, onSubmit }: ShopServiceFormPr
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <Button type="button" variant="outline" onClick={handleClose} disabled={submitting}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
               Annuler
             </Button>
-            <Button type="submit" className="bg-ikigai-primary hover:bg-ikigai-primary/90" disabled={submitting || uploadingImage}>
-              {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enregistrement...</> : uploadingImage ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Upload image...</> : 'Créer le service'}
+            <Button type="submit" className="bg-ikigai-primary hover:bg-ikigai-primary/90" disabled={submitting}>
+              {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Enregistrement...</> : 'Enregistrer'}
             </Button>
           </div>
         </form>

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Users, Store, Scissors, Calendar, TrendingUp, DollarSign } from 'lucide-react'
-
-const API_BASE = 'http://168.231.101.119:4040'
+import { API_BASE_URL } from '@/services/api'
 
 interface StatCardProps {
   title: string
@@ -46,7 +45,7 @@ export function DashboardStats() {
         const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
         const headers: HeadersInit = {}
         if (token) headers['Authorization'] = `Bearer ${token}`
-        const res = await fetch(`${API_BASE}/proownners/count`, { headers })
+        const res = await fetch(`${API_BASE_URL}/proownners/count`, { headers })
         if (!res.ok) throw new Error(`Failed to fetch (${res.status})`)
         const data = await res.json()
         const count = typeof data === 'number' ? data : data?.count ?? data?.total ?? 0

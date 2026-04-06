@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Tag } from 'lucide-react'
@@ -89,7 +90,7 @@ export function AreaEditModal({ isOpen, onClose, area, onSuccess }: AreaEditModa
         tags: formData.tags || undefined
       }
 
-      const res = await fetch(`http://168.231.101.119:4040/geoville/${area.id}`, {
+      const res = await fetch(`${API_BASE_URL}/geoville/${area.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

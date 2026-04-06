@@ -1,9 +1,8 @@
 {
-  "/bookings/page": "app/bookings/page.js",
+  "/shops/page": "app/shops/page.js",
   "/payments/page": "app/payments/page.js",
-  "/users/page": "app/users/page.js",
-  "/marketplace/page": "app/marketplace/page.js",
-  "/enrollers/page": "app/enrollers/page.js",
-  "/managers/page": "app/managers/page.js",
-  "/geolocation/page": "app/geolocation/page.js"
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/shops/[id]/services/page": "app/shops/[id]/services/page.js",
+  "/special-offers/page": "app/special-offers/page.js"
 }

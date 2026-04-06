@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, ImageIcon, Tag, Upload } from 'lucide-react'
@@ -74,7 +75,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
     form.append('image', file)
 
     try {
-      const res = await fetch('http://168.231.101.119:4040/upload', {
+      const res = await fetch(`${API_BASE_URL}/upload`, {
         method: 'POST',
         body: form,
       })
@@ -123,7 +124,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
         uploadForm.append('image', file)
 
         console.log('Uploading new image...')
-        const uploadRes = await fetch('http://168.231.101.119:4040/upload', {
+        const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
           method: 'POST',
           body: uploadForm,
         })
@@ -149,11 +150,11 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
 
       // Determine if creating or updating
       const isUpdate = initialData && initialData.id
-      let url = 'http://168.231.101.119:4040/categories'
+      let url = `${API_BASE_URL}/categories`
       let method = 'POST'
 
       if (isUpdate) {
-        url = `http://168.231.101.119:4040/categories/update/${initialData.id}`
+        url = `${API_BASE_URL}/categories/update/${initialData.id}`
         method = 'POST'
       }
 

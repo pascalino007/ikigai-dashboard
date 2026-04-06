@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Tag } from 'lucide-react'
@@ -69,7 +70,7 @@ export function SousCategoryEditModal({ isOpen, onClose, item, onSubmit }: SousC
     const fetchCategories = async () => {
       setIsLoadingCategories(true)
       try {
-        const res = await fetch('http://168.231.101.119:4040/categories/')
+        const res = await fetch(`${API_BASE_URL}/categories/`)
         if (!res.ok) throw new Error('Failed to load categories')
         const data = await res.json()
         setCategories(Array.isArray(data) ? data : [])
@@ -108,7 +109,7 @@ export function SousCategoryEditModal({ isOpen, onClose, item, onSubmit }: SousC
         isActive: formData.isActive
       }
 
-      const res = await fetch(`http://168.231.101.119:4040/sous-categories/${item.id}`, {
+      const res = await fetch(`${API_BASE_URL}/sous-categories/${item.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

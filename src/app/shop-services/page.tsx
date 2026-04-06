@@ -1,447 +1,243 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Filter, Edit, Trash2, Eye, Clock, DollarSign, Tag, List, Grid } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Clock, DollarSign, Tag, List, Grid, Layers, CheckCircle, XCircle } from 'lucide-react'
 import { ShopService } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ShopServiceForm } from '@/components/forms/shop-service-form'
+import { ShopServiceEditModal } from '@/components/modals/shop-service-edit-modal'
 
-// Mock data for demonstration
-const mockShopServices: ShopService[] = [
-  {
-    id: '1',
-    name: 'Haircut & Styling',
-    description: 'Professional haircut with styling and blow-dry',
-    price: 50,
-    duration: 60,
-    category: 'Hair',
-    subcategory: 'Cut & Style',
-    shopId: '1',
-    shopName: 'Downtown Beauty Studio',
-    providerId: '1',
-    providerName: 'John Smith',
-    isActive: true,
-    tags: ['haircut', 'styling', 'blow-dry'],
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15')
-  },
-  {
-    id: '2',
-    name: 'Manicure & Pedicure',
-    description: 'Complete nail care service with polish',
-    price: 35,
-    duration: 90,
-    category: 'Nails',
-    subcategory: 'Manicure',
-    shopId: '1',
-    shopName: 'Downtown Beauty Studio',
-    providerId: '2',
-    providerName: 'Maria Garcia',
-    isActive: true,
-    tags: ['manicure', 'pedicure', 'nail-polish'],
-    createdAt: new Date('2024-01-20'),
-    updatedAt: new Date('2024-01-20')
-  },
-  {
-    id: '3',
-    name: 'Facial Treatment',
-    description: 'Deep cleansing facial treatment with mask',
-    price: 80,
-    duration: 75,
-    category: 'Skincare',
-    subcategory: 'Facial',
-    shopId: '1',
-    shopName: 'Downtown Beauty Studio',
-    isActive: false,
-    tags: ['facial', 'cleansing', 'mask'],
-    createdAt: new Date('2024-02-01'),
-    updatedAt: new Date('2024-02-01')
+const BADGE_COLORS = [
+  'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800',
+  'bg-blue-100 text-blue-800', 'bg-green-100 text-green-800',
+  'bg-yellow-100 text-yellow-800', 'bg-orange-100 text-orange-800',
+  'bg-indigo-100 text-indigo-800', 'bg-teal-100 text-teal-800',
+]
+function catColor(name: string) {
+  let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return BADGE_COLORS[Math.abs(h) % BADGE_COLORS.length]
+}
+
+interface NormalizedService extends ShopService {
+  categoryName: string
+  sousCategoryName: string
+}
+
+function normalize(s: any, i: number): NormalizedService {
+  const dur = String(s.duration ?? '').match(/(\d+)/)
+  return {
+    id: String(s.id ?? `tmp-${i}`),
+    name: s.name ?? 'Untitled',
+    description: s.description ?? '',
+    price: Number(String(s.price ?? '0').replace(/[^\d.-]/g, '')) || 0,
+    duration: dur ? parseInt(dur[1]) : Number(s.duration ?? 0),
+    category: String(s.Category ?? s.category ?? ''),
+    subcategory: String(s.sous_category ?? s.subcategory ?? ''),
+    categoryName: s.categoryName ?? '',
+    sousCategoryName: s.sousCategoryName ?? '',
+    shopId: String(s.shopId ?? s.shop_id ?? ''),
+    shopName: String(s.shopName ?? s.shop_name ?? ''),
+    providerId: s.provider_id ? String(s.provider_id) : undefined,
+    providerName: s.provider_name ?? s.providerName ?? 'admin',
+    isActive: typeof s.is_active !== 'undefined' ? Boolean(s.is_active) : (s.isActive ?? true),
+    tags: s.tags ? (typeof s.tags === 'string' ? s.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : s.tags) : [],
+    image: s.imageurl ?? s.image ?? undefined,
+    createdAt: s.createdAt ? new Date(s.createdAt) : new Date(),
+    updatedAt: s.updatedAt ? new Date(s.updatedAt) : new Date(),
+    services: [],
   }
-]
-
-const serviceCategories = [
-  'Hair',
-  'Nails',
-  'Skincare',
-  'Makeup',
-  'Massage',
-  'Eyebrows',
-  'Eyelashes',
-  'Waxing',
-  'Other'
-]
-
-const serviceSubcategories = {
-  'Hair': ['Cut & Style', 'Coloring', 'Highlights', 'Perm', 'Straightening', 'Extensions'],
-  'Nails': ['Manicure', 'Pedicure', 'Gel Polish', 'Nail Art', 'Acrylic', 'French'],
-  'Skincare': ['Facial', 'Peel', 'Microdermabrasion', 'Anti-aging', 'Acne Treatment'],
-  'Makeup': ['Bridal', 'Event', 'Everyday', 'Special Effects', 'Airbrush'],
-  'Massage': ['Relaxation', 'Deep Tissue', 'Hot Stone', 'Aromatherapy', 'Sports'],
-  'Eyebrows': ['Shaping', 'Tinting', 'Microblading', 'Lamination'],
-  'Eyelashes': ['Extensions', 'Tinting', 'Lifting', 'Perming'],
-  'Waxing': ['Face', 'Body', 'Bikini', 'Brazilian', 'Legs', 'Arms'],
-  'Other': ['Consultation', 'Package Deal', 'Custom Service']
 }
 
 export default function ShopServicesPage() {
-  const [shopServices, setShopServices] = useState<ShopService[]>([])
-  const [shopInfo, setShopInfo] = useState<any>(null) // Adjust type as necessary
+  const [services, setServices] = useState<NormalizedService[]>([])
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [filterCategory, setFilterCategory] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterCategory, setFilterCategory] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingService, setEditingService] = useState<NormalizedService | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
-  useEffect(() => {
-    const fetchShopServices = async () => {
-      try {
-        const res = await fetch('http://168.231.101.119:4040/services/shop/2', { method: 'GET' })
-        if (!res.ok) throw new Error(`Failed to fetch services (${res.status})`)
-        const data = await res.json()
-        console.debug('raw services response:', data)
-
-        // If API returns an array of services directly, use it; otherwise try common wrappers
-        const rawArray = Array.isArray(data) ? data : (data.services ?? data.data ?? [])
-
-        const normalized = (Array.isArray(rawArray) ? rawArray : []).map((s: any, i: number) => {
-          // duration might be "30min" -> extract number
-          const durationMatch = String(s.duration ?? '').match(/(\d+)/)
-          const durationNum = durationMatch ? parseInt(durationMatch[1], 10) : Number(s.duration ?? 0)
-
-          return {
-            id: String(s.id ?? s._id ?? `${Date.now()}-${i}`),
-            name: s.name ?? 'Untitled',
-            description: s.description ?? '',
-            price: Number(String(s.price ?? '0').replace(/[^\d.-]/g, '')) || 0,
-            duration: durationNum || 0,
-            category: String(s.Category ?? s.category ?? 'Other'),
-            subcategory: String(s.sous_category ?? s.subcategory ?? ''),
-            shopId: String(s.shopId ?? s.shop_id ?? '2'),
-            shopName: String(s.shopName ?? s.shop_name ?? 'Shop'),
-            providerId: s.provider_id ? String(s.provider_id) : (s.providerId ? String(s.providerId) : ''),
-            providerName: s.provider_name ?? s.providerName ?? '',
-            isActive: typeof s.is_active !== 'undefined' ? Boolean(s.is_active) : (s.isActive ?? true),
-            tags: s.tags ? (typeof s.tags === 'string' ? s.tags.split(',').map((t:string)=>t.trim()).filter(Boolean) : s.tags) : [],
-            image: s.imageurl ?? s.image ?? s.imageUrl ?? undefined,
-            createdAt: s.createdAt ? new Date(s.createdAt) : new Date(),
-            updatedAt: s.updatedAt ? new Date(s.updatedAt) : new Date()
-          }
-        })
-
-        setShopServices(normalized)
-
-        // Optionally set a minimal shopInfo if API doesn't provide shop metadata
-        if (!shopInfo && normalized.length > 0) {
-          setShopInfo(prev => prev ?? ({
-            id: normalized[0].shopId,
-            name: normalized[0].shopName,
-            description: ''
-          }))
-        }
-      } catch (err) {
-        console.error('Error fetching shop services:', err)
+  const loadAll = async () => {
+    setLoading(true); setError(null)
+    try {
+      const [svcRes, catRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/services`),
+        fetch(`${API_BASE_URL}/categories/`),
+      ])
+      if (!svcRes.ok) throw new Error(`Erreur ${svcRes.status} lors du chargement des services`)
+      const raw = await svcRes.json()
+      const arr = Array.isArray(raw) ? raw : (raw.data ?? raw.services ?? [])
+      setServices(arr.map(normalize))
+      if (catRes.ok) {
+        const cats = await catRes.json()
+        setCategories(Array.isArray(cats) ? cats.map((c: any) => ({ id: String(c.id), name: c.name })) : [])
       }
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    fetchShopServices()
-  }, [])
+  useEffect(() => { loadAll() }, [])
 
-  const filteredServices = shopServices.filter(service => {
-    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-    const matchesCategory = filterCategory === 'all' || service.category === filterCategory
-    const matchesStatus = filterStatus === 'all' || 
-                         (filterStatus === 'active' && service.isActive) ||
-                         (filterStatus === 'inactive' && !service.isActive)
-    return matchesSearch && matchesCategory && matchesStatus
+  const filtered = services.filter(s => {
+    const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.tags?.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
+    const matchCat = filterCategory === 'all' || s.category === filterCategory
+    const matchStatus = filterStatus === 'all' || (filterStatus === 'active' && s.isActive) || (filterStatus === 'inactive' && !s.isActive)
+    return matchSearch && matchCat && matchStatus
   })
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'Hair': return 'bg-purple-100 text-purple-800'
-      case 'Nails': return 'bg-pink-100 text-pink-800'
-      case 'Skincare': return 'bg-green-100 text-green-800'
-      case 'Makeup': return 'bg-yellow-100 text-yellow-800'
-      case 'Massage': return 'bg-blue-100 text-blue-800'
-      case 'Eyebrows': return 'bg-orange-100 text-orange-800'
-      case 'Eyelashes': return 'bg-indigo-100 text-indigo-800'
-      case 'Waxing': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800 dark:text-gray-200'
-    }
-  }
+  const totalActive = services.filter(s => s.isActive).length
 
   const handleAddService = async (formData: any) => {
-    // Create new service object
-    const newService: ShopService = {
-      id: Date.now().toString(),
-      name: formData.name,
-      description: formData.description,
-      price: formData.price,
-      duration: formData.duration,
-      category: formData.category,
-      subcategory: formData.subcategory,
-      shopId: '1', // This would come from auth context
-      shopName: 'Downtown Beauty Studio', // This would come from auth context
-      providerId: formData.providerId || undefined,
-      providerName: formData.providerName || undefined,
-      isActive: true,
-      image: formData.image ? URL.createObjectURL(formData.image) : undefined,
-      tags: formData.tags ? formData.tags.split(',').map((tag: string) => tag.trim()) : [],
-      createdAt: new Date(),
-      updatedAt: new Date()
+    const res = await fetch(`${API_BASE_URL}/services`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.message ?? `Erreur ${res.status}`)
     }
-    
-    setShopServices(prev => [newService, ...prev])
-    setShowAddModal(false)
+    await loadAll()
   }
 
-  const handleToggleServiceStatus = (serviceId: string) => {
-    setShopServices(prev => prev.map(service => 
-      service.id === serviceId 
-        ? { ...service, isActive: !service.isActive, updatedAt: new Date() }
-        : service
-    ))
+  const handleToggle = async (s: NormalizedService) => {
+    await fetch(`${API_BASE_URL}/services/${s.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_active: !s.isActive }),
+    }).catch(() => {})
+    setServices(prev => prev.map(x => x.id === s.id ? { ...x, isActive: !x.isActive } : x))
   }
 
-  const handleDeleteService = (serviceId: string) => {
-    if (confirm('Are you sure you want to delete this service?')) {
-      setShopServices(prev => prev.filter(service => service.id !== serviceId))
-    }
+  const handleDelete = async (id: string) => {
+    if (!confirm('Supprimer ce service ?')) return
+    await fetch(`${API_BASE_URL}/services/${id}`, { method: 'DELETE' }).catch(() => {})
+    setServices(prev => prev.filter(x => x.id !== id))
   }
 
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-
-const handleSelect = (id: string) => {
-  setSelectedServices((prev) =>
-    prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-  );
-};
-
-const allSelected = filteredServices.length > 0 && selectedServices.length === filteredServices.length;
-
-const toggleSelectAll = () => {
-  if (allSelected) {
-    setSelectedServices([]);
-  } else {
-    setSelectedServices(filteredServices.map((s) => s.id));
-  }
-};
+  const allSelected = filtered.length > 0 && selectedIds.length === filtered.length
+  const toggleSelect = (id: string) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  const toggleSelectAll = () => setSelectedIds(allSelected ? [] : filtered.map(s => s.id))
 
   return (
     <DashboardLayout>
-      <div className="p-6">
-        {/* Shop Info Section */}
-        {shopInfo && (
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{shopInfo.name}</h1>
-            <p className="text-gray-600 mt-2">{shopInfo.description}</p>
-            <div className="mt-4">
-              <span className="text-sm font-medium text-gray-700">Address: {shopInfo.address}</span>
-              <span className="text-sm font-medium text-gray-700 ml-4">Phone: {shopInfo.phone}</span>
-              <span className="text-sm font-medium text-gray-700 ml-4">Email: {shopInfo.email}</span>
-            </div>
-          </div>
-        )}
+      <div className="p-6 space-y-6">
 
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Services</h2>
-              <p className="text-gray-600 mt-2">Manage your shop's services and offerings</p>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Services</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Services universels créés par l'admin</p>
+          </div>
+          <Button onClick={() => setShowAddModal(true)} className="bg-ikigai-primary hover:bg-ikigai-primary/90 self-start sm:self-auto">
+            <Plus className="h-4 w-4 mr-2" />Ajouter
+          </Button>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { icon: <Layers className="h-5 w-5 text-ikigai-primary" />, bg: 'bg-ikigai-primary/10', val: services.length, label: 'Total' },
+            { icon: <CheckCircle className="h-5 w-5 text-green-600" />, bg: 'bg-green-50', val: totalActive, label: 'Actifs' },
+            { icon: <XCircle className="h-5 w-5 text-red-500" />, bg: 'bg-red-50', val: services.length - totalActive, label: 'Inactifs' },
+          ].map(({ icon, bg, val, label }) => (
+            <div key={label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
+              <div className={`h-10 w-10 rounded-lg ${bg} flex items-center justify-center`}>{icon}</div>
+              <div><p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{val}</p><p className="text-xs text-gray-500">{label}</p></div>
             </div>
-            <Button onClick={() => setShowAddModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Service
-            </Button>
+          ))}
+        </div>
+
+        {/* Filters + View toggle */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input type="text" placeholder="Rechercher..." className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary"
+              value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          </div>
+          <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary"
+            value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
+            <option value="all">Toutes catégories</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <select className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary"
+            value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+            <option value="all">Tous statuts</option>
+            <option value="active">Actif</option>
+            <option value="inactive">Inactif</option>
+          </select>
+          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1 gap-1">
+            {(['list', 'grid'] as const).map(m => (
+              <button key={m} onClick={() => setViewMode(m)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${viewMode === m ? 'bg-ikigai-primary text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+                {m === 'list' ? <List className="h-4 w-4" /> : <Grid className="h-4 w-4" />}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search services..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                {serviceCategories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                More Filters
+        {/* Content */}
+        {loading ? (
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 py-16 flex items-center justify-center text-gray-400 shadow-sm">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-ikigai-primary mr-3" />Chargement...
+          </div>
+        ) : error ? (
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-red-100 py-12 text-center text-red-500 shadow-sm">
+            <p className="font-medium">{error}</p>
+            <Button variant="outline" className="mt-3" onClick={loadAll}>Réessayer</Button>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 py-16 text-center shadow-sm">
+            <Tag className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-600 font-medium">Aucun service trouvé</p>
+            <p className="text-gray-400 text-sm mt-1">{searchTerm || filterCategory !== 'all' || filterStatus !== 'all' ? 'Modifiez vos filtres.' : 'Créez votre premier service.'}</p>
+            {!searchTerm && filterCategory === 'all' && filterStatus === 'all' && (
+              <Button className="mt-4 bg-ikigai-primary hover:bg-ikigai-primary/90" onClick={() => setShowAddModal(true)}>
+                <Plus className="h-4 w-4 mr-2" />Créer un service
               </Button>
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* View Mode Toggle */}
-        <div className="flex justify-end mb-4">
-          <div className="flex space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              className={`${
-                viewMode === 'grid'
-                  ? 'bg-ikigai-primary text-white'
-                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
-              }`}
-            >
-              <Grid className="h-4 w-4 mr-2" />
-              Grid
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className={`${
-                viewMode === 'list'
-                  ? 'bg-ikigai-primary text-white'
-                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
-              }`}
-            >
-              <List className="h-4 w-4 mr-2" />
-              List
-            </Button>
-          </div>
-        </div>
-
-        {/* Services Display */}
-        {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {filteredServices.map((service) => (
-              <div
-                key={service.id}
-                className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden flex flex-col"
-              >
-                {/* Image Section */}
-                <div className="h-32 relative">
-                  <div className="h-full w-full bg-ikigai-primary flex items-center justify-center">
-                    {service.image ? (
-                      <img
-                        src={service.image}
-                        alt={service.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-xl font-medium text-white">
-                        {service.name.split(' ').map((n) => n[0]).join('')}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    className={`absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shadow-md ${
-                      service.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {service.isActive ? 'Active' : 'Inactive'}
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filtered.map(s => (
+              <div key={s.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                <div className="h-28 bg-ikigai-primary flex items-center justify-center relative">
+                  {s.image ? <img src={s.image} alt={s.name} className="h-full w-full object-cover" /> :
+                    <span className="text-2xl font-bold text-white">{s.name.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>}
+                  <span className={`absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${s.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-green-500' : 'bg-red-400'}`} />
+                    {s.isActive ? 'Actif' : 'Inactif'}
                   </span>
                 </div>
-
-                {/* Content Section */}
-                <div className="p-4 flex flex-col justify-between flex-1">
-                  <div>
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {service.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                      </div>
+                <div className="p-3 flex flex-col flex-1">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{s.name}</h3>
+                  <p className="text-xs text-gray-500 line-clamp-2 mt-1">{s.description}</p>
+                  {(s.category || s.subcategory) && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {(s.categoryName || s.category) && <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${catColor(s.categoryName || s.category)}`}>{s.categoryName || s.category}</span>}
+                      {(s.sousCategoryName || s.subcategory) && <span className="px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-500">{s.sousCategoryName || s.subcategory}</span>}
                     </div>
-
-                    <div className="space-y-2 mt-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <DollarSign className="h-4 w-4 mr-2 text-gray-500" />
-                        {service.price} - {service.duration} min
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Tag className="h-4 w-4 mr-2 text-gray-500" />
-                        {service.category} {service.subcategory && `• ${service.subcategory}`}
-                      </div>
-                      {service.providerName && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className="h-4 w-4 mr-2 bg-gray-500 rounded-full flex items-center justify-center text-xs text-white">
-                            P
-                          </span>
-                          {service.providerName}
-                        </div>
-                      )}
-                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 flex-1 items-end">
+                    <DollarSign className="h-3 w-3" />{s.price} FCFA
+                    <Clock className="h-3 w-3 ml-1" />{s.duration} min
                   </div>
-
-                  <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-200">
-                    <div className="text-xs text-gray-500">
-                      Updated {service.updatedAt.toString().slice(0, 10)}
-                    </div>
-
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {/* View details */}}
-                        title="View Service Details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {/* Edit service */}}
-                        title="Edit Service"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleServiceStatus(service.id)}
-                        className={service.isActive ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
-                        title={service.isActive ? 'Deactivate' : 'Activate'}
-                      >
-                        {service.isActive ? 'Deactivate' : 'Activate'}
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteService(service.id)}
-                        title="Delete Service"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50 dark:border-gray-800">
+                    <button onClick={() => setEditingService(s)} className="text-xs text-ikigai-primary hover:underline">Modifier</button>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleToggle(s)} className={`text-xs ${s.isActive ? 'text-orange-500' : 'text-green-600'}`}>{s.isActive ? 'Désact.' : 'Activer'}</button>
+                      <button onClick={() => handleDelete(s.id)} className="text-red-400 hover:text-red-600"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   </div>
                 </div>
@@ -449,146 +245,73 @@ const toggleSelectAll = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={toggleSelectAll}
-                        className="h-4 w-4 text-ikigai-primary border-gray-300 rounded"
-                      />
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                    <th className="px-4 py-3">
+                      <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="h-4 w-4 text-ikigai-primary border-gray-300 rounded" />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Service Details
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Provider
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price & Duration
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tags
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Service</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Catégorie</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Prix / Durée</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tags</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Statut</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredServices.map((service) => (
-                    <tr key={service.id} className="hover:bg-gray-50">
-                      {/* Checkbox column */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedServices.includes(service.id)}
-                          onChange={() => handleSelect(service.id)}
-                          className="h-4 w-4 text-ikigai-primary border-gray-300 rounded"
-                        />
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                  {filtered.map(s => (
+                    <tr key={s.id} className="hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors">
+                      <td className="px-4 py-4">
+                        <input type="checkbox" checked={selectedIds.includes(s.id)} onChange={() => toggleSelect(s.id)} className="h-4 w-4 text-ikigai-primary border-gray-300 rounded" />
                       </td>
-
-                      {/* Service Details */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-12 w-12 rounded-lg bg-ikigai-primary flex items-center justify-center overflow-hidden">
-                            {service.image ? (
-                              <img
-                                src={service.image}
-                                alt={service.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-sm font-medium text-white">
-                                {service.name.split(' ').map((n) => n[0]).join('')}
-                              </span>
-                            )}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-lg bg-ikigai-primary flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0">
+                            {s.image ? <img src={s.image} alt={s.name} className="h-full w-full object-cover" /> : s.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{service.name}</div>
-                            <div className="text-sm text-gray-500 max-w-xs truncate">{service.description}</div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{s.name}</p>
+                            <p className="text-xs text-gray-400 max-w-xs truncate">{s.description}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(service.category)}`}>
-                            {service.category}
-                          </span>
-                          {service.subcategory && (
-                            <div className="text-xs text-gray-500 mt-1">{service.subcategory}</div>
-                          )}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${catColor(s.categoryName || s.category)}`}>{s.categoryName || s.category || '—'}</span>
+                        {(s.sousCategoryName || s.subcategory) && <p className="text-xs text-gray-400 mt-0.5">{s.sousCategoryName || s.subcategory}</p>}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
+                          <DollarSign className="h-3 w-3" />{s.price}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+                          <Clock className="h-3 w-3" />{s.duration} min
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                        {service.providerName || 'Any Provider'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">
-                            <DollarSign className="h-3 w-3 mr-1" />
-                            {service.price}
-                          </div>
-                          <div className="text-sm text-gray-500 flex items-center">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {service.duration} min
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {service.tags?.slice(0, 2).map((tag, index) => (
-                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800 dark:text-gray-200">
-                              <Tag className="h-2 w-2 mr-1" />
-                              {tag}
-                            </span>
-                          ))}
-                          {service.tags && service.tags.length > 2 && (
-                            <span className="text-xs text-gray-500">+{service.tags.length - 2} more</span>
-                          )}
+                          {s.tags?.slice(0, 2).map((t, i) => <span key={i} className="px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{t}</span>)}
+                          {(s.tags?.length ?? 0) > 2 && <span className="text-xs text-gray-400">+{s.tags!.length - 2}</span>}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          service.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {service.isActive ? 'Active' : 'Inactive'}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${s.isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? 'bg-green-500' : 'bg-red-400'}`} />
+                          {s.isActive ? 'Actif' : 'Inactif'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setEditingService(s)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleToggleServiceStatus(service.id)}
-                            className={service.isActive ? "text-orange-600 hover:text-orange-700" : "text-green-600 hover:text-green-700"}
-                          >
-                            {service.isActive ? 'Deactivate' : 'Activate'}
+                          <Button variant="ghost" size="sm" onClick={() => handleToggle(s)}
+                            className={`h-8 px-2 text-xs ${s.isActive ? 'text-orange-500' : 'text-green-600'}`}>
+                            {s.isActive ? 'Désactiver' : 'Activer'}
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteService(service.id)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(s.id)} className="h-8 px-2 text-red-500 hover:text-red-700">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -601,13 +324,16 @@ const toggleSelectAll = () => {
           </div>
         )}
 
-        {/* Add Service Form */}
         <ShopServiceForm
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddService}
-          serviceCategories={serviceCategories}
-          serviceSubcategories={serviceSubcategories}
+        />
+
+        <ShopServiceEditModal
+          service={editingService}
+          onClose={() => setEditingService(null)}
+          onSaved={loadAll}
         />
       </div>
     </DashboardLayout>

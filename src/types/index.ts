@@ -61,6 +61,7 @@ export interface SousCategory {
   id: string;
   name: string;
   category: string;
+  categoryName?: string;
   tags: string;
   isActive: boolean;
   createdAt: Date;

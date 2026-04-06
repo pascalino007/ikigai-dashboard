@@ -1,8 +1,19 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Upload, MapPin, Phone, Mail, Tag, Image as ImageIcon, Calendar, Navigation } from 'lucide-react'
+
+interface GeoVille {
+  id: number
+  countryId: string
+  regionId: string
+  cityId?: string | null
+  districtId?: string | null
+  name: string
+  isActive: boolean
+}
 
 interface OpeningHour {
   day: string
@@ -32,8 +43,11 @@ interface ShopFormData {
   tags: string;
   owner: string;
   registered_by: string;
-  long?: number;
-  lat?: number;
+  region: string;
+  arrondissement: string;
+  longitude?: number;
+  latitude?: number;
+  grade: 'basic' | 'pro' | 'elite';
 }
 
 interface ShopFormProps {
@@ -108,8 +122,11 @@ const [formData, setFormData] = useState<ShopFormData>({
   description_shop: '',
   owner: '',
   registered_by: 'admin_123',
-  long: undefined,
-  lat: undefined,
+  region: '',
+  arrondissement: '',
+  longitude: undefined,
+  latitude: undefined,
+  grade: 'basic',
 });
 
   const [errors, setErrors] = useState<Partial<Record<keyof ShopFormData, string>>>({})
@@ -125,6 +142,8 @@ const [formData, setFormData] = useState<ShopFormData>({
   const [responsables, setResponsables] = useState<Array<{ id: string; name: string }>>([])
   const [listsLoading, setListsLoading] = useState(false)
   const [listsError, setListsError] = useState<string | null>(null)
+  const [geoZones, setGeoZones] = useState<GeoVille[]>([])
+  const [geoLoading, setGeoLoading] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -133,8 +152,8 @@ const [formData, setFormData] = useState<ShopFormData>({
       setListsError(null)
       try {
         const [catRes, provRes] = await Promise.all([
-          fetch('http://168.231.101.119:4040/categories/'),
-          fetch('http://168.231.101.119:4040/proownners')
+          fetch(`${API_BASE_URL}/categories/`),
+          fetch(`${API_BASE_URL}/proownners`)
         ])
         if (!catRes.ok) throw new Error(`Failed to fetch categories (${catRes.status})`)
         if (!provRes.ok) throw new Error(`Failed to fetch responsables (${provRes.status})`)
@@ -157,6 +176,15 @@ const [formData, setFormData] = useState<ShopFormData>({
     return () => { mounted = false }
   }, [])
 
+  useEffect(() => {
+    setGeoLoading(true)
+    fetch(`${API_BASE_URL}/geoville`)
+      .then(r => r.json())
+      .then(data => setGeoZones(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setGeoLoading(false))
+  }, [])
+
   // Upload profile image to backend and set returned imageUrl on success
   const uploadProfileImage = async (file: File) => {
     setProfileUploadError(null)
@@ -167,7 +195,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
     setIsUploadingProfile(true)
     try {
-      const res = await fetch('http://168.231.101.119:4040/upload', { method: 'POST', body: form })
+      const res = await fetch(`${API_BASE_URL}/upload`, { method: 'POST', body: form })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.message || `Upload failed (${res.status})`)
@@ -188,6 +216,30 @@ const [formData, setFormData] = useState<ShopFormData>({
       setIsUploadingProfile(false)
     }
   }
+
+  const uniqueCountries = [...new Set(geoZones.map(z => z.countryId).filter(Boolean))]
+  const filteredRegions = [...new Set(
+    geoZones
+      .filter(z => !formData.pays || z.countryId === formData.pays)
+      .map(z => z.regionId)
+      .filter(Boolean)
+  )]
+  const filteredVilles = [...new Set(
+    geoZones
+      .filter(z => z.cityId && (!formData.region || z.regionId === formData.region))
+      .map(z => z.cityId as string)
+  )]
+  const filteredDistricts = [...new Set(
+    geoZones
+      .filter(z => z.districtId && (!formData.ville || z.cityId === formData.ville))
+      .map(z => z.districtId as string)
+  )]
+  const filteredQuartiers = [...new Set(
+    geoZones
+      .filter(z => !formData.arrondissement || z.districtId === formData.arrondissement)
+      .map(z => z.name)
+      .filter(Boolean)
+  )]
 
   if (!isOpen) return null
 
@@ -232,8 +284,8 @@ const [formData, setFormData] = useState<ShopFormData>({
           const geo = await reverseGeocode(latitude, longitude)
           setFormData(prev => ({
             ...prev,
-            long: longitude,
-            lat: latitude,
+            longitude: longitude,
+            latitude: latitude,
             ...(geo && {
               address: geo.address,
               pays: geo.pays || prev.pays,
@@ -243,7 +295,7 @@ const [formData, setFormData] = useState<ShopFormData>({
           }))
         } catch {
           setLocationError('Could not fetch address from coordinates')
-          setFormData(prev => ({ ...prev, long: longitude, lat: latitude }))
+          setFormData(prev => ({ ...prev, longitude: longitude, latitude: latitude }))
         } finally {
           setIsGettingLocation(false)
         }
@@ -280,7 +332,6 @@ const [formData, setFormData] = useState<ShopFormData>({
   if (!formData.tags.trim()) newErrors.tags = 'Tags are required';
   if ( !formData.profileImageUrl) newErrors.profileImageUrl = 'Profile image is required';
   if (!formData.cfeImageUrl.trim()) newErrors.cfeImageUrl = 'CFE image is required';
-  if (!formData.address.trim()) newErrors.address = 'Address is required';
   if (!formData.pays?.trim()) newErrors.pays = 'Country is required';
   if (!formData.ville.trim()) newErrors.ville = 'City is required';
   if (!formData.quartier.trim()) newErrors.quartier = 'Neighborhood is required';
@@ -306,7 +357,7 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   setIsSubmitting(true);
     try {
-    const res = await fetch('http://168.231.101.119:4040/shops', {
+    const res = await fetch(`${API_BASE_URL}/shops`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formData),
@@ -419,102 +470,13 @@ const [formData, setFormData] = useState<ShopFormData>({
     {errors.tags && <p className="text-red-500 text-sm mt-1">{errors.tags}</p>}
   </div>
 
-  {/* Address / Pays / Ville / Quartier */}
+  {/* Location */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-        <MapPin className="h-4 w-4 mr-1" /> Address *
-      </label>
-      <input
-        type="text"
-        value={formData.address}
-        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
-        placeholder="Enter address"
-      />
-      {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Region *</label>
-      <select
-        value={formData.pays}
-        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
-      >
-        <option value="">Select Region</option>
-        <option value="maritime">Maririme</option>
-        <option value="centrale">Centrale</option>
-      </select>
-      {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pays *</label>
-      <select
-        value={formData.pays}
-        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
-      >
-        <option value="">Select country</option>
-        <option value="Togo">Togo</option>
-        <option value="Benin">Benin</option>
-        <option value="Ghana">Ghana</option>
-      </select>
-      {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ville *</label>
-      <select
-        value={formData.ville}
-        onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.ville ? 'border-red-500' : 'border-gray-300'}`}
-      >
-        <option value="">Select city</option>
-        <option value="Lomé">Lomé</option>
-        <option value="Kara">Kara</option>
-      </select>
-      {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arrondissement*</label>
-      <select
-        value={formData.ville}
-        onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.ville ? 'border-red-500' : 'border-gray-300'}`}
-      >
-        <option value="">Select Arrondissement</option>
-         <option value="1">1er arrondissement</option>
-         <option value="2">2em arrondissement</option>
-         <option value="3">3em arrondissement</option>
-          <option value="4">4em arrondissement</option>
-         <option value="5">5em arrondissement</option>
-
-      </select>
-      {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quartier *</label>
-      <select
-        value={formData.quartier}
-        onChange={(e) => setFormData(prev => ({ ...prev, quartier: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.quartier ? 'border-red-500' : 'border-gray-300'}`}
-      >
-        <option value="">Select quartier</option>
-        <option value="Agoe">Agoe</option>
-        <option value="Avedji">Avedji</option>
-      </select>
-      {errors.quartier && <p className="text-red-500 text-sm mt-1">{errors.quartier}</p>}
-    </div>
-
     <div className="md:col-span-2">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-        <MapPin className="h-4 w-4 mr-1" /> Position (long, lat)
+        <MapPin className="h-4 w-4 mr-1" /> Location
       </label>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button
           type="button"
           variant="outline"
@@ -524,13 +486,84 @@ const [formData, setFormData] = useState<ShopFormData>({
           <Navigation className="h-4 w-4 mr-2" />
           {isGettingLocation ? 'Getting position...' : 'Use my location'}
         </Button>
-        {(formData.lat != null && formData.long != null) && (
+        {(formData.latitude != null && formData.longitude != null) && (
           <span className="text-sm text-gray-600">
-            {formData.lat.toFixed(6)}, {formData.long.toFixed(6)}
+            {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
           </span>
+        )}
+        {formData.address && (
+          <span className="text-sm text-gray-500 truncate max-w-xs">{formData.address}</span>
         )}
       </div>
       {locationError && <p className="text-red-500 text-sm mt-1">{locationError}</p>}
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pays *</label>
+      <select
+        value={formData.pays}
+        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value, region: '', ville: '', arrondissement: '', quartier: '' }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
+        disabled={geoLoading}
+      >
+        <option value="">{geoLoading ? 'Loading...' : 'Select country'}</option>
+        {uniqueCountries.map(c => <option key={c} value={c}>{c}</option>)}
+      </select>
+      {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Région</label>
+      <select
+        value={formData.region}
+        onChange={(e) => setFormData(prev => ({ ...prev, region: e.target.value, ville: '', arrondissement: '', quartier: '' }))}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+        disabled={geoLoading || !formData.pays}
+      >
+        <option value="">Select region</option>
+        {filteredRegions.map(r => <option key={r} value={r}>{r}</option>)}
+      </select>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ville *</label>
+      <select
+        value={formData.ville}
+        onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value, arrondissement: '', quartier: '' }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.ville ? 'border-red-500' : 'border-gray-300'}`}
+        disabled={geoLoading}
+      >
+        <option value="">Select city</option>
+        {filteredVilles.map(v => <option key={v} value={v}>{v}</option>)}
+      </select>
+      {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arrondissement</label>
+      <select
+        value={formData.arrondissement}
+        onChange={(e) => setFormData(prev => ({ ...prev, arrondissement: e.target.value, quartier: '' }))}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+        disabled={geoLoading || !formData.ville}
+      >
+        <option value="">Select arrondissement</option>
+        {filteredDistricts.map(d => <option key={d} value={d}>{d}</option>)}
+      </select>
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quartier *</label>
+      <select
+        value={formData.quartier}
+        onChange={(e) => setFormData(prev => ({ ...prev, quartier: e.target.value }))}
+        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.quartier ? 'border-red-500' : 'border-gray-300'}`}
+        disabled={geoLoading}
+      >
+        <option value="">Select quartier</option>
+        {filteredQuartiers.map(q => <option key={q} value={q}>{q}</option>)}
+      </select>
+      {errors.quartier && <p className="text-red-500 text-sm mt-1">{errors.quartier}</p>}
     </div>
   </div>
 
@@ -676,67 +709,32 @@ const [formData, setFormData] = useState<ShopFormData>({
     </div>
   </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
-        <MapPin className="h-4 w-4 mr-1" /> Address *
-      </label>
-      <input
-        type="text"
-        value={formData.address}
-        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
-        placeholder="Enter address"
-      />
-      {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Grade de la boutique *</label>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {([
+        { value: 'basic', label: 'Basic', stars: 1, desc: '1 étoile — Boutique standard' },
+        { value: 'pro',   label: 'Pro',   stars: 3, desc: '3 étoiles — Boutique recommandée' },
+        { value: 'elite', label: 'Elite', stars: 5, desc: '5 étoiles — Boutique VIP haut de gamme' },
+      ] as const).map(({ value, label, stars, desc }) => (
+        <button
+          key={value}
+          type="button"
+          onClick={() => setFormData(prev => ({ ...prev, grade: value }))}
+          className={`p-4 rounded-lg border-2 text-left transition-all ${
+            formData.grade === value
+              ? 'border-ikigai-primary bg-ikigai-primary/5'
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-bold text-gray-800">{label}</span>
+            <span className="text-yellow-400">{Array(stars).fill('★').join('')}{Array(5 - stars).fill('☆').join('')}</span>
+          </div>
+          <p className="text-xs text-gray-500">{desc}</p>
+        </button>
+      ))}
     </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Region *</label>
-      <select
-        value={formData.pays}
-        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
-      >
-        <option value="">Select Region</option>
-        <option value="maritime">Maririme</option>
-        <option value="centrale">Centrale</option>
-      </select>
-      {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Abonnement *</label>
-      <select
-        value={formData.pays}
-        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
-      >
-        <option value="">Select Abonnement</option>
-        <option value="BASIC">BASIC</option>
-        <option value="recommended">Recommended</option>
-        <option value="vip">VIP </option>
-      </select>
-      {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duree *</label>
-      <select
-        value={formData.ville}
-        onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.ville ? 'border-red-500' : 'border-gray-300'}`}
-      >
-        <option value="">Select Duration en Mois</option>
-        <option value="6"> 6 </option>
-        <option value="12"> 12 </option>
-      </select>
-      {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
-    </div>
-
-   
-
-  
   </div>
 
    <div>

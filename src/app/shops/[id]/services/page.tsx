@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -51,7 +52,7 @@ useEffect(() => {
       setLoading(true);
       setError('');
       console.log('Fetching services for shop ID:', shopId);
-      const response = await fetch(`http://168.231.101.119:4040/services/shop/${shopId}`, {
+      const response = await fetch(`${API_BASE_URL}/services/shop/${shopId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
@@ -147,7 +148,7 @@ useEffect(() => {
   const handleDeleteService = async (serviceId: string) => {
     if (!confirm('Are you sure you want to delete this service?')) return
     try {
-      const res = await fetch(`http://168.231.101.119:4040/services/${serviceId}`, {
+      const res = await fetch(`${API_BASE_URL}/services/${serviceId}`, {
         method: 'DELETE'
       })
       if (!res.ok) throw new Error('Failed to delete service')

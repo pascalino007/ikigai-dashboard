@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Tag } from 'lucide-react'
@@ -39,7 +40,7 @@ export function SousCategoryForm({
     const fetchCategories = async () => {
       setIsLoading(true)
       try {
-        const res = await fetch(`http://168.231.101.119:4040/categories/`, {
+        const res = await fetch(`${API_BASE_URL}/categories/`, {
           method: 'GET',
         })
         if (!res.ok) throw new Error('Failed to load categories')

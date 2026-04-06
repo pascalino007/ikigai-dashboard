@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 20% 98%;
+    --foreground: 220 20% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 20% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --popover-foreground: 220 20% 10%;
+    --primary: 192 100% 11%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 30% 95%;
+    --secondary-foreground: 220 20% 10%;
+    --muted: 210 25% 95%;
+    --muted-foreground: 215 15% 47%;
+    --accent: 210 30% 95%;
+    --accent-foreground: 220 20% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 25% 90%;
+    --input: 214 25% 90%;
+    --ring: 192 100% 11%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -32,28 +32,28 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
+    --background: 220 20% 7%;
+    --foreground: 210 30% 94%;
+    --card: 220 18% 10%;
+    --card-foreground: 210 30% 94%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 210 30% 94%;
+    --primary: 174 60% 50%;
+    --primary-foreground: 220 20% 7%;
+    --secondary: 220 16% 16%;
+    --secondary-foreground: 210 30% 90%;
+    --muted: 220 14% 16%;
+    --muted-foreground: 215 15% 55%;
+    --accent: 220 16% 18%;
+    --accent-foreground: 210 30% 94%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 14% 18%;
+    --input: 220 14% 20%;
+    --ring: 174 60% 50%;
+    --chart-1: 174 60% 50%;
+    --chart-2: 43 90% 55%;
+    --chart-3: 220 70% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
@@ -65,6 +65,105 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* ── Scrollbar styling ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(215 15% 70%); border-radius: 3px; }
+  .dark ::-webkit-scrollbar-thumb { background: hsl(220 14% 25%); }
+}
+
+/* ── Reusable dark-safe component classes ── */
+@layer components {
+  /* Input / Select / Textarea */
+  .ik-input {
+    @apply w-full px-3 py-2 text-sm rounded-lg
+      border border-gray-200 bg-white text-gray-900 placeholder-gray-400
+      focus:ring-2 focus:ring-ikigai-primary/40 focus:border-ikigai-primary outline-none
+      transition-colors
+      dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500;
+  }
+  .ik-input-error {
+    @apply border-red-400 dark:border-red-500;
+  }
+
+  /* Card wrapper */
+  .ik-card {
+    @apply bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm;
+  }
+
+  /* Modal overlay */
+  .ik-overlay {
+    @apply fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm;
+  }
+
+  /* Modal panel */
+  .ik-modal {
+    @apply bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-h-[92vh] overflow-hidden flex flex-col
+      border border-gray-100 dark:border-gray-800;
+  }
+
+  /* Stat card */
+  .ik-stat {
+    @apply bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm;
+  }
+
+  /* Icon container in stat cards */
+  .ik-stat-icon {
+    @apply h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0;
+  }
+
+  /* Badge styles */
+  .ik-badge-green {
+    @apply bg-green-50 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20;
+  }
+  .ik-badge-red {
+    @apply bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20;
+  }
+  .ik-badge-amber {
+    @apply bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20;
+  }
+  .ik-badge-gray {
+    @apply bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600;
+  }
+
+  /* Label */
+  .ik-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+  }
+
+  /* Section heading text */
+  .ik-heading {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+
+  /* Subtle text */
+  .ik-muted {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+
+  /* Table header */
+  .ik-th {
+    @apply px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+  }
+
+  /* Table row hover */
+  .ik-tr-hover {
+    @apply hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors;
+  }
+
+  /* Filter bar */
+  .ik-filter-bar {
+    @apply bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm;
+  }
+
+  /* Action button ghost in dark */
+  .ik-action-btn {
+    @apply p-1.5 rounded-lg text-gray-400 hover:text-ikigai-primary hover:bg-ikigai-primary/10 dark:hover:bg-ikigai-primary/20 transition-colors;
+  }
+  .ik-action-btn-danger {
+    @apply p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors;
   }
 }
 

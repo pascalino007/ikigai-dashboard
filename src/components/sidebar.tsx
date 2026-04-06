@@ -77,13 +77,13 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-[hsl(220,18%,10%)] border-r border-gray-200 dark:border-gray-800/60 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-800">
-            <h1 className="text-2xl font-bold text-ikigai-primary">Ikigai</h1>
+          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-800/60">
+            <h1 className="text-2xl font-bold text-ikigai-primary dark:text-ikigai-teal">I<span className="text-ikigai-gold">k</span>igai</h1>
           </div>
 
           {/* Navigation */}
@@ -96,10 +96,10 @@ export function Sidebar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
                     isActive
-                      ? "bg-ikigai-primary text-white"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      ? "bg-ikigai-primary dark:bg-ikigai-teal/15 text-white dark:text-ikigai-teal shadow-sm dark:shadow-none border-l-2 border-transparent dark:border-ikigai-teal"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-gray-200"
                   )}
                   onClick={() => setIsOpen(false)}
                 >
@@ -111,12 +111,12 @@ export function Sidebar() {
           </nav>
 
           {/* User info */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800/60 space-y-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleTheme}
-              className="w-full justify-start text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="w-full justify-start text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/70"
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? (
@@ -137,9 +137,9 @@ export function Sidebar() {
                 </div>
               </div>
               <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{user?.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
-                <p className="text-xs text-ikigai-primary font-medium capitalize">{user?.role}</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{user?.name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-500">{user?.email}</p>
+                <p className="text-xs text-ikigai-teal dark:text-ikigai-gold font-medium capitalize">{user?.role}</p>
               </div>
             </div>
             <Button
