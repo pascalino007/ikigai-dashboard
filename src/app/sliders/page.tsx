@@ -1,77 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Edit, Trash2, Eye, Image as ImageIcon, Star, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Image as ImageIcon, Star, ArrowUp, ArrowDown } from 'lucide-react'
 import { Slider } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { SliderForm } from '@/components/forms/slider-form'
+import { sliderApi, handleApiError } from '@/services/api'
 
-// Mock data for demonstration
-const mockSliders: Slider[] = [
-  {
-    id: '1',
-    title: 'Welcome to Ikigai Beauty',
-    description: 'Discover the best beauty services in your city with our professional providers',
-    image: '/api/placeholder/800/400',
-    linkUrl: '/services',
-    isActive: true,
-    isCurrent: true,
-    order: 1,
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15')
-  },
-  {
-    id: '2',
-    title: 'Premium Hair Services',
-    description: 'Expert hairstylists and barbers ready to give you the perfect look',
-    image: '/api/placeholder/800/400',
-    linkUrl: '/shops',
-    isActive: true,
-    isCurrent: true,
-    order: 2,
-    createdAt: new Date('2024-01-20'),
-    updatedAt: new Date('2024-01-20')
-  },
-  {
-    id: '3',
-    title: 'Book Your Appointment',
-    description: 'Easy online booking system for all your beauty needs',
-    image: '/api/placeholder/800/400',
-    linkUrl: '/bookings',
-    isActive: true,
-    isCurrent: true,
-    order: 3,
-    createdAt: new Date('2024-01-25'),
-    updatedAt: new Date('2024-01-25')
-  },
-  {
-    id: '4',
-    title: 'Special Offers',
-    description: 'Limited time offers on selected beauty services',
-    image: '/api/placeholder/800/400',
-    linkUrl: '/offers',
-    isActive: true,
-    isCurrent: false,
-    order: 0,
-    createdAt: new Date('2024-02-01'),
-    updatedAt: new Date('2024-02-01')
-  },
-  {
-    id: '5',
-    title: 'New Salon Opening',
-    description: 'Check out our newest salon location with grand opening discounts',
-    image: '/api/placeholder/800/400',
-    isActive: false,
-    isCurrent: false,
-    order: 0,
-    createdAt: new Date('2024-02-05'),
-    updatedAt: new Date('2024-02-05')
-  }
-]
 
 export default function SlidersPage() {
-  const [sliders, setSliders] = useState<Slider[]>(mockSliders)
+  const [sliders, setSliders] = useState<Slider[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -79,7 +19,7 @@ export default function SlidersPage() {
 
   const filteredSliders = sliders.filter(slider => {
     const matchesSearch = slider.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         slider.description.toLowerCase().includes(searchTerm.toLowerCase())
+                         (slider.description?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || 
                          (filterStatus === 'active' && slider.isActive) ||
                          (filterStatus === 'inactive' && !slider.isActive) ||
@@ -91,80 +31,83 @@ export default function SlidersPage() {
     .filter(s => s.isCurrent)
     .sort((a, b) => a.order - b.order)
 
-  const handleAddSlider = async (data: any) => {
-    const newSlider: Slider = {
-      id: Date.now().toString(),
-      title: data.title,
-      description: data.description,
-      image: data.image ? URL.createObjectURL(data.image) : '/api/placeholder/800/400',
-      linkUrl: data.linkUrl || '',
-      isActive: data.isActive !== false,
-      isCurrent: data.isCurrent || false,
-      order: data.isCurrent ? getNextCurrentOrder() : 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
+  useEffect(() => {
+    fetchSliders()
+  }, [])
+
+  const fetchSliders = async () => {
+    setIsLoading(true)
+    try {
+      const data = await sliderApi.getAll()
+      setSliders(data.map((s: any) => ({
+        ...s,
+        id: String(s.id),
+        image: s.imageUrl || '/api/placeholder/800/400',
+        createdAt: new Date(s.createdAt),
+        updatedAt: new Date(s.updatedAt)
+      })))
+    } catch (error) {
+      handleApiError(error)
+    } finally {
+      setIsLoading(false)
     }
-    setSliders(prev => [newSlider, ...prev])
-    setShowAddModal(false)
   }
 
-  const handleUpdateSlider = async (data: any) => {
+  const handleAddSlider = async (formData: FormData) => {
+    try {
+      await sliderApi.create(formData)
+      await fetchSliders()
+      setShowAddModal(false)
+    } catch (error) {
+      handleApiError(error)
+    }
+  }
+
+  const handleUpdateSlider = async (formData: FormData) => {
     if (!editingSlider) return
-    
-    const updatedSlider: Slider = {
-      ...editingSlider,
-      title: data.title,
-      description: data.description,
-      image: data.image ? URL.createObjectURL(data.image) : editingSlider.image,
-      linkUrl: data.linkUrl || '',
-      isActive: data.isActive !== false,
-      isCurrent: data.isCurrent || false,
-      order: data.isCurrent ? (editingSlider.order || getNextCurrentOrder()) : 0,
-      updatedAt: new Date()
-    }
-    
-    setSliders(prev => prev.map(s => 
-      s.id === editingSlider.id ? updatedSlider : s
-    ))
-    setEditingSlider(null)
-  }
-
-  const handleDeleteSlider = (sliderId: string) => {
-    if (window.confirm('Are you sure you want to delete this slider?')) {
-      setSliders(prev => prev.filter(s => s.id !== sliderId))
+    try {
+      await sliderApi.update(editingSlider.id, formData)
+      await fetchSliders()
+      setEditingSlider(null)
+    } catch (error) {
+      handleApiError(error)
     }
   }
 
-  const handleToggleStatus = (sliderId: string) => {
-    setSliders(prev => prev.map(s => 
-      s.id === sliderId 
-        ? { ...s, isActive: !s.isActive, updatedAt: new Date() }
-        : s
-    ))
+  const handleDeleteSlider = async (sliderId: string) => {
+    if (!window.confirm('Are you sure you want to delete this slider?')) return
+    try {
+      await sliderApi.delete(sliderId)
+      await fetchSliders()
+    } catch (error) {
+      handleApiError(error)
+    }
   }
 
-  const handleSetCurrent = (sliderId: string) => {
-    const slider = sliders.find(s => s.id === sliderId)
-    if (!slider) return
+  const handleToggleStatus = async (sliderId: string, currentStatus: boolean) => {
+    try {
+      const dto = new FormData()
+      dto.append('isActive', String(!currentStatus))
+      await sliderApi.update(sliderId, dto)
+      await fetchSliders()
+    } catch (error) {
+      handleApiError(error)
+    }
+  }
 
-    if (slider.isCurrent) {
-      // Remove from current
-      setSliders(prev => prev.map(s => 
-        s.id === sliderId 
-          ? { ...s, isCurrent: false, order: 0, updatedAt: new Date() }
-          : s
-      ))
-    } else {
-      // Add to current (max 3)
-      if (currentSliders.length >= 3) {
-        alert('You can only have 3 current slides at a time. Please remove one first.')
-        return
-      }
-      setSliders(prev => prev.map(s => 
-        s.id === sliderId 
-          ? { ...s, isCurrent: true, order: getNextCurrentOrder(), updatedAt: new Date() }
-          : s
-      ))
+  const handleSetCurrent = async (sliderId: string, isCurrent: boolean) => {
+    if (!isCurrent && currentSliders.length >= 3) {
+      alert('You can only have 3 current slides at a time. Please remove one first.')
+      return
+    }
+    try {
+      const dto = new FormData()
+      dto.append('isCurrent', String(!isCurrent))
+      dto.append('order', isCurrent ? '0' : String(getNextCurrentOrder()))
+      await sliderApi.update(sliderId, dto)
+      await fetchSliders()
+    } catch (error) {
+      handleApiError(error)
     }
   }
 
@@ -173,7 +116,7 @@ export default function SlidersPage() {
     return currentOrders.length > 0 ? Math.max(...currentOrders) + 1 : 1
   }
 
-  const handleReorderCurrent = (sliderId: string, direction: 'up' | 'down') => {
+  const handleReorderCurrent = async (sliderId: string, direction: 'up' | 'down') => {
     const slider = sliders.find(s => s.id === sliderId)
     if (!slider || !slider.isCurrent) return
 
@@ -182,22 +125,32 @@ export default function SlidersPage() {
     
     if (direction === 'up' && currentIndex > 0) {
       const prevSlider = currentSlidersSorted[currentIndex - 1]
-      setSliders(prev => prev.map(s => 
-        s.id === sliderId 
-          ? { ...s, order: prevSlider.order, updatedAt: new Date() }
-          : s.id === prevSlider.id
-          ? { ...s, order: slider.order, updatedAt: new Date() }
-          : s
-      ))
+      try {
+        const dto1 = new FormData()
+        dto1.append('order', String(prevSlider.order))
+        await sliderApi.update(sliderId, dto1)
+        
+        const dto2 = new FormData()
+        dto2.append('order', String(slider.order))
+        await sliderApi.update(prevSlider.id, dto2)
+        await fetchSliders()
+      } catch (error) {
+        handleApiError(error)
+      }
     } else if (direction === 'down' && currentIndex < currentSlidersSorted.length - 1) {
       const nextSlider = currentSlidersSorted[currentIndex + 1]
-      setSliders(prev => prev.map(s => 
-        s.id === sliderId 
-          ? { ...s, order: nextSlider.order, updatedAt: new Date() }
-          : s.id === nextSlider.id
-          ? { ...s, order: slider.order, updatedAt: new Date() }
-          : s
-      ))
+      try {
+        const dto1 = new FormData()
+        dto1.append('order', String(nextSlider.order))
+        await sliderApi.update(sliderId, dto1)
+        
+        const dto2 = new FormData()
+        dto2.append('order', String(slider.order))
+        await sliderApi.update(nextSlider.id, dto2)
+        await fetchSliders()
+      } catch (error) {
+        handleApiError(error)
+      }
     }
   }
 
@@ -280,8 +233,17 @@ export default function SlidersPage() {
           </div>
         </div>
 
-        {/* Sliders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ikigai-primary mx-auto"></div>
+            <p className="mt-4 text-gray-500">Loading sliders...</p>
+          </div>
+        )}
+
+          {/* Sliders Grid */}
+        {!isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSliders.map((slider) => (
             <div key={slider.id} className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
               <div className="relative">
@@ -354,7 +316,7 @@ export default function SlidersPage() {
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => handleSetCurrent(slider.id)}
+                      onClick={() => handleSetCurrent(slider.id, slider.isCurrent)}
                       className={slider.isCurrent ? 'text-yellow-600' : 'text-gray-600'}
                     >
                       <Star className="h-4 w-4" />
@@ -362,7 +324,7 @@ export default function SlidersPage() {
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => handleToggleStatus(slider.id)}
+                      onClick={() => handleToggleStatus(slider.id, slider.isActive)}
                     >
                       {slider.isActive ? 'Deactivate' : 'Activate'}
                     </Button>
@@ -386,10 +348,11 @@ export default function SlidersPage() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Empty State */}
-        {filteredSliders.length === 0 && (
+        {!isLoading && filteredSliders.length === 0 && (
           <div className="text-center py-12">
             <div className="mx-auto h-12 w-12 text-gray-400">
               <ImageIcon className="h-12 w-12" />

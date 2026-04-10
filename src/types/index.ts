@@ -266,6 +266,18 @@ export interface ShopPerformance {
   };
 }
 
+export interface Song {
+  id: string;
+  title: string;
+  artist: string;
+  coverUrl: string | null;
+  fileUrl: string;
+  isActive: boolean;
+  order: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface DashboardStats {
   totalProviders: number;
   totalShops: number;

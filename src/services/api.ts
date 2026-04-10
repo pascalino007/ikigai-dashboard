@@ -274,6 +274,97 @@ export const categoryApi = {
   }
 }
 
+// Song API functions
+export const songApi = {
+  getAll: async () => {
+    return apiRequest<any[]>('/songs/all')
+  },
+
+  getActive: async () => {
+    return apiRequest<any[]>('/songs')
+  },
+
+  getById: async (id: string) => {
+    return apiRequest<any>(`/songs/${id}`)
+  },
+
+  create: async (formData: FormData) => {
+    const token = localStorage.getItem('authToken')
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch(`${API_BASE_URL}/songs`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+    return res.json()
+  },
+
+  update: async (id: string, data: any) => {
+    return apiRequest<any>(`/songs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id: string) => {
+    return apiRequest<void>(`/songs/${id}`, {
+      method: 'DELETE',
+    })
+  },
+}
+
+// Slider API functions
+export const sliderApi = {
+  getAll: async () => {
+    return apiRequest<any[]>('/sliders')
+  },
+
+  getCurrent: async () => {
+    return apiRequest<any[]>('/sliders/current')
+  },
+
+  getById: async (id: string) => {
+    return apiRequest<any>(`/sliders/${id}`)
+  },
+
+  create: async (formData: FormData) => {
+    const token = localStorage.getItem('authToken')
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch(`${API_BASE_URL}/sliders`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+    return res.json()
+  },
+
+  update: async (id: string, formData: FormData) => {
+    const token = localStorage.getItem('authToken')
+    const headers: Record<string, string> = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    const res = await fetch(`${API_BASE_URL}/sliders/${id}`, {
+      method: 'PUT',
+      headers,
+      body: formData,
+    })
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+    return res.json()
+  },
+
+  delete: async (id: string) => {
+    return apiRequest<void>(`/sliders/${id}`, {
+      method: 'DELETE',
+    })
+  },
+}
+
 // Utility function to handle API errors
 export const handleApiError = (error: any) => {
   console.error('API Error:', error)
