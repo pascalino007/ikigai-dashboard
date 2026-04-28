@@ -1,6 +1,6 @@
 // API service functions for backend integration
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4040'
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.ikilist.com/'
 
 // Generic API request function
 async function apiRequest<T>(

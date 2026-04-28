@@ -24,6 +24,7 @@ export function usePermissions() {
     settings: can('MANAGE_SETTINGS'),
     // Enroller specific
     enrolledShops: can('VIEW_ENROLLED_SHOPS'),
+    clientWallets: can('MANAGE_CLIENT_WALLETS'),
   }
 
   const getNavigationItems = () => {
@@ -53,6 +54,8 @@ export function usePermissions() {
       { name: 'Managers', href: '/managers', icon: 'Users', permission: 'MANAGE_MANAGERS' },
       { name: 'Parrainnage', href: '', icon: 'Users', permission: 'MANAGE_REFERRALS' },
       { name: 'Abonnements Prestaires', href: '/abonnements', icon: 'Users', permission: 'MANAGE_SUBSCRIPTIONS' },
+      { name: 'Commandes', href: '/commandes', icon: 'ShoppingBag', permission: 'MANAGE_COMMANDES' },
+      { name: 'Portefeuille Client', href: '/client-wallets', icon: 'Wallet', permission: 'MANAGE_CLIENT_WALLETS' },
       { name: 'Analytics', href: '/analytics', icon: 'BarChart3', permission: 'VIEW_ANALYTICS' },
       { name: 'Settings', href: '/settings', icon: 'Settings', permission: 'MANAGE_SETTINGS' },
       { name: 'Geolocation', href: '/geolocation', icon: 'Settings', permission: 'MANAGE_GEOLOCATION' },

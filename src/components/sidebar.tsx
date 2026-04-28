@@ -22,7 +22,9 @@ import {
   UserCheck,
   TrendingUp,
   Moon,
-  Sun
+  Sun,
+  ShoppingBag,
+  Wallet
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -44,7 +46,9 @@ const iconMap = {
   Settings,
   Plus,
   UserCheck,
-  TrendingUp
+  TrendingUp,
+  ShoppingBag,
+  Wallet
 }
 
 export function Sidebar() {
@@ -88,24 +92,30 @@ export function Sidebar() {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
+            {navigation.map((item, index) => {
               const isActive = pathname === item.href
               const IconComponent = iconMap[item.icon as keyof typeof iconMap]
+              const isFourthItem = (index + 1) % 4 === 0
+              const isLastItem = index === navigation.length - 1
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
-                    isActive
-                      ? "bg-ikigai-primary dark:bg-ikigai-teal/15 text-white dark:text-ikigai-teal shadow-sm dark:shadow-none border-l-2 border-transparent dark:border-ikigai-teal"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-gray-200"
+                <div key={item.name}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                      isActive
+                        ? "bg-ikigai-primary dark:bg-ikigai-teal/15 text-white dark:text-ikigai-teal shadow-sm dark:shadow-none border-l-2 border-transparent dark:border-ikigai-teal"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-gray-200"
+                    )}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <IconComponent className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Link>
+                  {isFourthItem && !isLastItem && (
+                    <div className="my-2 border-b border-gray-200 dark:border-gray-700" />
                   )}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <IconComponent className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Link>
+                </div>
               )
             })}
           </nav>

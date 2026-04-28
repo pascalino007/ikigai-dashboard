@@ -53,9 +53,18 @@ export default function SlidersPage() {
     }
   }
 
-  const handleAddSlider = async (formData: FormData) => {
+  const handleAddSlider = async (formData: { title: string; description: string; image: File | null; linkUrl: string; isActive: boolean; isCurrent: boolean }) => {
     try {
-      await sliderApi.create(formData)
+      const formDataObj = new FormData()
+      formDataObj.append('title', formData.title)
+      formDataObj.append('description', formData.description)
+      formDataObj.append('linkUrl', formData.linkUrl)
+      formDataObj.append('isActive', String(formData.isActive))
+      formDataObj.append('isCurrent', String(formData.isCurrent))
+      if (formData.image) {
+        formDataObj.append('image', formData.image)
+      }
+      await sliderApi.create(formDataObj)
       await fetchSliders()
       setShowAddModal(false)
     } catch (error) {
@@ -63,10 +72,19 @@ export default function SlidersPage() {
     }
   }
 
-  const handleUpdateSlider = async (formData: FormData) => {
+  const handleUpdateSlider = async (formData: { title: string; description: string; image: File | null; linkUrl: string; isActive: boolean; isCurrent: boolean }) => {
     if (!editingSlider) return
     try {
-      await sliderApi.update(editingSlider.id, formData)
+      const formDataObj = new FormData()
+      formDataObj.append('title', formData.title)
+      formDataObj.append('description', formData.description)
+      formDataObj.append('linkUrl', formData.linkUrl)
+      formDataObj.append('isActive', String(formData.isActive))
+      formDataObj.append('isCurrent', String(formData.isCurrent))
+      if (formData.image) {
+        formDataObj.append('image', formData.image)
+      }
+      await sliderApi.update(editingSlider.id, formDataObj)
       await fetchSliders()
       setEditingSlider(null)
     } catch (error) {

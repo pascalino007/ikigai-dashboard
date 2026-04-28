@@ -54,6 +54,8 @@ interface ShopFormProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (data: ShopFormData) => void
+  enrollerId?: number
+  inline?: boolean
 }
 
 const DEFAULT_HOURS: [string, string][] = [
@@ -100,7 +102,7 @@ const SERVICE_TAGS = [
 
 
 export function ShopForm(props: ShopFormProps) {
-  const { isOpen, onClose, onSubmit } = props
+  const { isOpen, onClose, onSubmit, enrollerId, inline } = props
 
 const [formData, setFormData] = useState<ShopFormData>({
   name: '',
@@ -360,7 +362,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     const res = await fetch(`${API_BASE_URL}/shops`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({ ...formData, ...(enrollerId != null ? { registered_by: String(enrollerId) } : {}) }),
     });
 
     if (!res.ok) throw new Error('Failed to submit shop data');
@@ -374,8 +376,8 @@ const [formData, setFormData] = useState<ShopFormData>({
       message: 'Shop created successfully!',
     });
 
-    // Optionally close form
-    onClose();
+    // In modal mode close immediately; in inline mode let the user see the success dialog
+    if (!inline) onClose();
   } catch (error) {
     console.error('❌ Error creating shop:', error);
 
@@ -392,16 +394,16 @@ const [formData, setFormData] = useState<ShopFormData>({
 };
 
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+  const formContent = (
         <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Add New Shop</h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
+          {!inline && (
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Add New Shop</h2>
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -775,7 +777,7 @@ const [formData, setFormData] = useState<ShopFormData>({
       <p className="text-gray-700 dark:text-gray-300 mb-4">{modal.message}</p>
       <button
         className="bg-blue-600 text-white rounded-lg px-4 py-2"
-        onClick={() => setModal(null)}
+        onClick={() => { setModal(null); if (inline && modal?.type === 'success') onClose(); }}
       >
         OK
       </button>
@@ -784,6 +786,14 @@ const [formData, setFormData] = useState<ShopFormData>({
 )}
 
         </div>
+  )
+
+  if (inline) return <div className="bg-white dark:bg-gray-900 rounded-lg w-full">{formContent}</div>
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        {formContent}
       </div>
     </div>
   )

@@ -1,394 +1,279 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, MapPin, Phone, Mail, Tag, Image as ImageIcon, Calendar, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Store, User, Upload, CheckCircle, Loader2 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { useAuth } from '@/lib/auth/auth-context'
-import { shopApi } from '@/services/api'
 import { EnrollerOnly } from '@/components/auth/route-guard'
+import { ShopForm } from '@/components/forms/shop-form'
+import { API_BASE_URL } from '@/services/api'
 
-interface ShopFormData {
-  name: string
-  category: string
-  tags: string[]
-  profileImage: File | null
-  images: File[]
-  address: string
-  country: string
-  city: string
-  area: string
-  phone: string
+// ── Provider form state ────────────────────────────────────────────────────────
+interface ProviderForm {
+  firstname: string
+  lastname: string
   email: string
-  description: string
-  openingHours: Array<{ day: string; open: string; close: string }>
+  phone_number: string
+  CNI_number: string
+  service_type: string
+  year_expe: string
+  profileImageUrl: string
+  profileImageFile: File | null
 }
 
-const DEFAULT_DAYS = [
-  { day: 'Monday', open: '09:00', close: '18:00' },
-  { day: 'Tuesday', open: '09:00', close: '18:00' },
-  { day: 'Wednesday', open: '09:00', close: '18:00' },
-  { day: 'Thursday', open: '09:00', close: '18:00' },
-  { day: 'Friday', open: '09:00', close: '18:00' },
-  { day: 'Saturday', open: '10:00', close: '16:00' },
-  { day: 'Sunday', open: 'Closed', close: 'Closed' },
-]
+const EMPTY_PROVIDER: ProviderForm = {
+  firstname: '', lastname: '', email: '', phone_number: '',
+  CNI_number: '', service_type: '', year_expe: '',
+  profileImageUrl: '', profileImageFile: null,
+}
 
-const SERVICE_TAGS = ['Hair Salon', 'Nail Salon', 'Spa', 'Barbershop', 'Beauty Center', 'Massage', 'Makeup', 'Other']
+type Tab = 'shop' | 'provider'
 
 export default function RegisterShopPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [formData, setFormData] = useState<ShopFormData>({
-    name: '',
-    category: '',
-    tags: [],
-    profileImage: null,
-    images: [],
-    address: '',
-    country: '',
-    city: '',
-    area: '',
-    phone: '',
-    email: '',
-    description: '',
-    openingHours: DEFAULT_DAYS,
-  })
+  const [tab, setTab] = useState<Tab>('shop')
+  const [shopKey, setShopKey] = useState(0) // force ShopForm remount on success
 
-  const [errors, setErrors] = useState<Partial<Record<keyof ShopFormData, string>>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
+  // ── Provider state ──────────────────────────────────────────────────────────
+  const [provider, setProvider] = useState<ProviderForm>(EMPTY_PROVIDER)
+  const [provErrors, setProvErrors] = useState<Partial<Record<keyof ProviderForm, string>>>({})
+  const [provImagePreview, setProvImagePreview] = useState('')
+  const [provSubmitting, setProvSubmitting] = useState(false)
+  const [provSuccess, setProvSuccess] = useState(false)
+  const [provError, setProvError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
 
-  const toggleTag = (tag: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.includes(tag) ? prev.tags.filter(t => t !== tag) : [...prev.tags, tag]
-    }))
-  }
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/categories/`)
+      .then(r => r.json())
+      .then(data => setCategories(Array.isArray(data) ? data.map((c: any) => ({ id: String(c.id), name: c.name })) : []))
+      .catch(() => {})
+  }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const newErrors: Partial<Record<keyof ShopFormData, string>> = {}
-    
-    if (!formData.name.trim()) newErrors.name = 'Shop name is required'
-    if (!formData.category.trim()) newErrors.category = 'Category is required'
-    if (!formData.address.trim()) newErrors.address = 'Address is required'
-    if (!formData.country.trim()) newErrors.country = 'Country is required'
-    if (!formData.city.trim()) newErrors.city = 'City is required'
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required'
-    if (!formData.email.trim()) newErrors.email = 'Email is required'
-    
-    setErrors(newErrors)
-    if (Object.keys(newErrors).length > 0) return
-
-    setIsSubmitting(true)
-    try {
-      // Add enroller ID to the shop data
-      const shopData = {
-        ...formData,
-        enrollerId: user?.id,
-        enrollerName: user?.name
-      }
-
-      // In a real app, this would call the API
-      // await shopApi.create(shopData)
-      
-      // For now, simulate success
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      setIsSuccess(true)
-      
-      // Redirect to enrolled shops after 3 seconds
-      setTimeout(() => {
-        router.push('/enrolled-shops')
-      }, 3000)
-      
-    } catch (error) {
-      console.error('Error registering shop:', error)
-    } finally {
-      setIsSubmitting(false)
+  const handleProviderImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    setProvider(p => ({ ...p, profileImageFile: file }))
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (ev) => setProvImagePreview(ev.target?.result as string)
+      reader.readAsDataURL(file)
+    } else {
+      setProvImagePreview('')
     }
   }
 
-  if (isSuccess) {
-    return (
-      <EnrollerOnly>
-        <DashboardLayout>
-        <div className="p-6">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="mb-8">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Shop Registered Successfully!</h1>
-              <p className="text-gray-600">
-                Your shop "{formData.name}" has been registered and is now under review.
-                You'll be notified once it's approved and goes live.
-              </p>
-            </div>
-            
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <h3 className="font-semibold text-blue-900 mb-2">What happens next?</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Your shop will be reviewed by our team</li>
-                <li>• You'll receive an email confirmation</li>
-                <li>• Once approved, your shop will be visible to customers</li>
-                <li>• You can track your shop's status in "My Enrolled Shops"</li>
-              </ul>
-            </div>
-
-            <div className="space-x-4">
-              <Button onClick={() => router.push('/enrolled-shops')}>
-                View My Shops
-              </Button>
-              <Button variant="outline" onClick={() => {
-                setIsSuccess(false)
-                setFormData({
-                  name: '',
-                  category: '',
-                  tags: [],
-                  profileImage: null,
-                  images: [],
-                  address: '',
-                  country: '',
-                  city: '',
-                  area: '',
-                  phone: '',
-                  email: '',
-                  description: '',
-                  openingHours: DEFAULT_DAYS,
-                })
-              }}>
-                Register Another Shop
-              </Button>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-      </EnrollerOnly>
-    )
+  const uploadImage = async (file: File): Promise<string> => {
+    const fd = new FormData()
+    fd.append('image', file)
+    const res = await fetch(`${API_BASE_URL}/upload`, { method: 'POST', body: fd })
+    const data = await res.json()
+    return data.imageUrl || data.filename || ''
   }
+
+  const validateProvider = () => {
+    const errs: Partial<Record<keyof ProviderForm, string>> = {}
+    if (!provider.firstname.trim()) errs.firstname = 'Required'
+    if (!provider.lastname.trim()) errs.lastname = 'Required'
+    if (!provider.email.trim()) errs.email = 'Required'
+    else if (!/\S+@\S+\.\S+/.test(provider.email)) errs.email = 'Invalid email'
+    if (!provider.phone_number.trim()) errs.phone_number = 'Required'
+    if (!provider.CNI_number.trim()) errs.CNI_number = 'Required'
+    if (!provider.service_type) errs.service_type = 'Required'
+    if (!provider.year_expe || isNaN(Number(provider.year_expe))) errs.year_expe = 'Required (number)'
+    return errs
+  }
+
+  const handleProviderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const errs = validateProvider()
+    setProvErrors(errs)
+    if (Object.keys(errs).length > 0) return
+
+    setProvSubmitting(true)
+    setProvError(null)
+    try {
+      let imageUrl = ''
+      if (provider.profileImageFile instanceof File) {
+        imageUrl = await uploadImage(provider.profileImageFile)
+      }
+      const res = await fetch(`${API_BASE_URL}/proownners`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstname: provider.firstname,
+          lastname: provider.lastname,
+          email: provider.email,
+          phone_number: provider.phone_number,
+          CNI_number: provider.CNI_number,
+          service_type: Number(provider.service_type),
+          year_expe: Number(provider.year_expe),
+          profileImageUrl: imageUrl,
+          registered_by: user?.id ? String(user.id) : 'enroller',
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Failed to create provider')
+      }
+      setProvSuccess(true)
+      setProvider(EMPTY_PROVIDER)
+      setProvImagePreview('')
+    } catch (err: any) {
+      setProvError(err.message)
+    } finally {
+      setProvSubmitting(false)
+    }
+  }
+
+  const pField = (key: keyof ProviderForm, label: string, type = 'text', placeholder = '') => (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+      <input
+        type={type}
+        value={provider[key] as string}
+        onChange={(e) => setProvider(p => ({ ...p, [key]: e.target.value }))}
+        className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${provErrors[key] ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
+        placeholder={placeholder || label}
+      />
+      {provErrors[key] && <p className="text-red-500 text-xs mt-1">{provErrors[key]}</p>}
+    </div>
+  )
 
   return (
     <EnrollerOnly>
       <DashboardLayout>
-      <div className="p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <Button 
-              variant="outline" 
-              onClick={() => router.push('/enrolled-shops')}
-              className="mb-4"
-            >
+        <div className="p-6">
+          {/* Header */}
+          <div className="mb-6 flex items-center gap-4">
+            <Button variant="outline" size="sm" onClick={() => router.push('/enrolled-shops')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to My Shops
+              Back
             </Button>
-            <h1 className="text-3xl font-bold text-gray-900">Register New Shop</h1>
-            <p className="text-gray-600 mt-2">Fill out the form below to register a new shop</p>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Enroller Portal</h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">Register shops and add service providers</p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Basic Information */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Basic Information</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Shop Name *</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Enter shop name"
-                  />
-                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                </div>
+          {/* Tab bar */}
+          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit mb-6">
+            {([
+              { key: 'shop' as Tab, icon: Store, label: 'Register Shop' },
+              { key: 'provider' as Tab, icon: User, label: 'Add Provider' },
+            ]).map(({ key, icon: Icon, label }) => (
+              <button
+                key={key}
+                onClick={() => { setTab(key); setProvSuccess(false); setProvError(null) }}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-all ${
+                  tab === key
+                    ? 'bg-white dark:bg-gray-900 shadow text-gray-900 dark:text-gray-100'
+                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.category ? 'border-red-500' : 'border-gray-300'}`}
-                  >
-                    <option value="">Select category</option>
-                    {SERVICE_TAGS.map(tag => (
-                      <option key={tag} value={tag}>{tag}</option>
-                    ))}
-                  </select>
-                  {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
-                </div>
-              </div>
+          {/* ── Tab 1: Register Shop ─────────────────────────────────────── */}
+          {tab === 'shop' && (
+            <ShopForm
+              key={shopKey}
+              isOpen={true}
+              inline={true}
+              enrollerId={user?.id ? Number(user.id) : undefined}
+              onClose={() => setShopKey(k => k + 1)}
+              onSubmit={() => {}}
+            />
+          )}
 
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                  placeholder="Describe the shop and services offered..."
-                />
-              </div>
-            </div>
-
-            {/* Location Information */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Location Information</h2>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <MapPin className="h-4 w-4 inline mr-1" />
-                    Address *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Enter full address"
-                  />
-                  {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Country *</label>
-                    <input
-                      type="text"
-                      value={formData.country}
-                      onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.country ? 'border-red-500' : 'border-gray-300'}`}
-                      placeholder="Enter country"
-                    />
-                    {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                      className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
-                      placeholder="Enter city"
-                    />
-                    {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Area/District</label>
-                    <input
-                      type="text"
-                      value={formData.area}
-                      onChange={(e) => setFormData(prev => ({ ...prev, area: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                      placeholder="Enter area or district"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Contact Information */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Contact Information</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Phone className="h-4 w-4 inline mr-1" />
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Enter phone number"
-                  />
-                  {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Mail className="h-4 w-4 inline mr-1" />
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
-                    placeholder="Enter email address"
-                  />
-                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* Opening Hours */}
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                <Calendar className="h-5 w-5 inline mr-2" />
-                Opening Hours
-              </h2>
-              
-              <div className="space-y-3">
-                {formData.openingHours.map((oh, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-3 text-sm font-medium text-gray-700">{oh.day}</div>
-                    <div className="col-span-4">
-                      <input
-                        type="text"
-                        value={oh.open}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          openingHours: prev.openingHours.map((o, i) => i === idx ? { ...o, open: e.target.value } : o)
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                        placeholder="Open time"
-                      />
+          {/* ── Tab 2: Add Provider ──────────────────────────────────────── */}
+          {tab === 'provider' && (
+            <div className="bg-white dark:bg-gray-900 rounded-lg w-full">
+              <div className="p-6">
+                {provSuccess && (
+                  <div className="mb-6 flex items-center gap-3 bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-green-800 dark:text-green-300">Provider created successfully!</p>
+                      <p className="text-sm text-green-600 dark:text-green-400">The provider has been registered in the system.</p>
                     </div>
-                    <div className="col-span-4">
-                      <input
-                        type="text"
-                        value={oh.close}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          openingHours: prev.openingHours.map((o, i) => i === idx ? { ...o, close: e.target.value } : o)
-                        }))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                        placeholder="Close time"
-                      />
+                    <button onClick={() => setProvSuccess(false)} className="ml-auto text-green-500 text-xs underline">Dismiss</button>
+                  </div>
+                )}
+
+                <form onSubmit={handleProviderSubmit} className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium flex items-center text-gray-900 dark:text-gray-100">
+                      <User className="h-5 w-5 mr-2" />
+                      Provider Details
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {pField('firstname', 'First Name *', 'text', 'Enter first name')}
+                      {pField('lastname', 'Last Name *', 'text', 'Enter last name')}
+                    </div>
+
+                    {pField('email', 'Email *', 'email', 'Enter email')}
+                    {pField('phone_number', 'Phone Number *', 'tel', 'Enter phone number')}
+                    {pField('CNI_number', 'CNI Number *', 'text', 'Identity card number')}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Service Type *</label>
+                        <select
+                          value={provider.service_type}
+                          onChange={(e) => setProvider(p => ({ ...p, service_type: e.target.value }))}
+                          className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${provErrors.service_type ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
+                        >
+                          <option value="">Select service type</option>
+                          {categories.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                        {provErrors.service_type && <p className="text-red-500 text-xs mt-1">{provErrors.service_type}</p>}
+                      </div>
+                      {pField('year_expe', 'Years of Experience *', 'number', '0')}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Profile Picture</label>
+                      {provImagePreview && (
+                        <img src={provImagePreview} className="w-20 h-20 object-cover rounded-lg border mb-4" alt="preview" />
+                      )}
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800">
+                        <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500">PNG, JPG or JPEG</p>
+                        <input type="file" accept="image/*" className="hidden" onChange={handleProviderImageChange} />
+                      </label>
                     </div>
                   </div>
-                ))}
+
+                  {provError && (
+                    <p className="text-red-600 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 rounded p-3">{provError}</p>
+                  )}
+
+                  <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <Button type="button" variant="outline" onClick={() => { setProvider(EMPTY_PROVIDER); setProvImagePreview(''); setProvErrors({}) }}>
+                      Reset
+                    </Button>
+                    <Button type="submit" disabled={provSubmitting}>
+                      {provSubmitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating...</> : 'Create Provider'}
+                    </Button>
+                  </div>
+                </form>
               </div>
             </div>
-
-            {/* Form Actions */}
-            <div className="flex justify-end space-x-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => router.push('/enrolled-shops')}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="bg-ikigai-primary hover:bg-ikigai-primary/90"
-              >
-                {isSubmitting ? 'Registering Shop...' : 'Register Shop'}
-              </Button>
-            </div>
-          </form>
+          )}
         </div>
-      </div>
-    </DashboardLayout>
+      </DashboardLayout>
     </EnrollerOnly>
   )
 }

@@ -25,6 +25,7 @@ export default function ShopsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedCountry, setSelectedCountry] = useState('')
+  const [selectedRegion, setSelectedRegion] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedArrondissement, setSelectedArrondissement] = useState('')
   const [selectedQuartier, setSelectedQuartier] = useState('')
@@ -35,12 +36,12 @@ export default function ShopsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
-  // --- Derived geo options with cascading ---
+  // --- Derived geo options with cascading: Pays -> Region -> Ville -> Arrondissement -> Quartier ---
   const paysList = useMemo(() =>
     Array.from(new Set(geovilles.map(g => g.countryId).filter(Boolean))).sort(),
     [geovilles])
 
-  const villesList = useMemo(() =>
+  const regionsList = useMemo(() =>
     Array.from(new Set(
       geovilles
         .filter(g => !selectedCountry || g.countryId === selectedCountry)
@@ -49,25 +50,37 @@ export default function ShopsPage() {
     )).sort(),
     [geovilles, selectedCountry])
 
+  const villesList = useMemo(() =>
+    Array.from(new Set(
+      geovilles
+        .filter(g => (!selectedCountry || g.countryId === selectedCountry) &&
+                     (!selectedRegion || g.regionId === selectedRegion))
+        .map(g => g.cityId)
+        .filter(Boolean) as string[]
+    )).sort(),
+    [geovilles, selectedCountry, selectedRegion])
+
   const arrondissementsList = useMemo(() =>
     Array.from(new Set(
       geovilles
         .filter(g => (!selectedCountry || g.countryId === selectedCountry) &&
-                     (!selectedCity || g.regionId === selectedCity))
+                     (!selectedRegion || g.regionId === selectedRegion) &&
+                     (!selectedCity || g.cityId === selectedCity))
         .map(g => g.districtId)
         .filter(Boolean) as string[]
     )).sort(),
-    [geovilles, selectedCountry, selectedCity])
+    [geovilles, selectedCountry, selectedRegion, selectedCity])
 
   const quartiersList = useMemo(() =>
     geovilles
       .filter(g => (!selectedCountry || g.countryId === selectedCountry) &&
-                   (!selectedCity || g.regionId === selectedCity) &&
+                   (!selectedRegion || g.regionId === selectedRegion) &&
+                   (!selectedCity || g.cityId === selectedCity) &&
                    (!selectedArrondissement || g.districtId === selectedArrondissement))
       .map(g => g.name)
       .filter(Boolean)
       .sort(),
-    [geovilles, selectedCountry, selectedCity, selectedArrondissement])
+    [geovilles, selectedCountry, selectedRegion, selectedCity, selectedArrondissement])
 
   const filteredShops = useMemo(() => shops.filter(shop => {
     const matchesSearch = shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -220,9 +233,28 @@ export default function ShopsPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/shops/${shopId}/toggle-active`, { method: 'PATCH' })
       if (!res.ok) throw new Error('Failed to toggle')
-      setShops(prev => prev.map(s => s.id === shopId ? { ...s, isActive: !currentActive } : s))
-    } catch (error) {
-      console.error('Error toggling shop visibility:', error)
+      handleApiSuccess(`Shop ${currentActive ? 'disabled' : 'enabled'}`)
+      loadShops()
+    } catch (err) {
+      handleApiError(err, 'Failed to toggle shop status')
+    }
+  }
+
+  const handleToggleVerification = async (shopId: string, shop: Shop) => {
+    // Check if shop has certification image
+    const certImage = (shop as any).certificationImage || shop.certificationImage
+    if (!certImage) {
+      handleApiError(new Error('Shop cannot be verified without a certification image'), 'Verification failed')
+      return
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/shops/${shopId}/toggle-verification`, { method: 'POST' })
+      if (!res.ok) throw new Error('Failed to toggle verification')
+      const result = await res.json()
+      handleApiSuccess(result.is_verified ? 'Shop verified' : 'Shop unverified')
+      loadShops()
+    } catch (err) {
+      handleApiError(err, 'Failed to toggle verification')
     }
   }
 
@@ -267,7 +299,7 @@ export default function ShopsPage() {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Catégorie</label>
               <select
@@ -296,6 +328,24 @@ export default function ShopsPage() {
               >
                 <option value="">Tous</option>
                 {paysList.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Région</label>
+              <select
+                value={selectedRegion}
+                onChange={(e) => {
+                  setSelectedRegion(e.target.value)
+                  setSelectedCity('')
+                  setSelectedArrondissement('')
+                  setSelectedQuartier('')
+                }}
+                disabled={regionsList.length === 0}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-ikigai-primary focus:border-transparent bg-white dark:bg-gray-800 disabled:opacity-50"
+              >
+                <option value="">Toutes</option>
+                {regionsList.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
 
@@ -351,6 +401,7 @@ export default function ShopsPage() {
                 onClick={() => {
                   setSelectedCategory('')
                   setSelectedCountry('')
+                  setSelectedRegion('')
                   setSelectedCity('')
                   setSelectedArrondissement('')
                   setSelectedQuartier('')
@@ -406,148 +457,290 @@ export default function ShopsPage() {
       </div>
 
       {/* Shops Display */}
-      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4' : 'space-y-4'}>
         {filteredShops.map((shop) => (
-         <div
-  key={shop.id}
-  className={`bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden ${
-    viewMode === 'grid' ? 'flex flex-col md:flex-row' : 'flex flex-row'
-  }`}
->
-  {/* Left: Image Section */}
-  <div className={`${
-    viewMode === 'grid' ? 'md:w-1/2 w-full h-48 md:h-auto' : 'w-24 h-24 flex-shrink-0'
-  } relative`}>
-    <img
-      src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/` + ((shop as any).profileImageUrl || shop.profileImage || '')}
-      alt={shop.name}
-      className="object-cover w-full h-full"
-    />
-    <span
-      className={`absolute ${
-        viewMode === 'grid' ? 'top-3 right-3' : 'top-1 right-1'
-      } inline-flex items-center ${
-        viewMode === 'grid' ? 'px-2.5 py-0.5' : 'px-1.5 py-0.5'
-      } rounded-full text-xs font-medium shadow-md ${
-        shop.isActive
-          ? 'bg-green-100 text-green-800'
-          : 'bg-red-100 text-red-800'
-      }`}
-    >
-      {shop.isActive ? 'Active' : 'Inactive'}
-    </span>
-  </div>
+          <div
+            key={shop.id}
+            className={`bg-white dark:bg-gray-900 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow ${
+              viewMode === 'grid' ? 'flex flex-col' : 'flex flex-row'
+            }`}
+          >
+            {viewMode === 'grid' ? (
+              <>
+                {/* Grid: Image 100% width at top */}
+                <div className="relative w-full h-52 flex-shrink-0">
+                  <img
+                    src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/` + ((shop as any).profileImageUrl || shop.profileImage || '')}
+                    alt={shop.name}
+                    className="object-cover w-full h-full"
+                  />
+                  <span
+                    className={`absolute top-3 right-3 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium shadow-md ${
+                      shop.isActive
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {shop.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                  {(shop as any).grade && (
+                    <span className="absolute top-3 left-3 inline-flex items-center px-2 py-1 bg-white/90 dark:bg-black/70 rounded-full text-xs font-bold shadow-sm">
+                      {(() => {
+                        const g = (shop as any).grade as 'basic' | 'pro' | 'elite'
+                        const stars = { basic: 1, pro: 3, elite: 5 }[g]
+                        return <>{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</>
+                      })()}
+                    </span>
+                  )}
+                </div>
 
-  {/* Right: Content Section */}
-  <div className={`${
-    viewMode === 'grid' ? 'md:w-2/3 w-full p-6' : 'flex-1 p-4'
-  } flex flex-col justify-between`}>
-    <div>
-        <div className="flex items-start justify-between mb-3">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {shop.name}
-          </h3>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {shop.category && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-ikigai-primary/10 text-ikigai-primary text-xs rounded-full font-medium">
-                <Tag className="h-2.5 w-2.5" />{shop.category}
-              </span>
+                {/* Grid: Content at bottom */}
+                <div className="flex flex-col flex-1 p-5">
+                  {/* Title & Category */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 line-clamp-1">
+                        {shop.name}
+                      </h3>
+                      {((shop as any).is_verified || shop.is_verified) && (
+                        <img 
+                          src="https://s.alicdn.com/@img/imgextra/i2/O1CN01YDryn81prCbNwab4Q_!!6000000005413-2-tps-168-42.png_q60.jpg" 
+                          alt="Verified" 
+                          className="h-4 w-auto object-contain"
+                        />
+                      )}
+                      {(shop as any).grade && (() => {
+                        const g = (shop as any).grade as 'basic' | 'pro' | 'elite'
+                        const cfg = { 
+                          basic: { stars: 1, color: 'bg-gray-100 text-gray-700', label: 'Basic' }, 
+                          pro: { stars: 3, color: 'bg-blue-100 text-blue-700', label: 'Pro' }, 
+                          elite: { stars: 5, color: 'bg-yellow-100 text-yellow-700', label: 'Elite' } 
+                        }
+                        const { stars, color, label } = cfg[g]
+                        return (
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-bold ${color}`}>
+                            {Array(stars).fill('★').join('')}{Array(5 - stars).fill('☆').join('')} {label}
+                          </span>
+                        )
+                      })()}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {shop.category && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-ikigai-primary/10 text-ikigai-primary text-xs rounded-full font-medium">
+                          <Tag className="h-3 w-3" />
+                          {shop.category}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(shop.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-1">
+                    <MapPin className="h-3.5 w-3.5 inline mr-1 text-gray-400" />
+                    {shop.address || 'Adresse non disponible'}
+                  </p>
+
+                  {/* Info row */}
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <MapPin className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                      <span className="truncate">{shop.city}, {shop.country}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <Phone className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                      <span className="truncate">{shop.phone}</span>
+                    </div>
+                  </div>
+
+                  {/* Action buttons at bottom */}
+                  <div className="flex items-center gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleManageServices(shop.id)}
+                      className="flex-1 text-ikigai-primary border-ikigai-primary hover:bg-ikigai-primary hover:text-white text-xs"
+                    >
+                      <Scissors className="h-3.5 w-3.5 mr-1.5" />
+                      Services
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleViewShopDetails(shop.id)}
+                      title="View"
+                      className="text-gray-500 hover:text-gray-700 px-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditShop(shop)}
+                      title="Edit"
+                      className="text-gray-500 hover:text-gray-700 px-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleActive(shop.id, shop.isActive ?? false)}
+                      title={shop.isActive ? 'Disable' : 'Enable'}
+                      className={`px-2 ${shop.isActive ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-gray-600'}`}
+                    >
+                      {shop.isActive ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
+                    </Button>
+
+                    {/* Verification Toggle */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleVerification(shop.id, shop)}
+                      disabled={!(shop as any).certificationImage && !shop.certificationImage}
+                      className={`text-xs px-2 ${
+                        (shop as any).is_verified || shop.is_verified
+                          ? 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200'
+                          : ((shop as any).certificationImage || shop.certificationImage)
+                            ? 'text-gray-600 border-gray-300 hover:text-blue-600 hover:border-blue-300'
+                            : 'text-gray-300 cursor-not-allowed border-gray-200'
+                      }`}
+                    >
+                      {(shop as any).is_verified || shop.is_verified ? 'Déverifier' : 'Verifier'}
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 px-2"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this shop?')) {
+                          handleDeleteShop(shop.id)
+                        }
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* List view - keep compact horizontal layout */}
+                <div className="w-24 h-24 flex-shrink-0 relative">
+                  <img
+                    src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/` + ((shop as any).profileImageUrl || shop.profileImage || '')}
+                    alt={shop.name}
+                    className="object-cover w-full h-full"
+                  />
+                  <span
+                    className={`absolute top-1 right-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium shadow-md ${
+                      shop.isActive
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {shop.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                <div className="flex-1 p-4 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                            {shop.name}
+                          </h3>
+                          {((shop as any).is_verified || shop.is_verified) && (
+                            <img 
+                              src="https://s.alicdn.com/@img/imgextra/i2/O1CN01YDryn81prCbNwab4Q_!!6000000005413-2-tps-168-42.png_q60.jpg" 
+                              alt="Verified" 
+                              className="h-3 w-auto object-contain"
+                            />
+                          )}
+                          {(shop as any).grade && (() => {
+                            const g = (shop as any).grade as 'basic' | 'pro' | 'elite'
+                            const cfg = { 
+                              basic: { stars: 1, color: 'bg-gray-100 text-gray-700', label: 'Basic' }, 
+                              pro: { stars: 3, color: 'bg-blue-100 text-blue-700', label: 'Pro' }, 
+                              elite: { stars: 5, color: 'bg-yellow-100 text-yellow-700', label: 'Elite' } 
+                            }
+                            const { stars, color, label } = cfg[g]
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-bold ${color}`}>
+                                {Array(stars).fill('★').join('')}{Array(5 - stars).fill('☆').join('')} {label}
+                              </span>
+                            )
+                          })()}
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {shop.category && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-ikigai-primary/10 text-ikigai-primary text-xs rounded-full font-medium">
+                              <Tag className="h-2.5 w-2.5" />{shop.category}
+                            </span>
+                          )}
+                          {(shop as any).grade && (() => {
+                            const g = (shop as any).grade as 'basic' | 'pro' | 'elite'
+                            const cfg = { basic: { stars: 1, color: 'bg-gray-100 text-gray-700' }, pro: { stars: 3, color: 'bg-blue-100 text-blue-700' }, elite: { stars: 5, color: 'bg-yellow-100 text-yellow-700' } }
+                            const { stars, color } = cfg[g]
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-bold ${color}`}>
+                                {Array(stars).fill('★').join('')}{Array(5 - stars).fill('☆').join('')} {g.charAt(0).toUpperCase() + g.slice(1)}
+                              </span>
+                            )
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <span className="flex items-center"><MapPin className="h-3 w-3 mr-1" />{shop.city}</span>
+                      <span className="flex items-center"><Phone className="h-3 w-3 mr-1" />{shop.phone}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-gray-100">
+                    <span className="text-xs text-gray-400">{new Date(shop.createdAt).toLocaleDateString('fr-FR')}</span>
+                    <div className="flex space-x-1">
+                      <Button variant="ghost" size="sm" onClick={() => handleManageServices(shop.id)} className="h-7 text-xs px-2 text-ikigai-primary">
+                        <Scissors className="h-3 w-3 mr-1" />Services
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleViewShopDetails(shop.id)} className="h-7 w-7 p-0"><Eye className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleEditShop(shop)} className="h-7 w-7 p-0"><Edit className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleToggleActive(shop.id, shop.isActive ?? false)} className={`h-7 w-7 p-0 ${shop.isActive ? 'text-green-600' : 'text-gray-400'}`}>
+                        {shop.isActive ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+                      </Button>
+                      {/* Verification Toggle */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleToggleVerification(shop.id, shop)}
+                        disabled={!(shop as any).certificationImage && !shop.certificationImage}
+                        className={`h-7 text-xs px-2 ${
+                          (shop as any).is_verified || shop.is_verified
+                            ? 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200'
+                            : ((shop as any).certificationImage || shop.certificationImage)
+                              ? 'text-gray-600 border-gray-300 hover:text-blue-600 hover:border-blue-300'
+                              : 'text-gray-300 cursor-not-allowed border-gray-200'
+                        }`}
+                      >
+                        {(shop as any).is_verified || shop.is_verified ? 'Déverifier' : 'Verifier'}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => confirm('Delete?') && handleDeleteShop(shop.id)} className="h-7 w-7 p-0 text-red-500"><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
-            {(shop as any).grade && (() => {
-              const g = (shop as any).grade as 'basic' | 'pro' | 'elite'
-              const cfg = { basic: { stars: 1, color: 'bg-gray-100 text-gray-700' }, pro: { stars: 3, color: 'bg-blue-100 text-blue-700' }, elite: { stars: 5, color: 'bg-yellow-100 text-yellow-700' } }
-              const { stars, color } = cfg[g]
-              return (
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-bold ${color}`}>
-                  {Array(stars).fill('★').join('')}{Array(5 - stars).fill('☆').join('')} {g.charAt(0).toUpperCase() + g.slice(1)}
-                </span>
-              )
-            })()}
           </div>
-          <p className="text-sm text-gray-500 mt-1 line-clamp-2">{shop.description}</p>
-        </div>
-      </div>
-
-      <div className="space-y-2 mt-4">
-        <div className="flex items-center text-sm text-gray-600">
-          <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-          {shop.address}, {shop.area}, {shop.city}, {shop.country}
-        </div>
-        <div className="flex items-center text-sm text-gray-600">
-          <Phone className="h-4 w-4 mr-2 text-gray-500" />
-          {shop.phone}
-        </div>
-        <div className="flex items-center text-sm text-gray-600">
-          <Mail className="h-4 w-4 mr-2 text-gray-500" />
-          {shop.email}
-        </div>
-      </div>
-    </div>
-
-    <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-200">
-      <div className="flex items-center gap-1 text-xs text-gray-400">
-        <Calendar className="h-3 w-3" />
-        {new Date(shop.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-      </div>
-
-      <div className="flex space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handleManageServices(shop.id)}
-          className="text-ikigai-primary border-ikigai-primary hover:bg-ikigai-primary hover:text-white"
-        >
-          <Scissors className="h-4 w-4 mr-1" />
-          Services
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleViewShopDetails(shop.id)}
-          title="View Shop Details"
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleEditShop(shop)}
-          title="Edit Shop"
-        >
-          <Edit className="h-4 w-4" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleToggleActive(shop.id, shop.isActive ?? false)}
-          title={shop.isActive ? 'Désactiver la boutique' : 'Activer la boutique'}
-          className={shop.isActive ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-gray-600'}
-        >
-          {shop.isActive ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-red-600 hover:text-red-700"
-          onClick={() => {
-            if (confirm('Are you sure you want to delete this shop?')) {
-              handleDeleteShop(shop.id)
-            }
-          }}
-          title="Delete Shop"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  </div>
-</div>
-
         ))}
       </div>
 

@@ -17,7 +17,7 @@ interface SliderFormData {
 interface SliderFormProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: SliderFormData) => void
+  onSubmit: (data: { title: string; description: string; image: File | null; linkUrl: string; isActive: boolean; isCurrent: boolean }) => void
   initialData?: Slider | null
 }
 

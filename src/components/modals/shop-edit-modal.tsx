@@ -1,10 +1,12 @@
 'use client'
 
 import { API_BASE_URL } from '@/services/api'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, MapPin, Phone, Mail, Clock, Image as ImageIcon, Tag, Upload, Trash2 } from 'lucide-react'
 import { Shop } from '@/types'
+
+interface GeoEntry { id: string; countryId: string; regionId: string; cityId?: string; districtId?: string; name: string }
 
 interface ShopEditModalProps {
   isOpen: boolean
@@ -31,7 +33,11 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     profileImageUrl: '',
     profileImageFile: null as File | null,
     galleryImages: [] as string[],
-    galleryImageFiles: [] as File[]
+    galleryImageFiles: [] as File[],
+    certificationImageUrl: '' as string,
+    certificationImageFile: null as File | null,
+    cfeImageUrl: '' as string,
+    cfeImageFile: null as File | null
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -39,6 +45,17 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
   const [previewGallery, setPreviewGallery] = useState<string[]>([])
   const [categories, setCategories] = useState<Array<{id:string; name:string}>>([])
   const [editingCategory, setEditingCategory] = useState(false)
+  
+  // Geolocation data
+  const [geovilles, setGeovilles] = useState<GeoEntry[]>([])
+  const [editingCountry, setEditingCountry] = useState(false)
+  const [editingCity, setEditingCity] = useState(false)
+  const [editingArrondissement, setEditingArrondissement] = useState(false)
+  const [editingArea, setEditingArea] = useState(false)
+  const [editingAddress, setEditingAddress] = useState(false)
+  const [editingRegion, setEditingRegion] = useState(false)
+  const [selectedRegion, setSelectedRegion] = useState('')
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
 
   // Initialize form data when shop changes
   useEffect(() => {
@@ -67,7 +84,11 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         profileImageUrl: (shop as any).profileImageUrl || shop.profileImage || '',
         profileImageFile: null,
         galleryImages: Array.isArray(shop.images) ? shop.images : [],
-        galleryImageFiles: []
+        galleryImageFiles: [],
+        certificationImageUrl: (shop as any).certificationImage || '',
+        certificationImageFile: null,
+        cfeImageUrl: (shop as any).cfeImageUrl || '',
+        cfeImageFile: null
       })
       setPreviewGallery(Array.isArray(shop.images) ? shop.images : [])
     }
@@ -77,6 +98,18 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     fetch(`${API_BASE_URL}/categories/`)
       .then(r => r.json())
       .then(data => setCategories(Array.isArray(data) ? data.map((c:any) => ({ id: String(c.id), name: c.name })) : []))
+      .catch(() => {})
+    
+    fetch(`${API_BASE_URL}/geoville`)
+      .then(r => r.json())
+      .then(data => setGeovilles(Array.isArray(data) ? data.map((g: any) => ({ 
+        id: String(g.id), 
+        countryId: g.countryId || '', 
+        regionId: g.regionId || '', 
+        cityId: g.cityId, 
+        districtId: g.districtId, 
+        name: g.name || '' 
+      })) : []))
       .catch(() => {})
   }, [])
 
@@ -115,6 +148,46 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     return data.imageUrl || data.url || ''
   }
 
+  // Get current location and reverse geocode to address
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      setErrors(prev => ({ ...prev, address: 'Geolocation is not supported by your browser' }))
+      return
+    }
+
+    setIsGettingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        try {
+          // Use OpenStreetMap Nominatim for reverse geocoding (free, no API key needed)
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
+          if (!res.ok) throw new Error('Failed to get address')
+          const data = await res.json()
+          
+          if (data && data.display_name) {
+            handleInputChange('address', data.display_name)
+            // Also extract city/country if available
+            if (data.address) {
+              if (data.address.country) handleInputChange('country', data.address.country)
+              if (data.address.city || data.address.town || data.address.village) {
+                handleInputChange('city', data.address.city || data.address.town || data.address.village)
+              }
+            }
+          }
+        } catch (err) {
+          setErrors(prev => ({ ...prev, address: 'Failed to get address from location' }))
+        } finally {
+          setIsGettingLocation(false)
+        }
+      },
+      (err) => {
+        setErrors(prev => ({ ...prev, address: `Location error: ${err.message}` }))
+        setIsGettingLocation(false)
+      }
+    )
+  }
+
   // Upload multiple images to backend
   const uploadMultipleImages = async (files: File[]): Promise<string[]> => {
     const fd = new FormData()
@@ -130,6 +203,22 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     return data.imageUrls || data.urls || data.images || []
   }
 
+  // Upload image to specific folder in backend (for certification, CFE images)
+  const uploadImageToFolder = async (file: File, folder: string): Promise<string> => {
+    const fd = new FormData()
+    fd.append('image', file)
+    fd.append('folder', folder)
+    
+    const res = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      body: fd
+    })
+    
+    if (!res.ok) throw new Error(`Failed to upload image to ${folder}`)
+    const data = await res.json()
+    return data.imageUrl || data.url || ''
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateForm() || !shop) return
@@ -138,6 +227,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     try {
       let finalProfileUrl = formData.profileImageUrl
       let finalGalleryUrls = formData.galleryImages
+      let finalCertUrl = formData.certificationImageUrl
+      let finalCfeUrl = formData.cfeImageUrl
 
       // Upload new profile image if provided
       if (formData.profileImageFile) {
@@ -148,6 +239,16 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       if (formData.galleryImageFiles.length > 0) {
         const newUrls = await uploadMultipleImages(formData.galleryImageFiles)
         finalGalleryUrls = [...formData.galleryImages, ...newUrls]
+      }
+
+      // Upload certification image if provided
+      if (formData.certificationImageFile) {
+        finalCertUrl = await uploadImageToFolder(formData.certificationImageFile, 'certification')
+      }
+
+      // Upload CFE image if provided
+      if (formData.cfeImageFile) {
+        finalCfeUrl = await uploadImageToFolder(formData.cfeImageFile, 'cfe')
       }
 
       const formattedWorkingHours = formData.openingHours.map(h => [h.day, `${h.open} - ${h.close}`])
@@ -170,10 +271,12 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
           description_shop: formData.description.trim(),
           profileImageUrl: finalProfileUrl,
           galleryImages: finalGalleryUrls,
+          certificationImage: finalCertUrl,
+          cfeImageUrl: finalCfeUrl,
           workingHours: formattedWorkingHours,
           tags: formData.tags,
           registered_by: 'admin',
-          is_active: formData.isActive ? 1 : 0
+          is_active: formData.isActive
         }),
       })
 
@@ -214,7 +317,11 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       profileImageUrl: '',
       profileImageFile: null,
       galleryImages: [],
-      galleryImageFiles: []
+      galleryImageFiles: [],
+      certificationImageUrl: '',
+      certificationImageFile: null,
+      cfeImageUrl: '',
+      cfeImageFile: null
     })
     setErrors({})
     setPreviewGallery([])
@@ -477,68 +584,446 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
             )}
           </div>
 
-          {/* Location Information */}
+          {/* Certification & CFE Documents */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Certification Image */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin className="h-4 w-4 inline mr-1" />
-                Address *
+                <svg className="h-4 w-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Certification Document
+                {formData.certificationImageUrl && (
+                  <span className="ml-2 text-green-600 text-xs">(Uploaded)</span>
+                )}
               </label>
-              <input
-                type="text"
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
-                  errors.address ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter address"
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-              />
-              {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+              
+              {formData.certificationImageUrl && !formData.certificationImageFile && (
+                <div className="mb-3">
+                  <div className="relative inline-block">
+                    <img 
+                      src={formData.certificationImageUrl.startsWith('http') ? formData.certificationImageUrl : `https://myikigai.sfo2.digitaloceanspaces.com/certification/${formData.certificationImageUrl}`}
+                      alt="Certification"
+                      className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange('certificationImageUrl', '')}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleInputChange('certificationImageFile', file)
+                  }}
+                  className="hidden"
+                  id="certification-image-input"
+                />
+                <label htmlFor="certification-image-input" className="cursor-pointer flex items-center justify-center">
+                  <div className="text-center">
+                    <Upload className="h-6 w-6 mx-auto text-gray-400 mb-1" />
+                    <p className="text-sm text-gray-600">
+                      {formData.certificationImageFile ? 'Change certification' : 'Upload certification'}
+                    </p>
+                  </div>
+                </label>
+              </div>
+              {formData.certificationImageFile && (
+                <p className="text-sm text-green-600 mt-2">✓ {formData.certificationImageFile.name}</p>
+              )}
             </div>
 
+            {/* CFE Image */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <svg className="h-4 w-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                </svg>
+                CFE Document
+                {formData.cfeImageUrl && (
+                  <span className="ml-2 text-green-600 text-xs">(Uploaded)</span>
+                )}
+              </label>
+              
+              {formData.cfeImageUrl && !formData.cfeImageFile && (
+                <div className="mb-3">
+                  <div className="relative inline-block">
+                    <img 
+                      src={formData.cfeImageUrl.startsWith('http') ? formData.cfeImageUrl : `https://myikigai.sfo2.digitaloceanspaces.com/cfe/${formData.cfeImageUrl}`}
+                      alt="CFE"
+                      className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange('cfeImageUrl', '')}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleInputChange('cfeImageFile', file)
+                  }}
+                  className="hidden"
+                  id="cfe-image-input"
+                />
+                <label htmlFor="cfe-image-input" className="cursor-pointer flex items-center justify-center">
+                  <div className="text-center">
+                    <Upload className="h-6 w-6 mx-auto text-gray-400 mb-1" />
+                    <p className="text-sm text-gray-600">
+                      {formData.cfeImageFile ? 'Change CFE' : 'Upload CFE'}
+                    </p>
+                  </div>
+                </label>
+              </div>
+              {formData.cfeImageFile && (
+                <p className="text-sm text-green-600 mt-2">✓ {formData.cfeImageFile.name}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Location Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Country with Edit button */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Country *
               </label>
-              <input
-                type="text"
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
-                  errors.country ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter country"
-                value={formData.country}
-                onChange={(e) => handleInputChange('country', e.target.value)}
-              />
+              {!editingCountry ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800">
+                    {formData.country || <span className="text-gray-400">No country set</span>}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingCountry(true)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                    value={formData.country}
+                    onChange={(e) => {
+                      handleInputChange('country', e.target.value)
+                      handleInputChange('city', '')
+                      handleInputChange('area', '')
+                      setSelectedRegion('')
+                    }}
+                    autoFocus
+                  >
+                    <option value="">Select country</option>
+                    {Array.from(new Set(geovilles.map(g => g.countryId).filter(Boolean))).sort().map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingCountry(false)}
+                  >
+                    Done
+                  </Button>
+                </div>
+              )}
               {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
             </div>
 
+            {/* Region with Edit button */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Region *
+              </label>
+              {!editingRegion ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800">
+                    {selectedRegion || <span className="text-gray-400">No region set</span>}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingRegion(true)}
+                    disabled={!formData.country}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                    value={selectedRegion}
+                    onChange={(e) => {
+                      setSelectedRegion(e.target.value)
+                      handleInputChange('city', '')
+                      handleInputChange('area', '')
+                    }}
+                    autoFocus
+                  >
+                    <option value="">Select region</option>
+                    {Array.from(new Set(geovilles
+                      .filter(g => g.countryId === formData.country)
+                      .map(g => g.regionId)
+                      .filter(Boolean))).sort().map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingRegion(false)}
+                  >
+                    Done
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* City with Edit button */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 City *
               </label>
-              <input
-                type="text"
-                className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
-                  errors.city ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter city"
-                value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-              />
+              {!editingCity ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800">
+                    {formData.city || <span className="text-gray-400">No city set</span>}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingCity(true)}
+                    disabled={!selectedRegion}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                    value={formData.city}
+                    onChange={(e) => {
+                      handleInputChange('city', e.target.value)
+                      handleInputChange('area', '')
+                    }}
+                    autoFocus
+                  >
+                    <option value="">Select city</option>
+                    {Array.from(new Set(geovilles
+                      .filter(g => g.countryId === formData.country && g.regionId === selectedRegion)
+                      .map(g => g.cityId)
+                      .filter(Boolean))).sort().map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingCity(false)}
+                  >
+                    Done
+                  </Button>
+                </div>
+              )}
               {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
             </div>
 
+            {/* Arrondissement with Edit button */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Area/District
+                Arrondissement
               </label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                placeholder="Enter area or district"
-                value={formData.area}
-                onChange={(e) => handleInputChange('area', e.target.value)}
-              />
+              {!editingArrondissement ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800">
+                    {(shop as any).arrondissement || <span className="text-gray-400">No arrondissement set</span>}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingArrondissement(true)}
+                    disabled={!formData.city}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                    value={(shop as any).arrondissement || ''}
+                    onChange={(e) => {
+                      // Store in a hidden field or handle separately
+                      (shop as any).arrondissement = e.target.value
+                    }}
+                    autoFocus
+                  >
+                    <option value="">Select arrondissement</option>
+                    {Array.from(new Set(geovilles
+                      .filter(g => g.cityId === formData.city)
+                      .map(g => g.districtId)
+                      .filter(Boolean))).sort().map(a => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingArrondissement(false)}
+                  >
+                    Done
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Quartier/Area with Edit button */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quartier (Area)
+              </label>
+              {!editingArea ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800">
+                    {formData.area || <span className="text-gray-400">No area set</span>}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingArea(true)}
+                    disabled={!(shop as any).arrondissement && !formData.city}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <select
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                    value={formData.area}
+                    onChange={(e) => handleInputChange('area', e.target.value)}
+                    autoFocus
+                  >
+                    <option value="">Select quartier</option>
+                    {geovilles
+                      .filter(g => g.districtId === (shop as any).arrondissement || g.cityId === formData.city)
+                      .map(g => g.name)
+                      .filter((v, i, a) => a.indexOf(v) === i)
+                      .sort()
+                      .map(q => (
+                        <option key={q} value={q}>{q}</option>
+                      ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditingArea(false)}
+                  >
+                    Done
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Address with Edit button and Geolocation */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPin className="h-4 w-4 inline mr-1" />
+                Address *
+              </label>
+              {!editingAddress ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800 truncate">
+                    {formData.address || <span className="text-gray-400">No address set</span>}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingAddress(true)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      className={`flex-1 px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${
+                        errors.address ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter address or use current location"
+                      value={formData.address}
+                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      autoFocus
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingAddress(false)}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={getCurrentLocation}
+                    disabled={isGettingLocation}
+                    className="w-full"
+                  >
+                    {isGettingLocation ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Getting location...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Use current location
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              )}
+              {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
             </div>
           </div>
 

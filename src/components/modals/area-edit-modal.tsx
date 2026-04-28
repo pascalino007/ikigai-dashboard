@@ -90,8 +90,8 @@ export function AreaEditModal({ isOpen, onClose, area, onSuccess }: AreaEditModa
         tags: formData.tags || undefined
       }
 
-      const res = await fetch(`${API_BASE_URL}/geoville/${area.id}`, {
-        method: 'PATCH',
+      const res = await fetch(`${API_BASE_URL}/geoville/${area.id}/update`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
