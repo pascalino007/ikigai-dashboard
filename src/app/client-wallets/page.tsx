@@ -196,39 +196,39 @@ export default function ClientWalletsPage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
+            <Card className="bg-black border-black">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">
+                <CardTitle className="text-sm font-medium text-gray-400">
                   Total Wallets
                 </CardTitle>
                 <Wallet className="h-4 w-4 text-gray-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{wallets.length}</div>
+                <div className="text-2xl font-bold text-white">{wallets.length}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-black border-black">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">
+                <CardTitle className="text-sm font-medium text-gray-400">
                   Total Balance
                 </CardTitle>
                 <ArrowUpRight className="h-4 w-4 text-gray-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold text-white">
                   {formatCurrency(wallets.reduce((sum, w) => sum + w.balance, 0))}
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-black border-black">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-500">
+                <CardTitle className="text-sm font-medium text-gray-400">
                   Average Balance
                 </CardTitle>
                 <User className="h-4 w-4 text-gray-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-2xl font-bold text-white">
                   {formatCurrency(
                     wallets.length > 0
                       ? Math.round(wallets.reduce((sum, w) => sum + w.balance, 0) / wallets.length)

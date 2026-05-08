@@ -22,6 +22,7 @@ import {
   Inbox,
   Filter,
   Eye,
+  Tag,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 
@@ -253,98 +254,105 @@ export default function BookingsPage() {
           )}
         </div>
 
-        {/* ── Table ──────────────────────────────────────────── */}
-        <div className="ik-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
-                  <th className="ik-th">ID</th>
-                  <th className="ik-th">Client</th>
-                  <th className="ik-th">Prestataire</th>
-                  <th className="ik-th">Service</th>
-                  <th className="ik-th">Date & Heure</th>
-                  <th className="ik-th">Montant</th>
-                  <th className="ik-th">Statut</th>
-                  <th className="ik-th">Paiement</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-16 text-center">
-                      <Inbox className="h-10 w-10 mx-auto ik-muted mb-3" />
-                      <p className="ik-muted text-sm">Aucune réservation trouvée</p>
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((b) => {
-                    const meta = STATUS_META[b.bookingStatus]
-                    return (
-                      <tr key={b.id} className="ik-tr-hover border-b border-gray-50 dark:border-gray-800/50">
-                        <td className="px-5 py-3.5 text-sm font-mono ik-muted">#{b.id}</td>
-
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-full bg-ikigai-primary/10 dark:bg-ikigai-teal/10 flex items-center justify-center flex-shrink-0">
-                              <Users className="h-4 w-4 text-ikigai-primary dark:text-ikigai-teal" />
-                            </div>
-                            <span className="text-sm font-medium ik-heading">Utilisateur #{b.userId}</span>
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-2">
-                            <Store className="h-4 w-4 ik-muted" />
-                            <span className="text-sm ik-heading">Prestataire #{b.providerId}</span>
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-3.5 text-sm ik-heading">Service #{b.serviceId}</td>
-
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-1.5 text-sm ik-heading">
-                            <Calendar className="h-3.5 w-3.5 ik-muted flex-shrink-0" />
-                            {fmtDate(b.bookingDate)}
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs ik-muted mt-0.5">
-                            <Clock className="h-3 w-3 flex-shrink-0" />
-                            {fmtTime(b.bookingTime)}
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-3.5 text-sm font-semibold ik-heading">
-                          {b.amount > 0 ? `${fmtAmount(b.amount)} FCFA` : '—'}
-                        </td>
-
-                        <td className="px-5 py-3.5">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${meta.badge}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
-                            {meta.label}
-                          </span>
-                        </td>
-
-                        <td className="px-5 py-3.5">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${b.paymentStatus === 1 ? 'ik-badge-green' : 'ik-badge-gray'}`}>
-                            {b.paymentStatus === 1 ? 'Payé' : 'Non payé'}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
+        {/* ── Package Cards ────────────────────────────────────── */}
+        {filtered.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 py-16 text-center shadow-sm">
+            <Inbox className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-600 font-medium">Aucune réservation trouvée</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {search || statusFilter !== 'all' || providerFilter !== 'all' || dateFrom || dateTo
+                ? 'Modifiez vos filtres.'
+                : 'Les réservations apparaîtront ici.'}
+            </p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filtered.map((b) => {
+              const meta = STATUS_META[b.bookingStatus]
+              const headerColor =
+                b.bookingStatus === 'confirmed'
+                  ? 'bg-green-500'
+                  : b.bookingStatus === 'cancelled'
+                    ? 'bg-red-500'
+                    : 'bg-amber-500'
+              return (
+                <div
+                  key={b.id}
+                  className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow"
+                >
+                  {/* Header */}
+                  <div className={`h-24 ${headerColor} flex items-center justify-center relative`}>
+                    <span className="text-2xl font-bold text-white">#{b.id}</span>
+                    <span
+                      className={`absolute top-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-white/90 backdrop-blur`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} />
+                      <span className={b.bookingStatus === 'confirmed' ? 'text-green-700' : b.bookingStatus === 'cancelled' ? 'text-red-700' : 'text-amber-700'}>
+                        {meta.label}
+                      </span>
+                    </span>
+                  </div>
 
-          {/* Table footer */}
-          {filtered.length > 0 && (
-            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs ik-muted">
-              <span>{filtered.length} réservation{filtered.length !== 1 ? 's' : ''}</span>
-              <span>Revenu confirmé : <strong className="ik-heading">{fmtAmount(counts.revenue)} FCFA</strong></span>
-            </div>
-          )}
-        </div>
+                  {/* Content */}
+                  <div className="p-3 flex flex-col flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Users className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Client #{b.userId}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Store className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Prestataire #{b.providerId}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Tag className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Service #{b.serviceId}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {fmtDate(b.bookingDate)}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      {fmtTime(b.bookingTime)}
+                    </div>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {b.amount > 0 ? `${fmtAmount(b.amount)} ${b.currency}` : '—'}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${b.paymentStatus === 1 ? 'ik-badge-green' : 'ik-badge-gray'}`}
+                      >
+                        {b.paymentStatus === 1 ? 'Payé' : 'Non payé'}
+                      </span>
+                    </div>
+
+                    {/* Footer buttons */}
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50 dark:border-gray-800">
+                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1">
+                        <Eye className="h-3.5 w-3.5" />
+                        Détails
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1 text-ikigai-primary">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Confirmer
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Footer summary */}
+        {filtered.length > 0 && (
+          <div className="px-5 py-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between text-xs ik-muted">
+            <span>{filtered.length} réservation{filtered.length !== 1 ? 's' : ''}</span>
+            <span>Revenu confirmé : <strong className="ik-heading">{fmtAmount(counts.revenue)} FCFA</strong></span>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )

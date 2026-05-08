@@ -1,6 +1,6 @@
  // This id the Prod Links 
-  // BASE_URL = https://api.ikilist.com/
+ BASE_URL = http://localhost:4040/
 
 // This is the Local url 
 
- //https://api.ikilist.com/
+ //http://localhost:4040/

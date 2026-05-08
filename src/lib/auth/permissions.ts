@@ -59,6 +59,7 @@ export const PERMISSIONS = {
   VIEW_ENROLLED_SHOPS: ['enroller'],
   MANAGE_COMMANDES: ['admin', 'manager'],
   MANAGE_CLIENT_WALLETS: ['admin'],
+  VIEW_OTP_CODES: ['admin'],
 } as const
 
 export function hasPermission(user: User | null, permission: keyof typeof PERMISSIONS): boolean {
