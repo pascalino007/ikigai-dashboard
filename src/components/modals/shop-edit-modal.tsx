@@ -34,6 +34,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     profileImageFile: null as File | null,
     galleryImages: [] as string[],
     galleryImageFiles: [] as File[],
+    longitude: null as number | null,
+    latitude: null as number | null,
     certificationImageUrl: '' as string,
     certificationImageFile: null as File | null,
     cfeImageUrl: '' as string,
@@ -88,7 +90,9 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         certificationImageUrl: (shop as any).certificationImage || '',
         certificationImageFile: null,
         cfeImageUrl: (shop as any).cfeImageUrl || '',
-        cfeImageFile: null
+        cfeImageFile: null,
+        longitude: (shop as any).longitude ?? null,
+        latitude: (shop as any).latitude ?? null
       })
       setPreviewGallery(Array.isArray(shop.images) ? shop.images : [])
     }
@@ -167,6 +171,9 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
           
           if (data && data.display_name) {
             handleInputChange('address', data.display_name)
+            // Store coordinates
+            handleInputChange('longitude', longitude)
+            handleInputChange('latitude', latitude)
             // Also extract city/country if available
             if (data.address) {
               if (data.address.country) handleInputChange('country', data.address.country)
@@ -274,6 +281,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
           certificationImage: finalCertUrl,
           cfeImageUrl: finalCfeUrl,
           workingHours: formattedWorkingHours,
+          longitude: formData.longitude,
+          latitude: formData.latitude,
           tags: formData.tags,
           registered_by: 'admin',
           is_active: formData.isActive
@@ -318,6 +327,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       profileImageFile: null,
       galleryImages: [],
       galleryImageFiles: [],
+      longitude: null,
+      latitude: null,
       certificationImageUrl: '',
       certificationImageFile: null,
       cfeImageUrl: '',
