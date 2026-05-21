@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Store, Calendar, CreditCard, UserCheck, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Store, Calendar, CreditCard, UserCheck, TrendingUp, Users, Plus, Pencil, Ban, CheckCircle } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { RouteGuard } from '@/components/auth/route-guard'
 import { API_BASE_URL } from '@/services/api'
 
-type TabType = 'overview' | 'bookings' | 'payments'
+type TabType = 'overview' | 'bookings' | 'payments' | 'workers'
 
 interface RealShop {
   id: number
@@ -83,6 +83,7 @@ export default function ShopDetailPage() {
   const [shop, setShop] = useState<RealShop | null>(null)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [transactions, setTransactions] = useState<TxRecord[]>([])
+  const [workers, setWorkers] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -93,20 +94,23 @@ export default function ShopDetailPage() {
       setIsLoading(true)
       setError(null)
       try {
-        const [shopRes, bookingsRes, txRes] = await Promise.all([
+        const [shopRes, bookingsRes, txRes, workersRes] = await Promise.all([
           fetch(`${API_BASE_URL}/shops/${shopId}`),
           fetch(`${API_BASE_URL}/bookings/provider/${shopId}`),
           fetch(`${API_BASE_URL}/transactions/shop/${shopId}`),
+          fetch(`${API_BASE_URL}/workers/shop/${shopId}`),
         ])
         if (!shopRes.ok) throw new Error('Shop not found')
-        const [shopData, bookingsData, txData] = await Promise.all([
+        const [shopData, bookingsData, txData, workersData] = await Promise.all([
           shopRes.json(),
           bookingsRes.ok ? bookingsRes.json() : [],
           txRes.ok ? txRes.json() : [],
+          workersRes.ok ? workersRes.json() : [],
         ])
         setShop(shopData)
         setBookings(Array.isArray(bookingsData) ? bookingsData : [])
         setTransactions(Array.isArray(txData) ? txData : [])
+        setWorkers(Array.isArray(workersData) ? workersData : [])
       } catch (e: any) {
         setError(e.message || 'Erreur lors du chargement')
       } finally {
@@ -120,13 +124,25 @@ export default function ShopDetailPage() {
     { id: 'overview', name: 'Vue générale', icon: Store },
     { id: 'bookings', name: `Réservations (${bookings.length})`, icon: Calendar },
     { id: 'payments', name: `Paiements (${transactions.length})`, icon: CreditCard },
+    { id: 'workers', name: `Équipe (${workers.length})`, icon: Users },
   ]
+
+  const refreshWorkers = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/workers/shop/${shopId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setWorkers(Array.isArray(data) ? data : [])
+      }
+    } catch {}
+  }
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview': return <ShopOverviewTab shop={shop} bookings={bookings} transactions={transactions} />
       case 'bookings': return <ShopBookingsTab bookings={bookings} />
       case 'payments': return <ShopPaymentsTab transactions={transactions} />
+      case 'workers': return <ShopWorkersTab shopId={Number(shopId)} workers={workers} onRefresh={refreshWorkers} />
       default: return <ShopOverviewTab shop={shop} bookings={bookings} transactions={transactions} />
     }
   }
@@ -399,6 +415,311 @@ function ShopPaymentsTab({ transactions }: { transactions: TxRecord[] }) {
                       <td className="px-4 py-3 text-sm text-gray-500">{new Date(tx.createdAt).toLocaleDateString('fr-FR')}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.color}`}>{s.label}</span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Workers tab ──────────────────────────────────────────────────────────────
+interface WorkerFormData {
+  first_name: string
+  last_name: string
+  phone: string
+  email: string
+  speciality: string
+  buffer_minutes: number
+  schedules: { day_of_week: number; start_time: string; end_time: string }[]
+}
+
+const DAY_LABELS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
+
+const defaultSchedules = () => [1, 2, 3, 4, 5].map(d => ({ day_of_week: d, start_time: '09:00', end_time: '18:00' }))
+
+function ShopWorkersTab({ shopId, workers, onRefresh }: { shopId: number; workers: any[]; onRefresh: () => void }) {
+  const [showForm, setShowForm] = useState(false)
+  const [editingWorker, setEditingWorker] = useState<any | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState<WorkerFormData>({
+    first_name: '', last_name: '', phone: '', email: '', speciality: '', buffer_minutes: 5,
+    schedules: defaultSchedules(),
+  })
+
+  const resetForm = () => {
+    setForm({ first_name: '', last_name: '', phone: '', email: '', speciality: '', buffer_minutes: 5, schedules: defaultSchedules() })
+    setEditingWorker(null)
+    setShowForm(false)
+  }
+
+  const openEdit = (worker: any) => {
+    setEditingWorker(worker)
+    setForm({
+      first_name: worker.first_name || '',
+      last_name: worker.last_name || '',
+      phone: worker.phone || '',
+      email: worker.email || '',
+      speciality: worker.speciality || '',
+      buffer_minutes: worker.buffer_minutes || 5,
+      schedules: worker.schedules?.length
+        ? worker.schedules.map((s: any) => ({ day_of_week: s.day_of_week, start_time: s.start_time, end_time: s.end_time }))
+        : defaultSchedules(),
+    })
+    setShowForm(true)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const payload = { ...form, shop_id: shopId }
+      const url = editingWorker
+        ? `${API_BASE_URL}/workers/${editingWorker.id}`
+        : `${API_BASE_URL}/workers`
+      const method = editingWorker ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        resetForm()
+        onRefresh()
+      } else {
+        const err = await res.json().catch(() => ({}))
+        alert(err.message || 'Erreur lors de la sauvegarde')
+      }
+    } catch (e: any) {
+      alert(e.message || 'Erreur réseau')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const toggleActive = async (worker: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/workers/${worker.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !worker.is_active }),
+      })
+      if (res.ok) onRefresh()
+    } catch {}
+  }
+
+  const updateSchedule = (index: number, field: string, value: string | number) => {
+    const updated = [...form.schedules]
+    updated[index] = { ...updated[index], [field]: value }
+    setForm({ ...form, schedules: updated })
+  }
+
+  const addScheduleRow = () => {
+    setForm({ ...form, schedules: [...form.schedules, { day_of_week: 0, start_time: '09:00', end_time: '18:00' }] })
+  }
+
+  const removeScheduleRow = (index: number) => {
+    setForm({ ...form, schedules: form.schedules.filter((_, i) => i !== index) })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Équipe ({workers.length})</h3>
+        <Button size="sm" onClick={() => { resetForm(); setShowForm(true) }}>
+          <Plus className="h-4 w-4 mr-1" /> Ajouter un worker
+        </Button>
+      </div>
+
+      {/* Add/Edit form modal-like */}
+      {showForm && (
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+          <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            {editingWorker ? `Modifier : ${editingWorker.first_name} ${editingWorker.last_name}` : 'Nouveau Worker'}
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prénom *</label>
+              <input
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                value={form.first_name}
+                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                placeholder="Prénom"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom *</label>
+              <input
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                value={form.last_name}
+                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                placeholder="Nom"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Téléphone</label>
+              <input
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+229..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+              <input
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="email@..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Spécialité</label>
+              <input
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                value={form.speciality}
+                onChange={(e) => setForm({ ...form, speciality: e.target.value })}
+                placeholder="Ex: Coiffure, Massage..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tampon (minutes entre RDV)</label>
+              <input
+                type="number"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                value={form.buffer_minutes}
+                onChange={(e) => setForm({ ...form, buffer_minutes: parseInt(e.target.value) || 5 })}
+                min={0}
+              />
+            </div>
+          </div>
+
+          {/* Schedule section */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Horaires de travail</label>
+              <button
+                type="button"
+                onClick={addScheduleRow}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                + Ajouter un jour
+              </button>
+            </div>
+            <div className="space-y-2">
+              {form.schedules.map((sched, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <select
+                    className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 w-32"
+                    value={sched.day_of_week}
+                    onChange={(e) => updateSchedule(idx, 'day_of_week', parseInt(e.target.value))}
+                  >
+                    {DAY_LABELS.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                  </select>
+                  <input
+                    type="time"
+                    className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    value={sched.start_time}
+                    onChange={(e) => updateSchedule(idx, 'start_time', e.target.value)}
+                  />
+                  <span className="text-gray-500 text-sm">→</span>
+                  <input
+                    type="time"
+                    className="border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    value={sched.end_time}
+                    onChange={(e) => updateSchedule(idx, 'end_time', e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeScheduleRow(idx)}
+                    className="text-red-500 hover:text-red-700 text-sm ml-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button onClick={handleSave} disabled={saving || !form.first_name || !form.last_name}>
+              {saving ? 'Sauvegarde...' : editingWorker ? 'Mettre à jour' : 'Créer le worker'}
+            </Button>
+            <Button variant="outline" onClick={resetForm}>Annuler</Button>
+          </div>
+        </div>
+      )}
+
+      {/* Workers list */}
+      {workers.length === 0 && !showForm ? (
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-12 text-center">
+          <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">Aucun worker pour ce shop</p>
+          <Button size="sm" className="mt-4" onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Ajouter le premier worker
+          </Button>
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  {['#', 'Nom', 'Spécialité', 'Téléphone', 'Horaires', 'Statut', 'Actions'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {workers.map((w) => {
+                  const scheduleSummary = w.schedules?.length
+                    ? w.schedules.map((s: any) => `${DAY_LABELS[s.day_of_week]?.slice(0, 3)} ${s.start_time}-${s.end_time}`).join(', ')
+                    : '—'
+                  return (
+                    <tr key={w.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${!w.is_active ? 'opacity-50' : ''}`}>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">#{w.id}</td>
+                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">
+                        <div className="flex items-center gap-2">
+                          {w.avatar_url ? (
+                            <img src={w.avatar_url} className="h-8 w-8 rounded-full object-cover" alt="" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">
+                              {(w.first_name?.[0] || '')}{(w.last_name?.[0] || '')}
+                            </div>
+                          )}
+                          <span className="font-medium">{w.first_name} {w.last_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{w.speciality || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{w.phone || '—'}</td>
+                      <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={scheduleSummary}>{scheduleSummary}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${w.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {w.is_active ? 'Actif' : 'Suspendu'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEdit(w)}
+                            className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400"
+                            title="Modifier"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => toggleActive(w)}
+                            className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 ${w.is_active ? 'text-red-500' : 'text-green-600'}`}
+                            title={w.is_active ? 'Suspendre' : 'Réactiver'}
+                          >
+                            {w.is_active ? <Ban className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )

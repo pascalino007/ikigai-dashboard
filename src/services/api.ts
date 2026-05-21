@@ -634,6 +634,20 @@ export const songApi = {
 
 
 
+// OTP API functions
+
+export const otpApi = {
+
+  getAll: async () => {
+
+    return apiRequest<{ active: any[]; history: any[] }>('/users/admin/otps')
+
+  },
+
+}
+
+
+
 // Slider API functions
 
 export const sliderApi = {
