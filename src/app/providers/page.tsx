@@ -27,6 +27,7 @@ export default function ProvidersPage() {
   const [filterType, setFilterType] = useState<string>('all')
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingProvider, setEditingProvider] = useState<ServiceProvider | null>(null)
+  const [newCredentials, setNewCredentials] = useState<{ email: string; password: string } | null>(null)
 
   // fetch providers from backend
   useEffect(() => {
@@ -111,35 +112,39 @@ export default function ProvidersPage() {
     }
   }
 
-  const handleAddProvider = async (formData: any) => {
-    // Simulate API call
-    console.log('Adding new provider:', formData)
-    
-    // Create new provider object
-    const newProvider: ServiceProvider = {
-      id: Date.now().toString(),
-      name: `${formData.firstName} ${formData.lastName}`,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phoneNumber,
-      idCardNumber: formData.idCardNumber,
-      profilePicture: formData.profilePicture ? URL.createObjectURL(formData.profilePicture) : undefined,
-      idCardPicture: formData.idCardPicture ? URL.createObjectURL(formData.idCardPicture) : undefined,
-      type: formData.type,
-      experience: formData.experience,
-      description: formData.description,
-      rating: 0,
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
+  const handleAddProvider = async (formData: any, credentials?: { email: string; password: string }) => {
+    // ProviderForm already called the API; we just refresh the list and show credentials
+    if (credentials) {
+      setNewCredentials(credentials)
     }
-    
-    // Add to providers list
-    setProviders(prev => [newProvider, ...prev])
-    
-    // Show success message
-    console.log('Provider created successfully!')
+    // Refresh provider list
+    try {
+      const res = await fetch(`${API_BASE_URL}/proownners`)
+      if (!res.ok) throw new Error('Failed to refresh providers')
+      const data = await res.json()
+      const arr = Array.isArray(data) ? data.map((d: any, i: number) => ({
+        id: d.id || d._id || String(d._key || `prov-${Date.now()}-${i}`),
+        name: `${d.firstname || ''} ${d.lastname || ''}`.trim() || (d.name || 'Unknown'),
+        firstName: d.firstname || '',
+        lastName: d.lastname || '',
+        email: d.email || '',
+        phone: d.phone_number || d.phone || '',
+        idCardNumber: d.CNI_number || '',
+        profilePicture: d.profileImageUrl || '',
+        idCardPicture: Array.isArray(d.idcards) && d.idcards.length ? d.idcards[0] : undefined,
+        type: (() => { switch(Number(d.service_type)){ case 1: return 'barber'; case 2: return 'hairdresser'; case 3: return 'makeup_artist'; case 4: return 'nail_technician'; case 5: return 'esthetician'; default: return 'barber' } })(),
+        experience: d.year_expe || 0,
+        description: d.description || '',
+        rating: d.rating || 0,
+        isActive: typeof d.is_active !== 'undefined' ? Boolean(d.is_active) : true,
+        createdAt: d.createdAt ? new Date(d.createdAt) : new Date(),
+        updatedAt: d.updatedAt ? new Date(d.updatedAt) : new Date(),
+        shopId: d.shopId || d.shop_id || ''
+      })) : []
+      setProviders(arr)
+    } catch (err) {
+      console.error('Failed to refresh providers:', err)
+    }
   }
 
   const handleUpdateProvider = async (providerId: string, data: any) => {
@@ -172,6 +177,24 @@ export default function ProvidersPage() {
     <AdminOnly>
       <DashboardLayout>
       <div className="p-6">
+      {newCredentials && (
+        <div className="mb-6 flex flex-col gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div>
+              <p className="font-medium text-green-800 dark:text-green-300">Provider user account created!</p>
+              <p className="text-sm text-green-600 dark:text-green-400">Share these credentials with the provider so they can log in to the provider app.</p>
+            </div>
+            <button onClick={() => setNewCredentials(null)} className="ml-auto text-green-500 text-xs underline">Dismiss</button>
+          </div>
+          <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded border border-green-200">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Login credentials:</p>
+            <div className="mt-1 text-sm font-mono text-gray-900 dark:text-gray-100">
+              <p><span className="font-semibold">Email:</span> {newCredentials.email}</p>
+              <p><span className="font-semibold">Password:</span> {newCredentials.password}</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mb-8">
         <div className="flex justify-between items-center">
           <div>

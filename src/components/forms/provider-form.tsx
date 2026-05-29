@@ -21,7 +21,7 @@ interface ProviderFormData {
 interface ProviderFormProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: ProviderFormData) => void
+  onSubmit: (data: ProviderFormData, credentials?: { email: string; password: string }) => void
 }
 
 export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
@@ -167,8 +167,12 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
         throw new Error(err || `Create provider failed (${res.status})`)
       }
 
-      // success: call parent onSubmit with original form data (or response if needed)
-      onSubmit(formData)
+      // success: parse new response and pass credentials to parent
+      const responseData = await res.json()
+      onSubmit(formData, {
+        email: responseData.proOwner?.email || formData.email,
+        password: responseData.rawPassword || '',
+      })
       // reset
       setFormData({
         firstName: '',

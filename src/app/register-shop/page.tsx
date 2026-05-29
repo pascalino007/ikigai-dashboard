@@ -44,6 +44,7 @@ export default function RegisterShopPage() {
   const [provSubmitting, setProvSubmitting] = useState(false)
   const [provSuccess, setProvSuccess] = useState(false)
   const [provError, setProvError] = useState<string | null>(null)
+  const [provCredentials, setProvCredentials] = useState<{ email: string; password: string } | null>(null)
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
 
   useEffect(() => {
@@ -118,7 +119,12 @@ export default function RegisterShopPage() {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.message || 'Failed to create provider')
       }
+      const data = await res.json()
       setProvSuccess(true)
+      setProvCredentials({
+        email: data.proOwner?.email || provider.email,
+        password: data.rawPassword || '',
+      })
       setProvider(EMPTY_PROVIDER)
       setProvImagePreview('')
     } catch (err: any) {
@@ -196,13 +202,24 @@ export default function RegisterShopPage() {
             <div className="bg-white dark:bg-gray-900 rounded-lg w-full">
               <div className="p-6">
                 {provSuccess && (
-                  <div className="mb-6 flex items-center gap-3 bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-green-800 dark:text-green-300">Provider created successfully!</p>
-                      <p className="text-sm text-green-600 dark:text-green-400">The provider has been registered in the system.</p>
+                  <div className="mb-6 flex flex-col gap-2 bg-green-50 dark:bg-green-900/20 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-green-800 dark:text-green-300">Provider created successfully!</p>
+                        <p className="text-sm text-green-600 dark:text-green-400">A provider user account has been created with the following credentials:</p>
+                      </div>
+                      <button onClick={() => { setProvSuccess(false); setProvCredentials(null) }} className="ml-auto text-green-500 text-xs underline">Dismiss</button>
                     </div>
-                    <button onClick={() => setProvSuccess(false)} className="ml-auto text-green-500 text-xs underline">Dismiss</button>
+                    {provCredentials && (
+                      <div className="mt-2 p-3 bg-white dark:bg-gray-800 rounded border border-green-200">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Credentials to share with the provider:</p>
+                        <div className="mt-1 text-sm font-mono text-gray-900 dark:text-gray-100">
+                          <p><span className="font-semibold">Email:</span> {provCredentials.email}</p>
+                          <p><span className="font-semibold">Password:</span> {provCredentials.password}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

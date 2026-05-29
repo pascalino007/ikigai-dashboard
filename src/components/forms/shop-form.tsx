@@ -166,7 +166,7 @@ const [formData, setFormData] = useState<ShopFormData>({
         if (!mounted) return
         // normalize responses to { id, name }
         setCategories(Array.isArray(cats) ? cats.map((c: any) => ({ id: String(c.id ?? c._id ?? c._key ?? c.name), name: c.name ?? c.Category ?? String(c) })) : [])
-        setResponsables(Array.isArray(provs) ? provs.map((p: any) => ({ id: String(p.id ?? p._id ?? p._key), name: `${p.firstname || ''} ${p.lastname || ''}`.trim() || p.email || p.name || 'Unknown' })) : [])
+        setResponsables(Array.isArray(provs) ? provs.map((p: any) => ({ id: p.email || String(p.id ?? p._id ?? p._key), name: `${p.firstname || ''} ${p.lastname || ''}`.trim() || p.email || p.name || 'Unknown' })) : [])
       } catch (err) {
         console.error('Error loading lists for shop form:', err)
         if (mounted) setListsError(err instanceof Error ? err.message : 'Unknown error')

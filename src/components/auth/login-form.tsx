@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/lib/theme-context'
+import { ForgotPasswordModal } from './forgot-password-modal'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [showForgotModal, setShowForgotModal] = useState(false)
   const { login, isLoading, user, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const router = useRouter()
@@ -128,6 +130,16 @@ export function LoginForm() {
             </div>
           </div>
 
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowForgotModal(true)}
+              className="text-sm text-ikigai-primary hover:text-ikigai-secondary font-medium"
+            >
+              Forgot password?
+            </button>
+          </div>
+
           {error && (
             <div className="rounded-md bg-red-50 dark:bg-red-950/50 p-4 border border-red-200 dark:border-red-900">
               <div className="flex">
@@ -217,6 +229,11 @@ export function LoginForm() {
           </div>
         </form>
       </div>
+
+      <ForgotPasswordModal
+        isOpen={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+      />
     </div>
   )
 }
