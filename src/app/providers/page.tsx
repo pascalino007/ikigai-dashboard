@@ -3,24 +3,18 @@
 import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Trash2, Eye, Key } from 'lucide-react'
 import { ServiceProvider } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ProviderForm } from '@/components/forms/provider-form'
 import { ProviderEditModal } from '@/components/modals/provider-edit-modal'
 import { AdminOnly } from '@/components/auth/route-guard'
 
-// Mock data for demonstration
-const shopIdToName: Record<string, string> = {
-  '1': 'Downtown Beauty Studio',
-  '2': 'Elite Hair & Spa',
-  '3': 'Modern Cuts Barbershop',
-}
-
 const mockProviders: ServiceProvider[] = []
 
 export default function ProvidersPage() {
   const [providers, setProviders] = useState<ServiceProvider[]>(mockProviders)
+  const [shops, setShops] = useState<any[]>([])
   const [loadingProviders, setLoadingProviders] = useState<boolean>(false)
   const [providersError, setProvidersError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,16 +23,23 @@ export default function ProvidersPage() {
   const [editingProvider, setEditingProvider] = useState<ServiceProvider | null>(null)
   const [newCredentials, setNewCredentials] = useState<{ email: string; password: string } | null>(null)
 
-  // fetch providers from backend
+  // fetch providers and shops from backend
   useEffect(() => {
     let mounted = true
     const load = async () => {
       setLoadingProviders(true)
       setProvidersError(null)
       try {
-        const res = await fetch(`${API_BASE_URL}/proownners`)
-        if (!res.ok) throw new Error(`Failed to fetch providers (${res.status})`)
-        const data = await res.json()
+        const [proRes, shopsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/proownners`),
+          fetch(`${API_BASE_URL}/shops`),
+        ])
+        if (!proRes.ok) throw new Error(`Failed to fetch providers (${proRes.status})`)
+        if (shopsRes.ok) {
+          const shopsData = await shopsRes.json()
+          if (mounted) setShops(Array.isArray(shopsData) ? shopsData : [])
+        }
+        const data = await proRes.json()
 
         const mapType = (n: number | string) => {
           switch (Number(n)) {
@@ -71,7 +72,9 @@ export default function ProvidersPage() {
           shopId: d.shopId || d.shop_id || ''
         })) : []
 
-        if (mounted) setProviders(arr)
+        if (mounted) {
+          setProviders(arr)
+        }
       } catch (err) {
         console.error('Failed to load providers:', err)
         if (mounted) setProvidersError(err instanceof Error ? err.message : 'Unknown error')
@@ -117,11 +120,14 @@ export default function ProvidersPage() {
     if (credentials) {
       setNewCredentials(credentials)
     }
-    // Refresh provider list
+    // Refresh provider list and shops
     try {
-      const res = await fetch(`${API_BASE_URL}/proownners`)
-      if (!res.ok) throw new Error('Failed to refresh providers')
-      const data = await res.json()
+      const [proRes, shopsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/proownners`),
+        fetch(`${API_BASE_URL}/shops`),
+      ])
+      if (!proRes.ok) throw new Error('Failed to refresh providers')
+      const data = await proRes.json()
       const arr = Array.isArray(data) ? data.map((d: any, i: number) => ({
         id: d.id || d._id || String(d._key || `prov-${Date.now()}-${i}`),
         name: `${d.firstname || ''} ${d.lastname || ''}`.trim() || (d.name || 'Unknown'),
@@ -142,8 +148,69 @@ export default function ProvidersPage() {
         shopId: d.shopId || d.shop_id || ''
       })) : []
       setProviders(arr)
+      if (shopsRes.ok) {
+        const shopsData = await shopsRes.json()
+        setShops(Array.isArray(shopsData) ? shopsData : [])
+      }
     } catch (err) {
       console.error('Failed to refresh providers:', err)
+    }
+  }
+
+  // Lookup shop name by provider email (shops.owner matches provider email)
+  const getShopNameByEmail = (email: string): string | null => {
+    if (!email || !shops.length) return null
+    const normalized = email.toLowerCase().trim()
+    const shop = shops.find((s: any) => (s.owner || '').toLowerCase().trim() === normalized)
+    return shop?.name || null
+  }
+
+  const handleDeleteProvider = async (providerId: string) => {
+    if (!window.confirm('Are you sure you want to delete this provider?')) return
+
+    try {
+      const token = localStorage.getItem('ikigai_token')
+      const res = await fetch(`${API_BASE_URL}/proownners/${providerId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.message || 'Failed to delete provider')
+        return
+      }
+
+      setProviders(prev => prev.filter(p => p.id !== providerId))
+    } catch (error) {
+      console.error('Delete provider failed:', error)
+      alert('Network error. Could not delete provider.')
+    }
+  }
+
+  const handleCreateUserForProvider = async (providerId: string, providerEmail: string) => {
+    try {
+      const token = localStorage.getItem('ikigai_token')
+      const res = await fetch(`${API_BASE_URL}/proownners/${providerId}/create-user`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        alert(data.message || 'Failed to create user account')
+        return
+      }
+
+      setNewCredentials({ email: providerEmail, password: data.rawPassword })
+    } catch (error) {
+      console.error('Create user for provider failed:', error)
+      alert('Network error. Could not create user account.')
     }
   }
 
@@ -322,11 +389,14 @@ export default function ProvidersPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    {provider.shopId ? (
-                      <span className="text-gray-800 dark:text-gray-200">{shopIdToName[provider.shopId] || provider.shopId}</span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
+                    {(() => {
+                      const shopName = getShopNameByEmail(provider.email)
+                      return shopName ? (
+                        <span className="text-gray-800 dark:text-gray-200">{shopName}</span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )
+                    })()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -350,7 +420,21 @@ export default function ProvidersPage() {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCreateUserForProvider(provider.id, provider.email)}
+                        title="Create user account"
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <Key className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteProvider(provider.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
