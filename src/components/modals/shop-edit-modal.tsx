@@ -3,7 +3,7 @@
 import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, MapPin, Phone, Mail, Clock, Image as ImageIcon, Tag, Upload, Trash2 } from 'lucide-react'
+import { X, MapPin, Phone, Mail, Clock, Image as ImageIcon, Tag, Upload, Trash2, User } from 'lucide-react'
 import { Shop } from '@/types'
 
 interface GeoEntry { id: string; countryId: string; regionId: string; cityId?: string; districtId?: string; name: string }
@@ -59,6 +59,11 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
   const [selectedRegion, setSelectedRegion] = useState('')
   const [isGettingLocation, setIsGettingLocation] = useState(false)
 
+  // Provider linking
+  const [providers, setProviders] = useState<any[]>([])
+  const [editingProvider, setEditingProvider] = useState(false)
+  const [selectedProviderEmail, setSelectedProviderEmail] = useState('')
+
   // Initialize form data when shop changes
   useEffect(() => {
     if (shop) {
@@ -95,6 +100,9 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         latitude: (shop as any).latitude ?? null
       })
       setPreviewGallery(Array.isArray(shop.images) ? shop.images : [])
+      // Initialize selected provider from shop.owner
+      const ownerEmail = (shop as any).owner || ''
+      setSelectedProviderEmail(ownerEmail)
     }
   }, [shop])
 
@@ -106,14 +114,20 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     
     fetch(`${API_BASE_URL}/geoville`)
       .then(r => r.json())
-      .then(data => setGeovilles(Array.isArray(data) ? data.map((g: any) => ({ 
-        id: String(g.id), 
-        countryId: g.countryId || '', 
-        regionId: g.regionId || '', 
-        cityId: g.cityId, 
-        districtId: g.districtId, 
-        name: g.name || '' 
+      .then(data => setGeovilles(Array.isArray(data) ? data.map((g: any) => ({
+        id: String(g.id),
+        countryId: g.countryId || '',
+        regionId: g.regionId || '',
+        cityId: g.cityId,
+        districtId: g.districtId,
+        name: g.name || ''
       })) : []))
+      .catch(() => {})
+
+    // Fetch providers for linking
+    fetch(`${API_BASE_URL}/proownners`)
+      .then(r => r.json())
+      .then(data => setProviders(Array.isArray(data) ? data : []))
       .catch(() => {})
   }, [])
 
@@ -285,7 +299,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
           latitude: formData.latitude,
           tags: formData.tags,
           registered_by: 'admin',
-          is_active: formData.isActive
+          is_active: formData.isActive,
+          owner: selectedProviderEmail
         }),
       })
 
@@ -337,6 +352,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     setErrors({})
     setPreviewGallery([])
     setEditingCategory(false)
+    setEditingProvider(false)
+    setSelectedProviderEmail('')
     onClose()
   }
 
@@ -486,6 +503,74 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
                 <option value="Freelance">Freelance</option>
               </select>
             </div>
+          </div>
+
+          {/* Linked Provider */}
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <User className="h-4 w-4 inline mr-1" />
+              Linked Provider
+            </label>
+            {!editingProvider ? (
+              <div className="flex items-center gap-2">
+                {selectedProviderEmail ? (
+                  <div className="flex-1">
+                    {(() => {
+                      const p = providers.find((pr: any) => (pr.email || '').toLowerCase().trim() === selectedProviderEmail.toLowerCase().trim())
+                      return p ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-ikigai-primary flex items-center justify-center text-white text-xs font-medium">
+                            {(p.firstname || '')[0]}{(p.lastname || '')[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {p.firstname} {p.lastname}
+                            </p>
+                            <p className="text-xs text-gray-500">{p.email}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-800 dark:text-gray-200">{selectedProviderEmail}</span>
+                      )
+                    })()}
+                  </div>
+                ) : (
+                  <span className="flex-1 text-sm text-gray-400 italic">No provider linked</span>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingProvider(true)}
+                >
+                  {selectedProviderEmail ? 'Change' : 'Link Provider'}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <select
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+                  value={selectedProviderEmail}
+                  onChange={(e) => setSelectedProviderEmail(e.target.value)}
+                  autoFocus
+                >
+                  <option value="">-- No provider --</option>
+                  {providers.map((p: any) => (
+                    <option key={p.id} value={p.email}>
+                      {p.firstname} {p.lastname} ({p.email})
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingProvider(false)}
+                >
+                  Done
+                </Button>
+              </div>
+            )}
           </div>
 
           <div>
