@@ -110,9 +110,28 @@ export default function UsersPage() {
   }
 
 
-  const handleDeleteUser = (userId: string) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return
+
+    try {
+      const token = localStorage.getItem('ikigai_token')
+      const res = await fetch(`${API_BASE_URL}/auth/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.message || 'Failed to delete user')
+        return
+      }
+
       setUsers(prev => prev.filter(u => u.id !== userId))
+    } catch (error) {
+      console.error('Delete user failed:', error)
+      alert('Network error. Could not delete user.')
     }
   }
 
