@@ -5,7 +5,7 @@ import { Clock, Wifi, WifiOff } from 'lucide-react'
 
 interface WorkerStatusIndicatorProps {
   workerId: string
-  status: 'available' | 'busy' | 'break' | 'offline'
+  status: 'available' | 'occupé' | 'break' | 'offline'
   lastSeen?: Date
   isOnline?: boolean
   className?: string
@@ -31,7 +31,7 @@ export function WorkerStatusIndicator({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available': return 'bg-green-500'
-      case 'busy': return 'bg-red-500'
+      case 'occupé': return 'bg-red-500'
       case 'break': return 'bg-yellow-500'
       case 'offline': return 'bg-gray-500'
       default: return 'bg-gray-500'
@@ -41,7 +41,7 @@ export function WorkerStatusIndicator({
   const getStatusText = (status: string) => {
     switch (status) {
       case 'available': return 'Available'
-      case 'busy': return 'Busy'
+      case 'occupé': return 'Busy'
       case 'break': return 'On Break'
       case 'offline': return 'Offline'
       default: return 'Unknown'
@@ -95,7 +95,7 @@ export function WorkerStatusIndicator({
 
 // Real-time status update hook
 export function useWorkerStatus(workerId: string) {
-  const [status, setStatus] = useState<'available' | 'busy' | 'break' | 'offline'>('offline')
+  const [status, setStatus] = useState<'available' | 'occupé' | 'break' | 'offline'>('offline')
   const [isOnline, setIsOnline] = useState(false)
   const [lastSeen, setLastSeen] = useState<Date | null>(null)
 
@@ -104,11 +104,11 @@ export function useWorkerStatus(workerId: string) {
     // In a real app, this would connect to WebSocket or use Server-Sent Events
     const interval = setInterval(() => {
       // Simulate status changes
-      const statuses: Array<'available' | 'busy' | 'break' | 'offline'> = ['available', 'busy', 'break', 'offline']
+      const statuses: Array<'available' | 'occupé' | 'break' | 'offline'> = ['available', 'occupé', 'break', 'offline']
       const randomStatus = statuses[Math.floor(Math.random() * statuses.length)]
       
       setStatus(randomStatus)
-      setIsOnline(Math.random() > 0.1) // 90% chance of being online
+      setIsOnline(Math.random() > 0.1) // 90% chance of being ouvert
       setLastSeen(new Date())
     }, 30000) // Update every 30 seconds
 
@@ -123,7 +123,7 @@ export function WorkerStatusBadge({
   status, 
   size = 'sm' 
 }: { 
-  status: 'available' | 'busy' | 'break' | 'offline'
+  status: 'available' | 'occupé' | 'break' | 'offline'
   size?: 'sm' | 'md' | 'lg'
 }) {
   const getStatusConfig = (status: string) => {
@@ -134,7 +134,7 @@ export function WorkerStatusBadge({
           text: 'Available',
           icon: '🟢'
         }
-      case 'busy':
+      case 'occupé':
         return {
           color: 'bg-red-100 text-red-800 border-red-200',
           text: 'Busy',

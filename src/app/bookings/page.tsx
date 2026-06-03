@@ -23,6 +23,7 @@ import {
   Filter,
   Eye,
   Tag,
+  Phone,
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 
@@ -42,6 +43,10 @@ interface Booking {
   paymentStatus: number
   amount: number
   currency: string
+  serviceName?: string | null
+  clientName?: string | null
+  clientPhone?: string | null
+  shopName?: string | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -130,6 +135,10 @@ export default function BookingsPage() {
             paymentStatus: b.payement_status ?? 0,
             amount: b.amount ?? 0,
             currency: b.currency ?? 'XOF',
+            serviceName: b.service_name ?? b.service?.name ?? null,
+            clientName: b.client_name ?? (b.user ? `${b.user.firstname ?? ''} ${b.user.lastname ?? ''}`.trim() || null : null),
+            clientPhone: b.client_phone ?? b.user?.phone ?? null,
+            shopName: b.shop_name ?? b.shop?.name ?? null,
           }))
         )
       } catch (err) {
@@ -145,7 +154,17 @@ export default function BookingsPage() {
 
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
-      if (search && !String(b.userId).includes(search) && !String(b.id).includes(search) && !String(b.providerId).includes(search)) return false
+      if (search) {
+        const q = search.toLowerCase()
+        const match =
+          String(b.id).includes(q) ||
+          String(b.userId).includes(q) ||
+          String(b.providerId).includes(q) ||
+          (b.clientName?.toLowerCase() ?? '').includes(q) ||
+          (b.serviceName?.toLowerCase() ?? '').includes(q) ||
+          (b.shopName?.toLowerCase() ?? '').includes(q)
+        if (!match) return false
+      }
       if (statusFilter !== 'all' && b.bookingStatus !== statusFilter) return false
       if (providerFilter !== 'all' && String(b.providerId) !== providerFilter) return false
       if (dateFrom && b.bookingDate < dateFrom) return false
@@ -209,7 +228,7 @@ export default function BookingsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Rechercher par ID utilisateur, réservation ou prestataire…"
+                placeholder="Rechercher par client, service ou prestataire…"
                 className="ik-input pl-10"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -227,9 +246,13 @@ export default function BookingsPage() {
             {/* Provider */}
             <select className="ik-input w-full lg:w-44" value={providerFilter} onChange={(e) => setProviderFilter(e.target.value)}>
               <option value="all">Tous les prestataires</option>
-              {providerIds.map((id) => (
-                <option key={id} value={id}>Prestataire #{id}</option>
-              ))}
+              {providerIds.map((id) => {
+                const b = bookings.find((b) => String(b.providerId) === String(id))
+                const label = b?.shopName ? `${b.shopName} (#${id})` : `Prestataire #${id}`
+                return (
+                  <option key={id} value={id}>{label}</option>
+                )
+              })}
             </select>
 
             {/* Date range */}
@@ -297,15 +320,27 @@ export default function BookingsPage() {
                   <div className="p-3 flex flex-col flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Users className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Client #{b.userId}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {b.clientName ?? `Client #${b.userId}`}
+                      </span>
                     </div>
+                    {b.clientPhone && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <Phone className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{b.clientPhone}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 mb-1">
                       <Store className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Prestataire #{b.providerId}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {b.shopName ?? `Prestataire #${b.providerId}`}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 mb-2">
                       <Tag className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Service #{b.serviceId}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {b.serviceName ?? `Service #${b.serviceId}`}
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-1">

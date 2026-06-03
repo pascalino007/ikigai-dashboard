@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Filter, Edit, Trash2, Eye, Clock, DollarSign, Star, User, Phone, Mail } from 'lucide-react'
@@ -50,7 +51,7 @@ const mockWorkers: Worker[] = [
     shopId: '1',
     shopName: 'Downtown Beauty Studio',
     isActive: true,
-    status: 'busy',
+    status: 'occupé',
     currentBookingId: 'booking-123',
     rating: 4.9,
     totalBookings: 89,
@@ -101,6 +102,61 @@ export default function ShopWorkersPage() {
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Load workers from API on mount
+  useEffect(() => {
+    loadWorkers()
+  }, [])
+
+  const loadWorkers = async () => {
+    setIsLoading(true)
+    try {
+      const token = localStorage.getItem('authToken') || localStorage.getItem('ikigai_token') || ''
+      const shopId = '1' // TODO: use actual shop from auth context
+      const res = await fetch(`${API_BASE_URL}/workers/shop/${shopId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+      if (!res.ok) throw new Error('Failed to fetch workers')
+      const data = await res.json()
+      const mapped: Worker[] = (Array.isArray(data) ? data : []).map((w: any) => ({
+        id: String(w.id),
+        firstName: w.first_name || '',
+        lastName: w.last_name || '',
+        email: w.email || '',
+        phone: w.phone || '',
+        profilePicture: w.avatar_url || undefined,
+        specialization: w.speciality || 'General',
+        experience: 0,
+        hourlyRate: 0,
+        shopId: String(w.shop_id || shopId),
+        shopName: 'Shop',
+        isActive: w.is_active !== false,
+        status: w.is_active !== false ? 'available' : 'offline',
+        rating: 0,
+        totalBookings: 0,
+        totalEarnings: 0,
+        workingHours: {
+          start: '09:00',
+          end: '18:00',
+          days: (w.schedules || []).map((s: any) => {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            return days[s.day_of_week % 7]
+          }),
+        },
+        createdAt: new Date(w.createdAt || Date.now()),
+        updatedAt: new Date(w.updatedAt || Date.now()),
+      }))
+      setWorkers(mapped)
+    } catch (error) {
+      console.error('Error loading workers:', error)
+      // Keep mock data as fallback
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Get unique specializations for filter
   const specializations = Array.from(new Set(workers.map(worker => worker.specialization)))
 
@@ -117,7 +173,7 @@ export default function ShopWorkersPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available': return 'bg-green-100 text-green-800'
-      case 'busy': return 'bg-red-100 text-red-800'
+      case 'occupé': return 'bg-red-100 text-red-800'
       case 'break': return 'bg-yellow-100 text-yellow-800'
       case 'offline': return 'bg-gray-100 text-gray-800'
       default: return 'bg-gray-100 text-gray-800'
@@ -127,7 +183,7 @@ export default function ShopWorkersPage() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'available': return 'Available'
-      case 'busy': return 'Busy'
+      case 'occupé': return 'Busy'
       case 'break': return 'On Break'
       case 'offline': return 'Offline'
       default: return 'Unknown'
@@ -137,35 +193,84 @@ export default function ShopWorkersPage() {
   const handleAddWorker = async (data: any) => {
     setIsLoading(true)
     try {
-      // In a real app, this would call the API
-      // const response = await workerApi.create(data)
-      
+      const token = localStorage.getItem('authToken') || localStorage.getItem('ikigai_token') || ''
+      let avatarUrl: string | undefined
+
+      if (data.profilePicture instanceof File) {
+        const form = new FormData()
+        form.append('image', data.profilePicture)
+        const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: form,
+        })
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json()
+          avatarUrl = uploadData.imageUrl || uploadData.image_url
+        }
+      }
+
+      const dayMap: Record<string, number> = {
+        Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6,
+      }
+      const schedules = data.workingHours.days.map((day: string) => ({
+        day_of_week: dayMap[day] ?? 1,
+        start_time: data.workingHours.start || '09:00',
+        end_time: data.workingHours.end || '18:00',
+      }))
+
+      const shopId = '1' // TODO: use actual shop from auth context
+      const res = await fetch(`${API_BASE_URL}/workers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          shop_id: parseInt(shopId),
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email || undefined,
+          phone: data.phone || undefined,
+          avatar_url: avatarUrl,
+          speciality: data.specialization || undefined,
+          buffer_minutes: 5,
+          schedules,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Failed to create worker')
+      const created = await res.json()
+
       const newWorker: Worker = {
-        id: Date.now().toString(),
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        profilePicture: data.profilePicture ? URL.createObjectURL(data.profilePicture) : undefined,
-        specialization: data.specialization,
-        experience: data.experience,
-        hourlyRate: data.hourlyRate,
-        shopId: '1', // This would come from auth context
-        shopName: 'Downtown Beauty Studio', // This would come from auth context
-        isActive: true,
-        status: 'available',
+        id: String(created.id),
+        firstName: created.first_name || data.firstName,
+        lastName: created.last_name || data.lastName,
+        email: created.email || data.email || '',
+        phone: created.phone || data.phone || '',
+        profilePicture: created.avatar_url || avatarUrl,
+        specialization: data.specialization || created.speciality || 'General',
+        experience: data.experience || 0,
+        hourlyRate: data.hourlyRate || 0,
+        shopId: String(created.shop_id || shopId),
+        shopName: 'Downtown Beauty Studio',
+        isActive: created.is_active !== false,
+        status: created.is_active !== false ? 'available' : 'offline',
         rating: 0,
         totalBookings: 0,
         totalEarnings: 0,
         workingHours: data.workingHours,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
-      
+
       setWorkers(prev => [newWorker, ...prev])
       setShowAddModal(false)
     } catch (error) {
       console.error('Error creating worker:', error)
+      alert('Failed to create worker. See console for details.')
     } finally {
       setIsLoading(false)
     }
@@ -204,14 +309,21 @@ export default function ShopWorkersPage() {
   const handleDeleteWorker = async (workerId: string) => {
     setIsLoading(true)
     try {
-      // In a real app, this would call the API
-      // await workerApi.delete(workerId)
-      
+      const token = localStorage.getItem('authToken') || localStorage.getItem('ikigai_token') || ''
+      const res = await fetch(`${API_BASE_URL}/workers/${workerId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+      if (!res.ok) throw new Error('Failed to delete worker')
       setWorkers(prev => prev.filter(worker => worker.id !== workerId))
       setShowViewModal(false)
       setSelectedWorker(null)
     } catch (error) {
       console.error('Error deleting worker:', error)
+      alert('Failed to delete worker. See console for details.')
     } finally {
       setIsLoading(false)
     }
@@ -290,7 +402,7 @@ export default function ShopWorkersPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Busy</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {workers.filter(w => w.status === 'busy').length}
+                    {workers.filter(w => w.status === 'occupé').length}
                   </p>
                 </div>
               </div>
@@ -334,7 +446,7 @@ export default function ShopWorkersPage() {
                 >
                   <option value="all">All Status</option>
                   <option value="available">Available</option>
-                  <option value="busy">Busy</option>
+                  <option value="occupé">Busy</option>
                   <option value="break">On Break</option>
                   <option value="offline">Offline</option>
                 </select>

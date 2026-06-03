@@ -6,56 +6,85 @@ import { Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { AdminOnly } from '@/components/auth/route-guard'
 
-interface SubscriptionPlan {
-  id: string
-  name: string
+interface Subscription {
+  id: number
+  plan: string
   price: number
-  interval: 'month' | 'year'
-  description: string
-  isActive: boolean
-  features: string[]
-  createdAt: Date
+  interval: string
+  status: string
+  shop_id?: number | null
+  user_id?: number | null
+  features?: string | null
+  max_bookings?: number | null
+  next_billing?: string | null
+  started_at?: string | null
+  ends_at?: string | null
+  created_at: string
 }
 
-const mockPlans: SubscriptionPlan[] = [
-  {
-    id: '1',
-    name: 'Basic Plan',
-    price: 29000,
-    interval: 'month',
-    description: 'Essential tools for small shops',
-    isActive: true,
-    features: ['Calendar', 'Up to 3 staff'],
-    createdAt: new Date('2024-01-01')
-  },
-  {
-    id: '2',
-    name: 'Pro Plan',
-    price: 59000,
-    interval: 'month',
-    description: 'Advanced features for growing businesses',
-    isActive: true,
-    features: ['Calendar', 'Unlimited staff', 'Analytics'],
-    createdAt: new Date('2024-01-01')
-  },
-  {
-    id: '3',
-    name: 'Annual Premium',
-    price: 590000,
-    interval: 'year',
-    description: 'Best value for established salons',
-    isActive: true,
-    features: ['All features', 'Priority support'],
-    createdAt: new Date('2024-01-01')
-  }
-]
-
 export default function AbonnementsPage() {
-  const [plans, setPlans] = useState<SubscriptionPlan[]>(mockPlans)
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    plan: '', price: '', interval: 'month', status: 'active',
+    shop_id: '', user_id: '', max_bookings: '', features: '',
+  })
 
-  const filteredPlans = plans.filter(plan => 
-    plan.name.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    fetchSubscriptions()
+  }, [])
+
+  async function fetchSubscriptions() {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/subscriptions`)
+      if (res.ok) {
+        const data = await res.json()
+        setSubscriptions(data || [])
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/subscriptions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: form.plan,
+          price: Number(form.price) || 0,
+          interval: form.interval,
+          status: form.status,
+          shop_id: form.shop_id ? Number(form.shop_id) : null,
+          user_id: form.user_id ? Number(form.user_id) : null,
+          max_bookings: form.max_bookings ? Number(form.max_bookings) : null,
+          features: form.features || null,
+        }),
+      })
+      if (res.ok) {
+        setShowModal(false)
+        setForm({ plan: '', price: '', interval: 'month', status: 'active', shop_id: '', user_id: '', max_bookings: '', features: '' })
+        await fetchSubscriptions()
+      } else {
+        alert('Failed to create subscription')
+      }
+    } catch (e) {
+      alert('Error creating subscription')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const filtered = subscriptions.filter(sub =>
+    sub.plan.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -68,7 +97,7 @@ export default function AbonnementsPage() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Abonnements</h1>
             <p className="text-gray-600 mt-2">Manage subscription plans and pricing</p>
           </div>
-          <Button>
+          <Button onClick={() => setShowModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Plan
           </Button>
@@ -120,28 +149,28 @@ export default function AbonnementsPage() {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredPlans.map((plan) => (
-                <tr key={plan.id} className="hover:bg-gray-50">
+              {filtered.map((sub) => (
+                <tr key={sub.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{plan.name}</div>
-                    <div className="text-sm text-gray-500">{plan.description}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{sub.plan}</div>
+                    <div className="text-sm text-gray-500">Shop #{sub.shop_id ?? 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    {plan.price.toLocaleString()} FCFA
+                    {sub.price.toLocaleString()} FCFA
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 capitalize">
-                    {plan.interval}
+                    {sub.interval}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                    {plan.features.length} features
+                    {sub.max_bookings ?? 'Unlimited'} bookings
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      plan.isActive 
-                        ? 'bg-green-100 text-green-800' 
+                      sub.status === 'active'
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {plan.isActive ? 'Active' : 'Inactive'}
+                      {sub.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -161,6 +190,29 @@ export default function AbonnementsPage() {
         </div>
       </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <h2 className="text-xl font-bold mb-4">Add Subscription</h2>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <input className="w-full border rounded-md px-3 py-2" placeholder="Plan name" value={form.plan} onChange={e => setForm({ ...form, plan: e.target.value })} required />
+              <input type="number" className="w-full border rounded-md px-3 py-2" placeholder="Price (FCFA)" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
+              <select className="w-full border rounded-md px-3 py-2" value={form.interval} onChange={e => setForm({ ...form, interval: e.target.value })}>
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+              </select>
+              <input type="number" className="w-full border rounded-md px-3 py-2" placeholder="Shop ID (optional)" value={form.shop_id} onChange={e => setForm({ ...form, shop_id: e.target.value })} />
+              <input type="number" className="w-full border rounded-md px-3 py-2" placeholder="Max bookings (optional)" value={form.max_bookings} onChange={e => setForm({ ...form, max_bookings: e.target.value })} />
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </DashboardLayout>
     </AdminOnly>
   )

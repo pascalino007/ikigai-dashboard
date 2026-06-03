@@ -18,7 +18,7 @@ export function WorkerViewModal({ isOpen, onClose, worker, onEdit, onDelete }: W
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available': return 'bg-green-100 text-green-800'
-      case 'busy': return 'bg-red-100 text-red-800'
+      case 'occupé': return 'bg-red-100 text-red-800'
       case 'break': return 'bg-yellow-100 text-yellow-800'
       case 'offline': return 'bg-gray-100 text-gray-800'
       default: return 'bg-gray-100 text-gray-800'
@@ -28,7 +28,7 @@ export function WorkerViewModal({ isOpen, onClose, worker, onEdit, onDelete }: W
   const getStatusText = (status: string) => {
     switch (status) {
       case 'available': return 'Available'
-      case 'busy': return 'Busy'
+      case 'occupé': return 'Busy'
       case 'break': return 'On Break'
       case 'offline': return 'Offline'
       default: return 'Unknown'
@@ -193,7 +193,7 @@ export function WorkerViewModal({ isOpen, onClose, worker, onEdit, onDelete }: W
           </div>
 
           {/* Current Status */}
-          {worker.status === 'busy' && worker.currentBookingId && (
+          {worker.status === 'occupé' && worker.currentBookingId && (
             <div className="mb-6">
               <h4 className="text-lg font-semibold text-gray-900 mb-4">Current Booking</h4>
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">

@@ -227,14 +227,18 @@ export function AreaCountryForm({
                 value={formData.districtId}
                 onChange={e => update('districtId', e.target.value)}
               >
-                <option value="1">1 arrondissement</option>
-                <option value="2">2  eme  arrondissement</option>
-                <option value="3"> 3  eme  arrondissement</option>
-                <option value="4"> 4 eme  arrondissement</option>
-                <option value="5"> 5  eme Sélectionner un arrondissement</option>
-                <option value="6"> 6  eme  arrondissement</option>
-                <option value="7"> 7 eme  arrondissement</option>
-                {/* YOU fill these */}
+                <option value="">-- Sélectionner un arrondissement --</option>
+                <option value="1">1er arrondissement</option>
+                <option value="2">2ème arrondissement</option>
+                <option value="3">3ème arrondissement</option>
+                <option value="4">4ème arrondissement</option>
+                <option value="5">5ème arrondissement</option>
+                <option value="6">6ème arrondissement</option>
+                <option value="7">7ème arrondissement</option>
+                <option value="8">8ème arrondissement</option>
+                <option value="9">9ème arrondissement</option>
+                <option value="10">10ème arrondissement</option>
+                <option value="11">11ème arrondissement</option>
               </select>
             </div>
           </div>

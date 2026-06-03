@@ -124,7 +124,7 @@ export interface Payment {
   serviceName: string;
   amount: number;
   currency: string;
-  paymentMethod: 'cash' | 'card' | 'bank_transfer' | 'online';
+  paymentMethod: 'cash' | 'card' | 'bank_transfer' | 'ouvert';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   transactionId?: string;
   notes?: string;
@@ -204,8 +204,8 @@ export interface Worker {
   shopId: string;
   shopName: string;
   isActive: boolean;
-  status: 'available' | 'busy' | 'break' | 'offline';
-  currentBookingId?: string; // if busy, which booking they're working on
+  status: 'available' | 'occupé' | 'break' | 'offline';
+  currentBookingId?: string; // if occupé, which booking they're working on
   rating: number;
   totalBookings: number;
   totalEarnings: number;

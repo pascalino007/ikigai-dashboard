@@ -41,8 +41,13 @@ interface Booking {
   amount: number
   currency: string
   created_at: string
+  service_name?: string | null
+  client_name?: string | null
+  client_phone?: string | null
+  shop_name?: string | null
   service?: { id: number; name: string; price: number; duration: string } | null
   shop?: { name: string } | null
+  user?: { id: number; firstname: string; lastname: string; phone: string } | null
   transaction?: { id: number; paymentMethod: string; paymentProvider: string; status: number } | null
 }
 
@@ -307,8 +312,11 @@ function ShopOverviewTab({ shop, bookings, transactions }: { shop: RealShop | nu
               return (
                 <div key={b.id} className="py-3 flex items-center justify-between">
                   <div className="text-sm">
-                    <p className="font-medium text-gray-800 dark:text-gray-200">#{b.id} — {b.service?.name || `Service #${b.service_id}`}</p>
-                    <p className="text-gray-500">{b.booking_date} · Client #{b.user_id}</p>
+                    <p className="font-medium text-gray-800 dark:text-gray-200">#{b.id} — {b.service_name || b.service?.name || `Service #${b.service_id}`}</p>
+                    <p className="text-gray-500">
+                      {b.booking_date} · {b.client_name || (b.user ? `${b.user?.firstname ?? ''} ${b.user?.lastname ?? ''}`.trim() || `Client #${b.user_id}` : `Client #${b.user_id}`)}
+                      {(b.client_phone || b.user?.phone) ? ` · ${b.client_phone || b.user?.phone}` : ''}
+                    </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{b.amount.toLocaleString()} {b.currency}</span>
@@ -348,11 +356,17 @@ function ShopBookingsTab({ bookings }: { bookings: Booking[] }) {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {bookings.map((b) => {
                   const s = BOOKING_STATUS[b.booking_status] || { label: `${b.booking_status}`, color: 'bg-gray-100 text-gray-800' }
+                  const clientLabel = b.client_name || (b.user ? `${b.user?.firstname ?? ''} ${b.user?.lastname ?? ''}`.trim() || `Client #${b.user_id}` : `Client #${b.user_id}`)
                   return (
                     <tr key={b.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">#{b.id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">Client #{b.user_id}</td>
-                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">{b.service?.name || `#${b.service_id}`}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                        <div>{clientLabel}</div>
+                        {(b.client_phone || b.user?.phone) && (
+                          <div className="text-xs text-gray-400">{b.client_phone || b.user?.phone}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-800 dark:text-gray-200">{b.service_name || b.service?.name || `#${b.service_id}`}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{b.booking_date || '—'}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{b.amount.toLocaleString()} {b.currency}</td>
                       <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 capitalize">{b.transaction?.paymentMethod || '—'}</td>

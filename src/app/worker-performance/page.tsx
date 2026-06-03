@@ -45,7 +45,7 @@ const mockWorkers: Worker[] = [
     shopId: '1',
     shopName: 'Downtown Beauty Studio',
     isActive: true,
-    status: 'busy',
+    status: 'occupé',
     rating: 4.9,
     totalBookings: 89,
     totalEarnings: 8900,
