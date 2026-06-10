@@ -60,6 +60,7 @@ export const PERMISSIONS = {
   MANAGE_COMMANDES: ['admin', 'manager'],
   MANAGE_CLIENT_WALLETS: ['admin'],
   VIEW_OTP_CODES: ['admin'],
+  SEND_NOTIFICATIONS: ['admin'],
 } as const
 
 export function hasPermission(user: User | null, permission: keyof typeof PERMISSIONS): boolean {

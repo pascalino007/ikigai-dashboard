@@ -58,6 +58,7 @@ export function usePermissions() {
       { name: 'Commandes', href: '/commandes', icon: 'ShoppingBag', permission: 'MANAGE_COMMANDES' },
       { name: 'Portefeuille Client', href: '/client-wallets', icon: 'Wallet', permission: 'MANAGE_CLIENT_WALLETS' },
       { name: 'OTP Codes', href: '/otp', icon: 'Key', permission: 'VIEW_OTP_CODES' },
+      { name: 'Notifications', href: '/notifications', icon: 'Bell', permission: 'SEND_NOTIFICATIONS' },
       { name: 'Analytics', href: '/analytics', icon: 'BarChart3', permission: 'VIEW_ANALYTICS' },
       { name: 'Settings', href: '/settings', icon: 'Settings', permission: 'MANAGE_SETTINGS' },
       { name: 'Geolocation', href: '/geolocation', icon: 'Settings', permission: 'MANAGE_GEOLOCATION' },

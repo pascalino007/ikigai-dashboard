@@ -25,7 +25,8 @@ import {
   Sun,
   ShoppingBag,
   Wallet,
-  Key
+  Key,
+  Bell
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -50,7 +51,8 @@ const iconMap = {
   TrendingUp,
   ShoppingBag,
   Wallet,
-  Key
+  Key,
+  Bell
 }
 
 export function Sidebar() {
