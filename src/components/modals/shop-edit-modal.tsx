@@ -19,7 +19,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: '',
     type: 'Salon',
     tags: '',
     address: '',
@@ -45,8 +44,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [previewGallery, setPreviewGallery] = useState<string[]>([])
-  const [categories, setCategories] = useState<Array<{id:string; name:string}>>([])
-  const [editingCategory, setEditingCategory] = useState(false)
   
   // Geolocation data
   const [geovilles, setGeovilles] = useState<GeoEntry[]>([])
@@ -77,7 +74,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       setFormData({
         name: shop.name || '',
         description: shop.description || (shop as any).description_shop || '',
-        category: shop.category || '',
         type: (shop as any).type || 'Salon',
         tags: Array.isArray(shop.tags) ? shop.tags.join(', ') : shop.tags || '',
         address: shop.address || '',
@@ -107,11 +103,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
   }, [shop])
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/categories/`)
-      .then(r => r.json())
-      .then(data => setCategories(Array.isArray(data) ? data.map((c:any) => ({ id: String(c.id), name: c.name })) : []))
-      .catch(() => {})
-    
     fetch(`${API_BASE_URL}/geoville`)
       .then(r => r.json())
       .then(data => setGeovilles(Array.isArray(data) ? data.map((g: any) => ({
@@ -281,7 +272,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         },
         body: JSON.stringify({
           name: formData.name.trim(),
-          category: formData.category,
           type: formData.type,
           address: formData.address.trim(),
           pays: formData.country.trim(),
@@ -327,7 +317,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     setFormData({
       name: '',
       description: '',
-      category: '',
       type: 'Salon',
       tags: '',
       address: '',
@@ -351,7 +340,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     })
     setErrors({})
     setPreviewGallery([])
-    setEditingCategory(false)
     setEditingProvider(false)
     setSelectedProviderEmail('')
     onClose()
@@ -444,49 +432,6 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
                 onChange={(e) => handleInputChange('name', e.target.value)}
               />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category
-              </label>
-              {!editingCategory ? (
-                <div className="flex items-center gap-2">
-                  <span className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-800">
-                    {formData.category || <span className="text-gray-400">No category set</span>}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingCategory(true)}
-                  >
-                    Edit
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <select
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-                    value={formData.category}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
-                    autoFocus
-                  >
-                    <option value="">Select category</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.name}>{cat.name}</option>
-                    ))}
-                  </select>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditingCategory(false)}
-                  >
-                    Done
-                  </Button>
-                </div>
-              )}
             </div>
 
             <div>

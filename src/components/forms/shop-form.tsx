@@ -23,7 +23,6 @@ interface OpeningHour {
 
 interface ShopFormData {
   name: string;
-  category: string;
   type: string;
   address: string;
   pays: string;
@@ -106,7 +105,6 @@ export function ShopForm(props: ShopFormProps) {
 
 const [formData, setFormData] = useState<ShopFormData>({
   name: '',
-  category: '',
   type: '',
   tags: '',         // local file before upload
   profileImageUrl: '',        // URL after upload
@@ -140,7 +138,6 @@ const [formData, setFormData] = useState<ShopFormData>({
   const [locationError, setLocationError] = useState<string | null>(null);
 
   // fetched lists for selects
-  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
   const [responsables, setResponsables] = useState<Array<{ id: string; name: string }>>([])
   const [listsLoading, setListsLoading] = useState(false)
   const [listsError, setListsError] = useState<string | null>(null)
@@ -153,19 +150,13 @@ const [formData, setFormData] = useState<ShopFormData>({
       setListsLoading(true)
       setListsError(null)
       try {
-        const [catRes, provRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/categories/`),
-          fetch(`${API_BASE_URL}/proownners`)
-        ])
-        if (!catRes.ok) throw new Error(`Failed to fetch categories (${catRes.status})`)
+        const provRes = await fetch(`${API_BASE_URL}/proownners`)
         if (!provRes.ok) throw new Error(`Failed to fetch responsables (${provRes.status})`)
 
-        const cats = await catRes.json()
         const provs = await provRes.json()
 
         if (!mounted) return
         // normalize responses to { id, name }
-        setCategories(Array.isArray(cats) ? cats.map((c: any) => ({ id: String(c.id ?? c._id ?? c._key ?? c.name), name: c.name ?? c.Category ?? String(c) })) : [])
         setResponsables(Array.isArray(provs) ? provs.map((p: any) => ({ id: p.email || String(p.id ?? p._id ?? p._key), name: `${p.firstname || ''} ${p.lastname || ''}`.trim() || p.email || p.name || 'Unknown' })) : [])
       } catch (err) {
         console.error('Error loading lists for shop form:', err)
@@ -329,7 +320,6 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   // Required field validation
   if (!formData.name.trim()) newErrors.name = 'Shop name is required';
-  if (!formData.category.trim()) newErrors.category = 'Category is required';
   if (!formData.type.trim()) newErrors.type = 'Type is required';
   if (!formData.tags.trim()) newErrors.tags = 'Tags are required';
   if ( !formData.profileImageUrl) newErrors.profileImageUrl = 'Profile image is required';
@@ -417,23 +407,6 @@ const [formData, setFormData] = useState<ShopFormData>({
         placeholder="Enter shop name"
       />
       {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
-      <select
-        value={formData.category}
-        onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.category ? 'border-red-500' : 'border-gray-300'}`}
-        disabled={listsLoading}
-      >
-        <option value="">{listsLoading ? 'Loading categories...' : 'Select category'}</option>
-        {categories.map(cat => (
-          <option key={cat.id} value={cat.name}>{cat.name}</option>
-        ))}
-      </select>
-      {listsError && <p className="text-xs text-red-500 mt-1">Failed to load lists: {listsError}</p>}
-      {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
     </div>
 
     <div>

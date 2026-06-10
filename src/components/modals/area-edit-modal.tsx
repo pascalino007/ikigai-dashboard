@@ -237,6 +237,19 @@ export function AreaEditModal({ isOpen, onClose, area, onSuccess }: AreaEditModa
                 <option value="5">5ème arrondissement</option>
                 <option value="6">6ème arrondissement</option>
                 <option value="7">7ème arrondissement</option>
+                <option value="8">8ème arrondissement</option>
+                <option value="9">9ème arrondissement</option>
+                <option value="10">10ème arrondissement</option>
+                <option value="11">11ème arrondissement</option>
+                <option value="12">12ème arrondissement</option>
+                <option value="13">13ème arrondissement</option>
+                <option value="14">14ème arrondissement</option>
+                <option value="15">15ème arrondissement</option>
+                <option value="16">16ème arrondissement</option>
+                <option value="17">17ème arrondissement</option>
+                <option value="18">18ème arrondissement</option>
+                <option value="19">19ème arrondissement</option>
+                <option value="20">20ème arrondissement</option>
               </select>
             </div>
           </div>
