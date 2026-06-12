@@ -26,7 +26,10 @@ import {
   ShoppingBag,
   Wallet,
   Key,
-  Bell
+  Bell,
+  ArrowUpRight,
+  Sparkles,
+  ClipboardList
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -52,7 +55,10 @@ const iconMap = {
   ShoppingBag,
   Wallet,
   Key,
-  Bell
+  Bell,
+  ArrowUpRight,
+  Sparkles,
+  ClipboardList
 }
 
 export function Sidebar() {
