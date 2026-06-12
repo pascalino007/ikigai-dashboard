@@ -54,7 +54,6 @@ export const PERMISSIONS = {
   MANAGE_ENROLLERS: ['admin', 'manager'],
   MANAGE_MANAGERS: ['admin'],
   MANAGE_REFERRALS: ['admin', 'manager'],
-  MANAGE_SUBSCRIPTIONS: ['admin', 'manager'],
   MANAGE_GEOLOCATION: ['admin'],
   VIEW_ENROLLED_SHOPS: ['enroller'],
   MANAGE_COMMANDES: ['admin', 'manager'],
