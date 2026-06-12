@@ -34,65 +34,106 @@ function StatCard({ title, value, change, icon: Icon, color }: StatCardProps) {
   )
 }
 
+function getMonthRange() {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  const pad = (n: number) => n.toString().padStart(2, '0')
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return { startDate: fmt(start), endDate: fmt(end) }
+}
+
 export function DashboardStats() {
   const [providersCount, setProvidersCount] = useState<number | null>(null)
+  const [shopsCount, setShopsCount] = useState<number | null>(null)
+  const [servicesCount, setServicesCount] = useState<number | null>(null)
+  const [bookingsCount, setBookingsCount] = useState<number | null>(null)
+  const [revenue, setRevenue] = useState<number | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchProvidersCount = async () => {
+    const fetchStats = async () => {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
-        const headers: HeadersInit = {}
-        if (token) headers['Authorization'] = `Bearer ${token}`
-        const res = await fetch(`${API_BASE_URL}/proownners/count`, { headers })
-        if (!res.ok) throw new Error(`Failed to fetch (${res.status})`)
-        const data = await res.json()
-        const count = typeof data === 'number' ? data : data?.count ?? data?.total ?? 0
-        setProvidersCount(count)
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+        const { startDate, endDate } = getMonthRange()
+
+        const [providersRes, shopsRes, servicesRes, bookingsRes, revenueRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/proownners/stats/count`, { headers }),
+          fetch(`${API_BASE_URL}/shops/stats/count`, { headers }),
+          fetch(`${API_BASE_URL}/services/stats/count`, { headers }),
+          fetch(`${API_BASE_URL}/bookings/stats/count?startDate=${startDate}&endDate=${endDate}`, { headers }),
+          fetch(`${API_BASE_URL}/bookings/stats/revenue?startDate=${startDate}&endDate=${endDate}`, { headers }),
+        ])
+
+        const [providersData, shopsData, servicesData, bookingsData, revenueData] = await Promise.all([
+          providersRes.ok ? providersRes.json() : { count: 0 },
+          shopsRes.ok ? shopsRes.json() : { count: 0 },
+          servicesRes.ok ? servicesRes.json() : { count: 0 },
+          bookingsRes.ok ? bookingsRes.json() : { count: 0 },
+          revenueRes.ok ? revenueRes.json() : { revenue: 0 },
+        ])
+
+        setProvidersCount(providersData.count ?? 0)
+        setShopsCount(shopsData.count ?? 0)
+        setServicesCount(servicesData.count ?? 0)
+        setBookingsCount(bookingsData.count ?? 0)
+        setRevenue(revenueData.revenue ?? 0)
       } catch (err) {
         setStatsError(err instanceof Error ? err.message : 'Failed to load stats')
-        setProvidersCount(0)
       } finally {
         setStatsLoading(false)
       }
     }
-    fetchProvidersCount()
+    fetchStats()
   }, [])
+
+  const formatValue = (v: number | null) => {
+    if (statsLoading) return '...'
+    if (statsError) return '—'
+    return (v ?? 0).toLocaleString()
+  }
+
+  const formatCurrency = (v: number | null) => {
+    if (statsLoading) return '...'
+    if (statsError) return '—'
+    return `${(v ?? 0).toLocaleString()} FCFA`
+  }
 
   const stats = [
     {
       title: 'Total Providers',
-      value: statsLoading ? '...' : statsError ? '—' : (providersCount ?? 0).toLocaleString(),
-      change: '+12% from last month',
+      value: formatValue(providersCount),
+      change: '',
       icon: Users,
       color: 'bg-ikigai-primary'
     },
     {
       title: 'Active Shops',
-      value: '89',
-      change: '+5% from last month',
+      value: formatValue(shopsCount),
+      change: '',
       icon: Store,
       color: 'bg-ikigai-secondary'
     },
     {
       title: 'Total Services',
-      value: '2,456',
-      change: '+8% from last month',
+      value: formatValue(servicesCount),
+      change: '',
       icon: Scissors,
       color: 'bg-ikigai-accent'
     },
     {
       title: 'Monthly Bookings',
-      value: '5,678',
-      change: '+15% from last month',
+      value: formatValue(bookingsCount),
+      change: '',
       icon: Calendar,
       color: 'bg-green-500'
     },
     {
       title: 'Monthly Revenue',
-      value: '$45,678',
-      change: '+22% from last month',
+      value: formatCurrency(revenue),
+      change: '',
       icon: DollarSign,
       color: 'bg-yellow-500'
     }

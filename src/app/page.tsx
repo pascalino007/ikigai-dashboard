@@ -2,6 +2,7 @@
 
 import { DashboardStats } from '@/components/dashboard-stats'
 import { RecentActivity } from '@/components/recent-activity'
+import { RevenueChart } from '@/components/revenue-chart'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { useAuth } from '@/lib/auth/auth-context'
 import { usePermissions } from '@/lib/auth/use-permissions'
@@ -41,13 +42,8 @@ export default function Dashboard() {
 
         {/* Charts and Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Revenue Chart Placeholder */}
-          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Revenue Overview</h3>
-            <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <p className="text-gray-500 dark:text-gray-400">Chart will be implemented here</p>
-            </div>
-          </div>
+          {/* Revenue Chart */}
+          <RevenueChart />
 
           {/* Recent Activity */}
           <RecentActivity />

@@ -121,10 +121,11 @@ export default function BookingsPage() {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         })
         if (!res.ok) throw new Error('fetch failed')
-        const data = await res.json()
+        const payload = await res.json()
+        const rawList = Array.isArray(payload) ? payload : (payload.data ?? [])
 
         setBookings(
-          (Array.isArray(data) ? data : []).map((b: any) => ({
+          rawList.map((b: any) => ({
             id: b.id,
             userId: b.user_id,
             providerId: b.provider_id,
