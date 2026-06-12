@@ -38,7 +38,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
     certificationImageUrl: '' as string,
     certificationImageFile: null as File | null,
     cfeImageUrl: '' as string,
-    cfeImageFile: null as File | null
+    cfeImageFile: null as File | null,
+    grade: 'basic' as 'basic' | 'pro' | 'elite'
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -93,7 +94,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         cfeImageUrl: (shop as any).cfeImageUrl || '',
         cfeImageFile: null,
         longitude: (shop as any).longitude ?? null,
-        latitude: (shop as any).latitude ?? null
+        latitude: (shop as any).latitude ?? null,
+        grade: (shop as any).grade || 'basic'
       })
       setPreviewGallery(Array.isArray(shop.images) ? shop.images : [])
       // Initialize selected provider from shop.owner
@@ -290,7 +292,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
           tags: formData.tags,
           registered_by: 'admin',
           is_active: formData.isActive,
-          owner: selectedProviderEmail
+          owner: selectedProviderEmail,
+          grade: formData.grade
         }),
       })
 
@@ -336,7 +339,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       certificationImageUrl: '',
       certificationImageFile: null,
       cfeImageUrl: '',
-      cfeImageFile: null
+      cfeImageFile: null,
+      grade: 'basic'
     })
     setErrors({})
     setPreviewGallery([])
@@ -447,6 +451,35 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
                 <option value="Institut">Institut</option>
                 <option value="Freelance">Freelance</option>
               </select>
+            </div>
+          </div>
+
+          {/* Shop Grade */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shop Grade</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {([
+                { value: 'basic', label: 'Basic', stars: 1, desc: '1 étoile — Boutique standard' },
+                { value: 'pro',   label: 'Pro',   stars: 3, desc: '3 étoiles — Boutique recommandée' },
+                { value: 'elite', label: 'Elite', stars: 5, desc: '5 étoiles — Boutique VIP haut de gamme' },
+              ] as const).map(({ value, label, stars, desc }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => handleInputChange('grade', value)}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    formData.grade === value
+                      ? 'border-ikigai-primary bg-ikigai-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-gray-800">{label}</span>
+                    <span className="text-yellow-400">{Array(stars).fill('★').join('')}{Array(5 - stars).fill('☆').join('')}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">{desc}</p>
+                </button>
+              ))}
             </div>
           </div>
 

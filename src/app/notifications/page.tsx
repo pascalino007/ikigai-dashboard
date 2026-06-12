@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { API_BASE_URL } from '@/services/api'
+import Image from 'next/image'
 import {
   Bell,
   Users,
@@ -13,6 +14,8 @@ import {
   XCircle,
   Loader2,
   Megaphone,
+  ImageIcon,
+  Clock,
 } from 'lucide-react'
 
 type Target = 'clients' | 'providers' | 'both'
@@ -20,6 +23,17 @@ type Target = 'clients' | 'providers' | 'both'
 interface BroadcastResult {
   sent: number
   failed: number
+}
+
+interface NotificationItem {
+  id: number
+  user_id: number
+  type: string
+  title: string
+  body: string
+  image_url: string | null
+  is_read: boolean
+  created_at: string
 }
 
 const TARGET_OPTIONS: { value: Target; label: string; description: string; icon: React.ReactNode; color: string; bg: string }[] = [
@@ -53,9 +67,33 @@ export default function NotificationsPage() {
   const [target, setTarget] = useState<Target>('clients')
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<BroadcastResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [history, setHistory] = useState<NotificationItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  const fetchHistory = async () => {
+    setHistoryLoading(true)
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
+      const res = await fetch(`${API_BASE_URL}/notifications`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      if (!res.ok) throw new Error()
+      const data: NotificationItem[] = await res.json()
+      setHistory(data)
+    } catch {
+      // silently fail
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchHistory()
+  }, [])
 
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) {
@@ -69,13 +107,20 @@ export default function NotificationsPage() {
 
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
+      const body: Record<string, string> = {
+        target,
+        title: title.trim(),
+        message: message.trim(),
+      }
+      if (imageUrl.trim()) body.imageUrl = imageUrl.trim()
+
       const res = await fetch(`${API_BASE_URL}/notifications/broadcast`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ target, title: title.trim(), message: message.trim() }),
+        body: JSON.stringify(body),
       })
 
       if (!res.ok) {
@@ -87,6 +132,8 @@ export default function NotificationsPage() {
       setResult(data)
       setTitle('')
       setMessage('')
+      setImageUrl('')
+      fetchHistory()
     } catch (e: any) {
       setError(e.message || 'Une erreur est survenue.')
     } finally {
@@ -189,6 +236,19 @@ export default function NotificationsPage() {
               <p className="text-xs text-gray-400 mt-1 text-right">{message.length}/500</p>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                URL de l'image (optionnel)
+              </label>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://exemple.com/image.jpg"
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition"
+              />
+            </div>
+
             {/* Preview */}
             {(title || message) && (
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
@@ -199,7 +259,7 @@ export default function NotificationsPage() {
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center flex-shrink-0">
                     <Bell className="w-5 h-5 text-white" />
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-gray-900 dark:text-white">
                       {title || 'Titre de la notification'}
                     </p>
@@ -208,6 +268,12 @@ export default function NotificationsPage() {
                     </p>
                   </div>
                 </div>
+                {imageUrl && (
+                  <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imageUrl} alt="Preview" className="w-full h-40 object-cover" />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -262,6 +328,62 @@ export default function NotificationsPage() {
               </>
             )}
           </button>
+        </div>
+
+        {/* History list */}
+        <div>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Historique des notifications
+          </h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            {historyLoading ? (
+              <div className="p-8 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+              </div>
+            ) : history.length === 0 ? (
+              <div className="p-8 text-center text-gray-400 text-sm">
+                Aucune notification envoyée pour le moment.
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {history.map((n: NotificationItem) => (
+                  <div key={n.id} className="p-4 flex items-start gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center flex-shrink-0">
+                      {n.image_url ? (
+                        <ImageIcon className="w-5 h-5 text-white" />
+                      ) : (
+                        <Bell className="w-5 h-5 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                        {n.title}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                        {n.body}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase">
+                          {n.type}
+                        </span>
+                        <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(n.created_at).toLocaleString('fr-FR')}
+                        </span>
+                      </div>
+                    </div>
+                    {n.image_url && (
+                      <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200 dark:border-gray-600">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={n.image_url} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </DashboardLayout>
