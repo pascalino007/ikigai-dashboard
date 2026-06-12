@@ -16,8 +16,13 @@ interface Withdrawal {
   toUserId: number
   transactionRef: string
   paymentMethod: string
-  metadata?: { phone?: string } | null
+  metadata?: { phone?: string; shopId?: number } | null
   createdAt: string
+}
+
+interface Shop {
+  id: number
+  name: string
 }
 
 export default function WithdrawalsPage() {
@@ -27,8 +32,11 @@ export default function WithdrawalsPage() {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'pending' | 'success' | 'failed'>('all')
   const [processingId, setProcessingId] = useState<number | null>(null)
+  const [shops, setShops] = useState<Shop[]>([])
 
-  useEffect(() => { load() }, [filter])
+  useEffect(() => { load(); fetchShops() }, [filter])
+
+  const shopMap = new Map(shops.map((s) => [s.id, s.name]))
 
   useEffect(() => {
     const q = search.toLowerCase()
@@ -36,10 +44,10 @@ export default function WithdrawalsPage() {
       withdrawals.filter((w) =>
         w.label.toLowerCase().includes(q) ||
         w.transactionRef.toLowerCase().includes(q) ||
-        String(w.fromUserId).includes(q)
+        String(shopMap.get(w.metadata?.shopId ?? 0) ?? '').toLowerCase().includes(q)
       )
     )
-  }, [search, withdrawals])
+  }, [search, withdrawals, shops])
 
   async function load() {
     setLoading(true)
@@ -56,6 +64,13 @@ export default function WithdrawalsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function fetchShops() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/shops`)
+      if (res.ok) setShops(await res.json() || [])
+    } catch (e) { console.error(e) }
   }
 
   async function confirm(id: number) {
@@ -157,7 +172,7 @@ export default function WithdrawalsPage() {
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reference</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Utilisateur</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Boutique</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Montant</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Telephone</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
@@ -169,7 +184,7 @@ export default function WithdrawalsPage() {
                   {filtered.map((w) => (
                     <tr key={w.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                       <td className="px-4 py-3 text-sm font-mono text-gray-600 dark:text-gray-300">{w.transactionRef}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">#{w.fromUserId}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">{w.metadata?.shopId ? (shopMap.get(w.metadata.shopId) ?? `Boutique #${w.metadata.shopId}`) : '—'}</td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100">{w.amount.toLocaleString()} FCFA</td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{w.metadata?.phone ?? '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{fmtDate(w.createdAt)}</td>
@@ -204,7 +219,7 @@ export default function WithdrawalsPage() {
                   ))}
                   {filtered.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                      <td colSpan={6} className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                         <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                         Aucun retrait trouve
                       </td>
