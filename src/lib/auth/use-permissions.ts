@@ -54,6 +54,7 @@ export function usePermissions() {
       { name: 'Enrollers', href: '/enrollers', icon: 'Users', permission: 'MANAGE_ENROLLERS' },
       { name: 'Managers', href: '/managers', icon: 'Users', permission: 'MANAGE_MANAGERS' },
       { name: 'Parrainnage', href: '', icon: 'Users', permission: 'MANAGE_REFERRALS' },
+      { name: 'Abonnements Prestaires', href: '/abonnements', icon: 'Users', permission: 'MANAGE_SUBSCRIPTIONS' },
       { name: 'Commandes', href: '/commandes', icon: 'ShoppingBag', permission: 'MANAGE_COMMANDES' },
       { name: 'Portefeuille Client', href: '/client-wallets', icon: 'Wallet', permission: 'MANAGE_CLIENT_WALLETS' },
       { name: 'Retraits', href: '/withdrawals', icon: 'ArrowUpRight', permission: 'MANAGE_WITHDRAWALS' },
