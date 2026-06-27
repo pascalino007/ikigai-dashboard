@@ -22,6 +22,11 @@ interface Subscription {
   created_at: string
 }
 
+interface Shop {
+  id: number
+  name: string
+}
+
 interface SubscriptionPlan {
   id: number
   key: string
@@ -70,7 +75,7 @@ export default function AbonnementsPage() {
   const [planForm, setPlanForm] = useState({ key: '', name: '', subtitle: '', description: '', monthly_price: '', yearly_price: '', accent_color: '#6B7280', is_recommended: false, sort_order: '1' })
   const [planFeatures, setPlanFeatures] = useState<{ category: string; items: string[] }[]>([{ category: '', items: [] }])
 
-  useEffect(() => { fetchSubscriptions(); fetchPlans() }, [])
+  useEffect(() => { fetchSubscriptions(); fetchPlans(); fetchShops() }, [])
 
   async function fetchSubscriptions() {
     try { const res = await fetch(`${API_BASE_URL}/subscriptions`, { headers: authHeaders() }); if (res.ok) setSubscriptions(await res.json() || []) }
@@ -79,6 +84,11 @@ export default function AbonnementsPage() {
   async function fetchPlans() {
     try { const res = await fetch(`${API_BASE_URL}/subscriptions/plans`, { headers: authHeaders() }); if (res.ok) setPlans(await res.json() || []) }
     catch (e) { console.error(e) } finally { setPlansLoading(false) }
+  }
+  const [shops, setShops] = useState<Shop[]>([])
+  async function fetchShops() {
+    try { const res = await fetch(`${API_BASE_URL}/shops`, { headers: authHeaders() }); if (res.ok) setShops(await res.json() || []) }
+    catch (e) { console.error(e) }
   }
 
   async function togglePlanActive(plan: SubscriptionPlan) {
@@ -121,6 +131,7 @@ export default function AbonnementsPage() {
 
   const filtered = subscriptions.filter((s) => s.plan.toLowerCase().includes(searchTerm.toLowerCase()))
   const activePlans = plans.filter((p) => p.is_active)
+  const shopMap = new Map(shops.map((s) => [s.id, s.name]))
 
   return (
     <AdminOnly>
@@ -239,12 +250,13 @@ export default function AbonnementsPage() {
                     const isExpired = nextBilling ? nextBilling < now : false
                     const statusClass = sub.status === 'active' && !isExpired ? 'ik-badge-green' : sub.status === 'active' && isExpired ? 'bg-red-100 text-red-700 border-red-200' : 'ik-badge-gray'
                     const statusLabel = sub.status === 'active' && !isExpired ? 'Actif' : sub.status === 'active' && isExpired ? 'Expiré' : 'Inactif'
+                    const shopName = sub.shop_id ? (shopMap.get(sub.shop_id) ?? `Boutique #${sub.shop_id}`) : '—'
                     return (
                       <tr key={sub.id} className="ik-tr-hover">
                         <td className="px-5 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900 dark:text-gray-100">{sub.plan}</div></td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{sub.price.toLocaleString()} FCFA</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 capitalize">{sub.interval === 'month' ? 'Mensuel' : 'Annuel'}</td>
-                        <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">#{sub.shop_id ?? '—'}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{shopName}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{sub.started_at ? new Date(sub.started_at).toLocaleDateString('fr-FR') : '—'}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{sub.next_billing ? new Date(sub.next_billing).toLocaleDateString('fr-FR') : '—'}</td>
                         <td className="px-5 py-4 whitespace-nowrap"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusClass}`}>{statusLabel}</span></td>

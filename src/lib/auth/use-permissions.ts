@@ -59,6 +59,7 @@ export function usePermissions() {
       { name: 'Portefeuille Client', href: '/client-wallets', icon: 'Wallet', permission: 'MANAGE_CLIENT_WALLETS' },
       { name: 'Retraits', href: '/withdrawals', icon: 'ArrowUpRight', permission: 'MANAGE_WITHDRAWALS' },
       { name: 'Mi Services', href: '/mi-services', icon: 'Sparkles', permission: 'MANAGE_MI_SERVICES' },
+      { name: 'Mi Services Catégories', href: '/mi-services/categories', icon: 'Tag', permission: 'MANAGE_MI_SERVICES' },
       { name: 'Mi Services Commandees', href: '/mi-services/orders', icon: 'ClipboardList', permission: 'MANAGE_MI_SERVICE_ORDERS' },
       { name: 'OTP Codes', href: '/otp', icon: 'Key', permission: 'VIEW_OTP_CODES' },
       { name: 'Notifications', href: '/notifications', icon: 'Bell', permission: 'SEND_NOTIFICATIONS' },

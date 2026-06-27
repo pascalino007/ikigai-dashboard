@@ -29,7 +29,8 @@ import {
   Bell,
   ArrowUpRight,
   Sparkles,
-  ClipboardList
+  ClipboardList,
+  Tag
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -58,7 +59,8 @@ const iconMap = {
   Bell,
   ArrowUpRight,
   Sparkles,
-  ClipboardList
+  ClipboardList,
+  Tag
 }
 
 export function Sidebar() {
