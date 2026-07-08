@@ -31,6 +31,17 @@ interface ServiceFormProps {
   initialData?: Service | null
 }
 
+/** Resolve a stored value (which may be an id OR a name) to the canonical id. */
+function resolveId(raw: string, list: Array<{ id: string | number; name: string }>): string {
+  if (!raw) return ''
+  const s = String(raw).trim().toLowerCase()
+  const byId = list.find((o) => String(o.id).toLowerCase() === s)
+  if (byId) return String(byId.id)
+  const byName = list.find((o) => o.name?.trim().toLowerCase() === s)
+  if (byName) return String(byName.id)
+  return ''
+}
+
 export function ServiceForm({
   isOpen,
   onClose,
@@ -62,6 +73,10 @@ export function ServiceForm({
   const [loadingCategories, setLoadingCategories] = useState(false)
   const [loadingSubcategories, setLoadingSubcategories] = useState(false)
   const [concatained, setconcatained] = useState<string>('')
+  // Raw category/subcategory from initialData (may be an id or a name);
+  // resolved to canonical ids once the categories/subcategories lists load.
+  const [pendingCategory, setPendingCategory] = useState('')
+  const [pendingSubcategory, setPendingSubcategory] = useState('')
 
   // ✅ Fetch all categories on mount
   useEffect(() => {
@@ -103,22 +118,30 @@ export function ServiceForm({
 
   useEffect(() => {
     if (initialData) {
+      // The API returns raw entity fields (`Category`, `sous_category`, string
+      // price/duration); the stored value may be an id OR a name, so park it in
+      // pending* and resolve to the canonical id once the lists load.
+      const raw = initialData as any
+      setPendingCategory(String(raw.Category ?? raw.category ?? ''))
+      setPendingSubcategory(String(raw.sous_category ?? raw.subcategory ?? ''))
       setFormData({
-        shopId: initialData.shopId,
-        name: initialData.name,
-        description: initialData.description,
-        category: initialData.category,
-        sous_category: initialData.subcategory || '',
-        price: initialData.price,
-        duration: initialData.duration,
+        shopId: String(initialData.shopId ?? selectedShopId ?? ''),
+        name: initialData.name ?? '',
+        description: initialData.description ?? '',
+        category: '',        // resolved from pendingCategory
+        sous_category: '',   // resolved from pendingSubcategory
+        price: Number(String(initialData.price ?? '0').replace(/[^\d.-]/g, '')) || 0,
+        duration: parseInt(String(initialData.duration ?? ''), 10) || 30,
         imageurl: initialData.imageurl || 'https://cdn.example.com/default-service.jpg',
-        tags: (initialData as any).tags || '',
-        provider_id: initialData.providerId ? Number(initialData.providerId) : undefined,
-        provider_name: (initialData as any).providerName || '',
+        tags: raw.tags || '',
+        provider_id: raw.provider_id ?? (initialData.providerId ? Number(initialData.providerId) : undefined),
+        provider_name: raw.provider_name || raw.providerName || '',
         profileImageFile: undefined, // Reset file input on open
         galleryImages: undefined,
       })
     } else {
+      setPendingCategory('')
+      setPendingSubcategory('')
       setFormData({
         shopId: selectedShopId || '',
         name: '',
@@ -137,12 +160,29 @@ export function ServiceForm({
     }
   }, [initialData, selectedShopId, isOpen])
 
+  // Resolve the stored category to its canonical id once the list is loaded,
+  // so the <select> preselects correctly (also triggers the subcategory fetch).
+  useEffect(() => {
+    if (!pendingCategory || categories.length === 0) return
+    const catId = resolveId(pendingCategory, categories)
+    if (catId) setFormData((prev) => ({ ...prev, category: catId }))
+    setPendingCategory('')
+  }, [pendingCategory, categories])
+
+  useEffect(() => {
+    if (!pendingSubcategory || subcategories.length === 0) return
+    const subId = resolveId(pendingSubcategory, subcategories)
+    if (subId) setFormData((prev) => ({ ...prev, sous_category: subId }))
+    setPendingSubcategory('')
+  }, [pendingSubcategory, subcategories])
+
   // Keep track of previous auto-generated base name so we only overwrite
   // when name is empty or still equals the previous generated base.
   const prevBaseNameRef = useRef<string>('')
 
   // Update name immediately when category/subcategory changes (preserve user edits)
   const updateNameFromCategorySub = (catId: string, subId: string) => {
+    if (initialData) return // editing: never overwrite the existing name
     const catName = categories.find((c) => c.id === catId)?.name || ''
     const subName = subcategories.find((s) => s.id === subId)?.name || ''
     const baseName = [catName, subName].filter(Boolean).join(' ').trim()
@@ -155,6 +195,9 @@ export function ServiceForm({
   }
 
   useEffect(() => {
+    // Editing an existing service: keep its real name — this auto-naming is a
+    // creation convenience only (it used to blank the name on modal open).
+    if (initialData) return
     const catName = categories.find((c) => c.id === formData.category)?.name || ''
     const subName = subcategories.find((s) => s.id === formData.sous_category)?.name || ''
     const parts = []
@@ -357,12 +400,13 @@ export function ServiceForm({
                     const catName = categories.find((c) => c.id === catId)?.name || ''
                     handleInputChange('category', catId)
                     handleInputChange('sous_category', '')
-                    
-                    // Update name and log
-                    const newName = catName
-                    handleInputChange('name', newName)
-                    console.log('Updated name after category change:', newName)
-                    
+
+                    // Auto-name from the category on creation only — never
+                    // overwrite an existing service's name while editing.
+                    if (!initialData) {
+                      handleInputChange('name', catName)
+                    }
+
                     setErrors(prev => ({
                       ...prev,
                       category: '',
