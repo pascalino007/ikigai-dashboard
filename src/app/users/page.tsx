@@ -7,8 +7,11 @@ import { Plus, Search, Edit, Trash2, User, Mail, Phone, Shield, Calendar } from 
 import { User as UserType } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { UserForm } from '@/components/forms/user-form'
+import { useAuth } from '@/lib/auth/auth-context'
 
 export default function UsersPage() {
+  const { user: currentUser } = useAuth()
+  const isAdmin = currentUser?.role === 'admin'
   const [users, setUsers] = useState<UserType[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -18,37 +21,35 @@ export default function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingUser, setEditingUser] = useState<UserType | null>(null)
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/auth`)
-        const data = await res.json()
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth`)
+      const data = await res.json()
 
-        // MAP API RESPONSE → UserType used in UI
-        const formatted: UserType[] = data.map((u: any) => ({
-          id: u.id.toString(),
-          firstName: u.firstname || '',
-          lastName: u.lastname || '',
-          email: u.email,
-          phone: u.phone || '',
-          role: u.role === 'user' ? 'customer' : u.role, 
-          profilePicture: u.image || undefined,
-          isActive: u.is_active,
-          lastLogin: null,
-          createdAt: u.createdAt ? new Date(u.createdAt) : new Date(),
-          updatedAt: u.createdAt ? new Date(u.createdAt) : new Date()
-        }))
+      // MAP API RESPONSE → UserType used in UI
+      const formatted: UserType[] = data.map((u: any) => ({
+        id: u.id.toString(),
+        firstName: u.firstname || '',
+        lastName: u.lastname || '',
+        email: u.email,
+        phone: u.phone || '',
+        role: u.role === 'user' ? 'customer' : u.role,
+        profilePicture: u.image || undefined,
+        isActive: u.is_active,
+        lastLogin: null,
+        createdAt: u.createdAt ? new Date(u.createdAt) : new Date(),
+        updatedAt: u.createdAt ? new Date(u.createdAt) : new Date()
+      }))
 
-        setUsers(formatted)
-      } catch (error) {
-        console.error('Failed to fetch users:', error)
-      } finally {
-        setLoading(false)
-      }
+      setUsers(formatted)
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    fetchUsers()
-  }, [])
+  useEffect(() => { fetchUsers() }, [])
 
 
   const filteredUsers = users.filter(user => {
@@ -70,43 +71,15 @@ export default function UsersPage() {
   })
 
 
-  const handleAddUser = async (data: any) => {
-    const newUser: UserType = {
-      id: Date.now().toString(),
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phone: data.phone || '',
-      role: data.role,
-      profilePicture: data.profilePicture ? URL.createObjectURL(data.profilePicture) : undefined,
-      isActive: data.isActive !== false,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-    setUsers(prev => [newUser, ...prev])
+  // The UserForm performs the API call itself; on success we just refetch.
+  const handleAddUser = async () => {
     setShowAddModal(false)
+    fetchUsers()
   }
 
-
-  const handleUpdateUser = async (data: any) => {
-    if (!editingUser) return
-
-    const updatedUser: UserType = {
-      ...editingUser,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phone: data.phone || '',
-      role: data.role,
-      profilePicture: data.profilePicture
-        ? URL.createObjectURL(data.profilePicture)
-        : editingUser.profilePicture,
-      isActive: data.isActive !== false,
-      updatedAt: new Date()
-    }
-
-    setUsers(prev => prev.map(u => (u.id === editingUser.id ? updatedUser : u)))
+  const handleUpdateUser = async () => {
     setEditingUser(null)
+    fetchUsers()
   }
 
 
@@ -135,14 +108,32 @@ export default function UsersPage() {
     }
   }
 
-  const handleToggleStatus = (userId: string) => {
-    setUsers(prev =>
-      prev.map(u =>
-        u.id === userId
-          ? { ...u, isActive: !u.isActive, updatedAt: new Date() }
-          : u
+  /** Suspend/reactivate an account (persisted via POST /auth/:id). */
+  const handleToggleStatus = async (userId: string) => {
+    const target = users.find(u => u.id === userId)
+    if (!target) return
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !target.isActive }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.message || 'Failed to update account status')
+        return
+      }
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === userId
+            ? { ...u, isActive: !u.isActive, updatedAt: new Date() }
+            : u
+        )
       )
-    )
+    } catch (error) {
+      console.error('Toggle status failed:', error)
+      alert('Network error. Could not update account status.')
+    }
   }
 
  
@@ -152,6 +143,10 @@ export default function UsersPage() {
         return 'bg-red-100 text-red-800'
       case 'manager':
         return 'bg-blue-100 text-blue-800'
+      case 'designer':
+        return 'bg-purple-100 text-purple-800'
+      case 'enroller':
+        return 'bg-amber-100 text-amber-800'
       case 'provider':
         return 'bg-green-100 text-green-800'
       case 'customer':
@@ -224,6 +219,8 @@ export default function UsersPage() {
                 <option value="all">All Roles</option>
                 <option value="admin">Admin</option>
                 <option value="manager">Manager</option>
+                <option value="designer">Designer</option>
+                <option value="enroller">Enroller</option>
                 <option value="provider">Provider</option>
                 <option value="customer">Customer</option>
               </select>
@@ -344,18 +341,21 @@ export default function UsersPage() {
                     {/* ACTIONS */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleStatus(user.id)}
-                          className={
-                            user.isActive
-                              ? 'text-orange-600 hover:text-orange-700'
-                              : 'text-green-600 hover:text-green-700'
-                          }
-                        >
-                          {user.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
+                        {/* Only an admin can suspend/reactivate or delete accounts */}
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleStatus(user.id)}
+                            className={
+                              user.isActive
+                                ? 'text-orange-600 hover:text-orange-700'
+                                : 'text-green-600 hover:text-green-700'
+                            }
+                          >
+                            {user.isActive ? 'Deactivate' : 'Activate'}
+                          </Button>
+                        )}
 
                         <Button
                           variant="ghost"
@@ -365,14 +365,16 @@ export default function UsersPage() {
                           <Edit className="h-4 w-4" />
                         </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </td>
 

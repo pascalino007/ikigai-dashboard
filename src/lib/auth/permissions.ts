@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'manager' | 'staff' | 'enroller' | 'user'
+export type UserRole = 'admin' | 'manager' | 'staff' | 'enroller' | 'designer' | 'user'
 
 export interface User {
   id: string
@@ -10,7 +10,7 @@ export interface User {
 
 export const PERMISSIONS = {
   // General
-  VIEW_DASHBOARD: ['admin', 'manager', 'enroller'],
+  VIEW_DASHBOARD: ['admin', 'manager', 'enroller', 'designer'],
 
   // Provider management
   CREATE_PROVIDER: ['admin', 'manager'],
@@ -48,7 +48,8 @@ export const PERMISSIONS = {
   // Examples from use-permissions.ts:
   MANAGE_CATEGORIES: ['admin', 'manager', 'enroller'],
   MANAGE_SPECIAL_OFFERS: ['admin', 'manager'],
-  MANAGE_SLIDERS: ['admin'],
+  // Designers manage the app's visual content (sliders, songs).
+  MANAGE_SLIDERS: ['admin', 'designer'],
   READ_PAYMENTS: ['admin', 'manager'],
   VIEW_MARKETPLACE: ['admin', 'manager'],
   MANAGE_ENROLLERS: ['admin', 'manager'],
@@ -69,22 +70,25 @@ export const PERMISSIONS = {
   SHOW_REGISTER_SHOP_MENU: ['enroller'],
 } as const
 
-export function hasPermission(user: User | null, permission: keyof typeof PERMISSIONS): boolean {
-  if (!user) return false
-  return (PERMISSIONS[permission] as readonly UserRole[]).includes(user.role)
+// Accepts any user-shaped object (the auth context's User has an optional
+// role), so both User types in the app can be passed in.
+export function hasPermission(user: { role?: string } | null, permission: keyof typeof PERMISSIONS): boolean {
+  if (!user?.role) return false
+  return (PERMISSIONS[permission] as readonly string[]).includes(user.role)
 }
 
-export function canAccess(user: User | null, requiredRole?: UserRole): boolean {
-  if (!user) return false
+export function canAccess(user: { role?: string } | null, requiredRole?: UserRole): boolean {
+  if (!user?.role) return false
   if (!requiredRole) return true
-  
+
   const roleHierarchy: Record<UserRole, number> = {
     admin: 3,
     manager: 2,
     staff: 1,
     enroller: 1,
+    designer: 1,
     user: 0
   }
-  
-  return roleHierarchy[user.role] >= roleHierarchy[requiredRole]
+
+  return (roleHierarchy[user.role as UserRole] ?? 0) >= roleHierarchy[requiredRole]
 }

@@ -7,8 +7,8 @@ import { usePermissions } from '@/lib/auth/use-permissions'
 
 interface RouteGuardProps {
   children: React.ReactNode
-  requiredRole?: 'admin' | 'manager' | 'enroller'
-  allowedRoles?: ('admin' | 'manager' | 'enroller')[]
+  requiredRole?: 'admin' | 'manager' | 'enroller' | 'designer'
+  allowedRoles?: ('admin' | 'manager' | 'enroller' | 'designer')[]
   fallbackPath?: string
 }
 
@@ -19,7 +19,7 @@ export function RouteGuard({
   fallbackPath = '/login' 
 }: RouteGuardProps) {
   const { user, isAuthenticated, isLoading } = useAuth()
-  const { isAdmin, isManager, isEnroller } = usePermissions()
+  const { isAdmin, isManager, isEnroller, isDesigner } = usePermissions()
   const router = useRouter()
 
   useEffect(() => {
@@ -32,15 +32,17 @@ export function RouteGuard({
 
     // Check role-based access
     if (requiredRole) {
-      const hasRequiredRole = 
+      const hasRequiredRole =
         (requiredRole === 'admin' && isAdmin) ||
         (requiredRole === 'manager' && isManager) ||
-        (requiredRole === 'enroller' && isEnroller)
+        (requiredRole === 'enroller' && isEnroller) ||
+        (requiredRole === 'designer' && isDesigner)
 
       if (!hasRequiredRole) {
         // Redirect to appropriate dashboard based on user role
         if (isAdmin) router.push('/')
         else if (isManager) router.push('/')
+        else if (isDesigner) router.push('/')
         else if (isEnroller) router.push('/enrolled-shops')
         else router.push(fallbackPath)
         return
@@ -53,6 +55,7 @@ export function RouteGuard({
         if (role === 'admin') return isAdmin
         if (role === 'manager') return isManager
         if (role === 'enroller') return isEnroller
+        if (role === 'designer') return isDesigner
         return false
       })
 
@@ -60,12 +63,13 @@ export function RouteGuard({
         // Redirect to appropriate dashboard based on user role
         if (isAdmin) router.push('/')
         else if (isManager) router.push('/')
+        else if (isDesigner) router.push('/')
         else if (isEnroller) router.push('/enrolled-shops')
         else router.push(fallbackPath)
         return
       }
     }
-  }, [isAuthenticated, isLoading, user, requiredRole, allowedRoles, isAdmin, isManager, isEnroller, router, fallbackPath])
+  }, [isAuthenticated, isLoading, user, requiredRole, allowedRoles, isAdmin, isManager, isEnroller, isDesigner, router, fallbackPath])
 
   // Show loading while checking authentication
   if (isLoading) {

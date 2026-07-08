@@ -14,11 +14,29 @@ interface User {
   enrolledShops?: number
 }
 
+interface OtpRequestResult {
+  success: boolean
+  /** false when the backend recognized a trusted device and logged in directly */
+  otpRequired: boolean
+  message?: string
+  error?: string
+}
+
+interface OtpVerifyResult {
+  success: boolean
+  error?: string
+}
+
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<boolean>
+  /** Step 1: validate credentials; sends an OTP email unless the device is trusted. */
+  requestLoginOtp: (email: string, password: string) => Promise<OtpRequestResult>
+  /** Step 2: verify the emailed code and open the session. */
+  verifyLoginOtp: (email: string, otp: string, rememberDevice: boolean) => Promise<OtpVerifyResult>
+  /** Patch the in-memory + persisted user (e.g. after changing the avatar). */
+  updateUser: (patch: Partial<User>) => void
   logout: () => void
 }
 
@@ -32,8 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
 
-  // 15 minutes inactivity timeout
-  const INACTIVITY_TIMEOUT = 5 * 60 * 1000
+  // Auto-logout only after 30 minutes of real inactivity — any mouse/keyboard/
+  // scroll activity resets the timer, so an active user is never signed out.
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000
 
   const logout = useCallback(() => {
     // Best-effort: release the active session server-side so it isn't left dangling.
@@ -160,66 +179,140 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t)
   }, [notice])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  // Stable per-browser id: lets the backend recognize this device and skip the
+  // OTP for 30 days when "remember this device" was checked at verification.
+  const getDeviceId = (): string => {
+    let id = localStorage.getItem('ikigai_device_id')
+    if (!id) {
+      id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `web-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      localStorage.setItem('ikigai_device_id', id)
+    }
+    return id
+  }
+
+  /** Map a session response (accessToken/user/sessionId) into local state. Returns an error message or null. */
+  const completeSession = (data: any, fallbackEmail: string): string | null => {
+    const token = data.accessToken || data.access_token || data.token
+    // Handle potential flat response structure where user data is at root
+    const rawUser = data.user || data
+    if (!token) return 'Réponse invalide du serveur'
+
+    // Check if user is active based on DB column 'is_active' (1 = active, 0 = inactive)
+    if (rawUser.is_active === 0 || rawUser.is_active === false) {
+      console.warn('Login blocked: User is inactive')
+      return 'Ce compte est désactivé.'
+    }
+
+    // Map DB fields to App User Interface
+    // DB: firstname, lastname, image, role
+    // App: name, avatar, role
+    const userData: User = {
+      id: rawUser.id?.toString() || rawUser.userId?.toString(),
+      email: rawUser.email || fallbackEmail,
+      token,
+      role: rawUser.role || 'user',
+      name: rawUser.name || `${rawUser.firstname || ''} ${rawUser.lastname || ''}`.trim(),
+      avatar: rawUser.image || rawUser.avatar,
+      enrolledShops: rawUser.enrolledShops
+    }
+
+    localStorage.setItem('ikigai_token', token)
+    localStorage.setItem('ikigai_user', JSON.stringify(userData))
+    if (data.sessionId) localStorage.setItem('ikigai_session', data.sessionId)
+    // Secret proving this device is trusted; sent with the next login to skip the OTP.
+    if (data.deviceToken) localStorage.setItem('ikigai_device_token', data.deviceToken)
+    setUser(userData)
+    return null
+  }
+
+  const requestLoginOtp = async (email: string, password: string): Promise<OtpRequestResult> => {
     setIsLoading(true)
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/signin`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login/request-otp`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          deviceId: getDeviceId(),
+          deviceToken: localStorage.getItem('ikigai_device_token') || undefined,
+        }),
       })
+      const data = await response.json().catch(() => null)
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Login API Response:', data)
-
-        const token = data.access_token || data.token
-        // Handle potential flat response structure where user data is at root
-        const rawUser = data.user || data
-
-        // Check if user is active based on DB column 'is_active' (1 = active, 0 = inactive)
-        if (rawUser.is_active === 0 || rawUser.is_active === false) {
-          console.warn('Login blocked: User is inactive')
-          return false
+      if (!response.ok) {
+        console.error('Login failed details:', response.status, data)
+        return {
+          success: false,
+          otpRequired: false,
+          error: data?.message || 'Email ou mot de passe invalide',
         }
-
-        // Map DB fields to App User Interface
-        // DB: firstname, lastname, image, role
-        // App: name, avatar, role
-        const userData: User = {
-          id: rawUser.id?.toString() || rawUser.userId?.toString(),
-          email: rawUser.email || email,
-          token,
-          role: rawUser.role || 'user',
-          name: rawUser.name || `${rawUser.firstname || ''} ${rawUser.lastname || ''}`.trim(),
-          avatar: rawUser.image || rawUser.avatar,
-          enrolledShops: rawUser.enrolledShops
-        }
-        
-        localStorage.setItem('ikigai_token', token)
-        localStorage.setItem('ikigai_user', JSON.stringify(userData))
-        if (data.sessionId) localStorage.setItem('ikigai_session', data.sessionId)
-        setUser(userData)
-        return true
       }
 
-      // Log the specific error message from the backend to the console
-      const errorData = await response.json().catch(() => null)
-      console.error('Login failed details:', response.status, errorData)
-      return false
+      // Trusted device: the backend returned the session directly, no OTP step.
+      if (data?.otpRequired === false) {
+        const err = completeSession(data, email)
+        if (err) return { success: false, otpRequired: false, error: err }
+        return { success: true, otpRequired: false }
+      }
+
+      return { success: true, otpRequired: true, message: data?.message }
     } catch (error) {
       console.error('Login error:', error)
-      return false
+      return { success: false, otpRequired: false, error: 'Erreur réseau — veuillez réessayer' }
     } finally {
       setIsLoading(false)
     }
   }
 
+  const verifyLoginOtp = async (email: string, otp: string, rememberDevice: boolean): Promise<OtpVerifyResult> => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          otp,
+          deviceId: getDeviceId(),
+          rememberDevice,
+          deviceName: 'Ikigai Dashboard (web)',
+        }),
+      })
+      const data = await response.json().catch(() => null)
+
+      if (!response.ok) {
+        console.error('OTP verify failed details:', response.status, data)
+        return { success: false, error: data?.message || 'Code invalide ou expiré' }
+      }
+
+      const err = completeSession(data, email)
+      if (err) return { success: false, error: err }
+      return { success: true }
+    } catch (error) {
+      console.error('OTP verify error:', error)
+      return { success: false, error: 'Erreur réseau — veuillez réessayer' }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const updateUser = (patch: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return prev
+      const next = { ...prev, ...patch }
+      localStorage.setItem('ikigai_user', JSON.stringify(next))
+      return next
+    })
+  }
+
   const value: AuthContextType = {
     user,
-    login,
+    requestLoginOtp,
+    verifyLoginOtp,
+    updateUser,
     logout,
     isLoading,
     isAuthenticated: !!user

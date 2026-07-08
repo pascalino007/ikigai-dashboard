@@ -11,8 +11,8 @@ interface UserFormData {
   lastName: string
   email: string
   phone: string
-  superior : string 
-  role: 'admin' | 'manager' | 'provider' | 'customer' | 'enroller'
+  superior : string
+  role: 'admin' | 'manager' | 'provider' | 'customer' | 'enroller' | 'designer'
   profilePicture: File | null
   isActive: boolean
 }
@@ -20,10 +20,12 @@ interface UserFormData {
 interface UserFormProps {
   isOpen: boolean
   onClose: () => void
+  /** Called after the user was created/updated on the backend. */
+  onSubmit?: (data: any) => void
   initialData?: UserType | null
 }
 
-export function UserForm({ isOpen, onClose, initialData }: UserFormProps) {
+export function UserForm({ isOpen, onClose, onSubmit, initialData }: UserFormProps) {
   const [formData, setFormData] = useState<UserFormData>({
     firstName: '',
     lastName: '',
@@ -143,28 +145,40 @@ const handleSubmit = async (e: React.FormEvent) => {
       }
     }
 
-    // Payload to backend
-    const payload = {
+    // Payload to backend — create via /auth/signup, edit via /auth/:id
+    const isEdit = !!initialData;
+    const payload: any = {
       firstname: formData.firstName,
       lastname: formData.lastName,
       email: formData.email,
       phone: formData.phone,
       role: formData.role,
-      password: "ikigai",
-      image: uploadedImageName
+      image: uploadedImageName,
     };
+    if (isEdit) {
+      payload.is_active = formData.isActive;
+    } else {
+      payload.password = "ikigai";
+    }
 
-    const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+    const url = isEdit
+      ? `${API_BASE_URL}/auth/${initialData!.id}`
+      : `${API_BASE_URL}/auth/signup`;
+
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
     if (!res.ok) {
-      console.log("Signup failed");
+      console.log(isEdit ? "Update failed" : "Signup failed");
       console.log(payload);
       return;
     }
+
+    const result = await res.json().catch(() => null);
+    onSubmit?.(result ?? payload);
 
     // Reset fields
     setFormData({
@@ -327,6 +341,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 >
                   <option value="enroller">Enroller</option>
                   <option value="manager">Manager</option>
+                  <option value="designer">Designer</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>

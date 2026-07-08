@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { API_BASE_URL } from '@/services/api'
 import { 
   LayoutDashboard, 
   Users, 
@@ -31,7 +32,8 @@ import {
   Sparkles,
   ClipboardList,
   Tag,
-  Smartphone
+  Smartphone,
+  Camera
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -68,16 +70,45 @@ const iconMap = {
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const { user, logout } = useAuth()
+  const { user, logout, updateUser } = useAuth()
   const { getNavigationItems } = usePermissions()
   const { theme, toggleTheme } = useTheme()
   const router = useRouter()
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
 
   const navigation = getNavigationItems()
 
   const handleLogout = () => {
     logout()
     router.push('/login')
+  }
+
+  // Any signed-in user (enroller included) can change their own picture.
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-selecting the same file
+    if (!file || !user?.id) return
+    setIsUploadingAvatar(true)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const res = await fetch(`${API_BASE_URL}/auth/${user.id}/profile-image`, {
+        method: 'POST',
+        body: fd,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || `Upload failed (${res.status})`)
+      }
+      const data = await res.json()
+      if (data?.imageUrl) updateUser({ avatar: data.imageUrl })
+    } catch (err) {
+      console.error('Avatar upload failed:', err)
+      alert("Impossible de mettre à jour la photo de profil")
+    } finally {
+      setIsUploadingAvatar(false)
+    }
   }
 
   return (
@@ -151,14 +182,34 @@ export function Sidebar() {
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </Button>
             <div className="flex items-center mb-3">
-              <div className="flex-shrink-0">
-                <div className="h-8 w-8 rounded-full bg-ikigai-primary flex items-center justify-center">
+              <div className="flex-shrink-0 relative">
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  className="group relative h-8 w-8 rounded-full bg-ikigai-primary flex items-center justify-center overflow-hidden"
+                  title="Changer ma photo de profil"
+                >
                   {user?.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full" />
+                    <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
                   ) : (
                     <User className="h-4 w-4 text-white" />
                   )}
-                </div>
+                  <span className="absolute inset-0 hidden group-hover:flex items-center justify-center bg-black/50 rounded-full">
+                    {isUploadingAvatar ? (
+                      <span className="h-3 w-3 rounded-full border-b-2 border-white animate-spin" />
+                    ) : (
+                      <Camera className="h-3.5 w-3.5 text-white" />
+                    )}
+                  </span>
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
               </div>
               <div className="ml-3 flex-1">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{user?.name}</p>

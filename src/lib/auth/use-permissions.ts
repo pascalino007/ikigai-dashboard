@@ -84,6 +84,7 @@ export function usePermissions() {
     isAdmin: user?.role === 'admin',
     isManager: user?.role === 'manager',
     isEnroller: user?.role === 'enroller',
+    isDesigner: user?.role === 'designer',
     can,
     canAccess,
     getNavigationItems,

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Store, Star, Eye, ToggleLeft, ToggleRight, X, Loader2, User, Upload, Lock } from 'lucide-react'
+import { Plus, Search, Store, Star, Eye, ToggleLeft, ToggleRight, X, Loader2, User, Upload, Lock, Pencil, Trash2 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { RouteGuard } from '@/components/auth/route-guard'
 import { useAuth } from '@/lib/auth/auth-context'
@@ -43,6 +43,7 @@ export default function EnrollersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<Enroller | null>(null)
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM)
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CreateForm, string>>>({})
   const [imagePreview, setImagePreview] = useState('')
@@ -64,12 +65,34 @@ export default function EnrollersPage() {
   useEffect(() => { fetchEnrollers() }, [])
 
   const openModal = () => {
+    setEditing(null)
     setForm(EMPTY_FORM)
     setFormErrors({})
     setImagePreview('')
     setSubmitError(null)
     setShowModal(true)
   }
+
+  const openEditModal = (enroller: Enroller, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditing(enroller)
+    setForm({
+      firstname: enroller.firstname,
+      lastname: enroller.lastname,
+      email: enroller.email,
+      phone: enroller.phone,
+      password: '', // blank = unchanged
+      profilePicture: null,
+    })
+    setFormErrors({})
+    setImagePreview(enroller.image || '')
+    setSubmitError(null)
+    setShowModal(true)
+  }
+
+  /** admin manages every enroller; a manager only the enrollers under them. */
+  const canManage = (e: Enroller) =>
+    user?.role === 'admin' || (user?.role === 'manager' && e.superior_id === Number(user?.id))
 
   const filtered = enrollers.filter((e) => {
     const name = `${e.firstname} ${e.lastname}`.toLowerCase()
@@ -98,14 +121,17 @@ export default function EnrollersPage() {
     return data.filename || ''
   }
 
-  const validate = () => {
+  const validate = (isEdit = false) => {
     const errs: Partial<Record<keyof CreateForm, string>> = {}
     if (!form.firstname.trim()) errs.firstname = 'First name is required'
     if (!form.lastname.trim()) errs.lastname = 'Last name is required'
     if (!form.email.trim()) errs.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Email is invalid'
     if (!form.phone.trim()) errs.phone = 'Phone number is required'
-    if (!form.password.trim() || form.password.length < 4) errs.password = 'Password must be at least 4 characters'
+    // Editing: an empty password means "keep the current one".
+    if (!isEdit || form.password.trim()) {
+      if (!form.password.trim() || form.password.length < 4) errs.password = 'Password must be at least 4 characters'
+    }
     return errs
   }
 
@@ -156,6 +182,68 @@ export default function EnrollersPage() {
     e.stopPropagation()
     await fetch(`${API_BASE_URL}/enrollers/${id}/toggle-active`, { method: 'PATCH' })
     fetchEnrollers()
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editing) return
+    const errs = validate(true)
+    setFormErrors(errs)
+    if (Object.keys(errs).length > 0) return
+
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const body: any = {
+        firstname: form.firstname,
+        lastname: form.lastname,
+        email: form.email,
+        phone: form.phone,
+        updaterRole: user?.role,
+        updaterId: Number(user?.id),
+      }
+      if (form.password.trim()) body.password = form.password
+      if (form.profilePicture instanceof File) {
+        body.image = await uploadImage(form.profilePicture)
+      }
+
+      const res = await fetch(`${API_BASE_URL}/enrollers/${editing.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.message || 'Update failed')
+      }
+      setShowModal(false)
+      setEditing(null)
+      fetchEnrollers()
+    } catch (err: any) {
+      setSubmitError(err.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (enroller: Enroller, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm(`Supprimer l'enroller ${enroller.firstname} ${enroller.lastname} ? Cette action est irréversible.`)) return
+    try {
+      const res = await fetch(`${API_BASE_URL}/enrollers/${enroller.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updaterRole: user?.role, updaterId: Number(user?.id) }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.message || 'Suppression impossible')
+        return
+      }
+      fetchEnrollers()
+    } catch {
+      alert('Erreur réseau — suppression impossible')
+    }
   }
 
   return (
@@ -272,6 +360,24 @@ export default function EnrollersPage() {
                             >
                               {enroller.is_active ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
                             </button>
+                            {canManage(enroller) && (
+                              <>
+                                <button
+                                  onClick={(e) => openEditModal(enroller, e)}
+                                  className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-ikigai-primary"
+                                  title="Modifier"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={(e) => handleDelete(enroller, e)}
+                                  className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500"
+                                  title="Supprimer"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -292,13 +398,15 @@ export default function EnrollersPage() {
             <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Add New Enroller</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {editing ? "Modifier l'enroller" : 'Add New Enroller'}
+                  </h2>
                   <Button variant="ghost" size="icon" onClick={() => setShowModal(false)}>
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
 
-                <form onSubmit={handleCreate} className="space-y-6">
+                <form onSubmit={editing ? handleUpdate : handleCreate} className="space-y-6">
                   {/* USER DETAILS */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium flex items-center text-gray-900 dark:text-gray-100">
@@ -383,13 +491,15 @@ export default function EnrollersPage() {
                       Security
                     </h3>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {editing ? 'Password (laisser vide pour ne pas changer)' : 'Password *'}
+                      </label>
                       <input
                         type="password"
                         value={form.password}
                         onChange={(e) => setForm(p => ({ ...p, password: e.target.value }))}
                         className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${formErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'}`}
-                        placeholder="Enter password manually"
+                        placeholder={editing ? 'Nouveau mot de passe (optionnel)' : 'Enter password manually'}
                       />
                       {formErrors.password && <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>}
                     </div>
@@ -403,7 +513,9 @@ export default function EnrollersPage() {
                   <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? 'Creating...' : 'Create Enroller'}
+                      {isSubmitting
+                        ? (editing ? 'Updating...' : 'Creating...')
+                        : (editing ? 'Enregistrer' : 'Create Enroller')}
                     </Button>
                   </div>
                 </form>
