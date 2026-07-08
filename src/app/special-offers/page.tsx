@@ -3,11 +3,12 @@
 import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Filter, Edit, Trash2, Eye, Calendar, Percent, Clock } from 'lucide-react'
+import { Plus, Edit, Trash2, Calendar, Percent, Clock } from 'lucide-react'
 import { SpecialOffer, ShopService } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { SpecialOfferForm } from '@/components/forms/special-offer-form'
-import { AdminOnly } from '@/components/auth/route-guard'
+import { SpecialOfferEditModal } from '@/components/modals/special-offer-edit-modal'
+import { AdminOrManager } from '@/components/auth/route-guard'
 
 
 
@@ -20,40 +21,54 @@ export default function SpecialOffersPage() {
   const [shopServices, setShopServices] = useState<ShopService[]>([])
   // filters removed for now
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingOffer, setEditingOffer] = useState<SpecialOffer | null>(null)
 
   // date filters
   const [dateFrom, setDateFrom] = useState<string>('')
   const [dateTo, setDateTo] = useState<string>('')
 
-  // fetch specials from backend on mount
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      setFetchError(null)
-      try {
-        const res = await fetch(`${API_BASE_URL}/specials`)
-        if (!res.ok) throw new Error(`Failed to fetch specials (${res.status})`)
-        const data = await res.json()
+  // fetch specials from backend
+  const loadSpecials = async () => {
+    setLoading(true)
+    setFetchError(null)
+    try {
+      const res = await fetch(`${API_BASE_URL}/specials`)
+      if (!res.ok) throw new Error(`Failed to fetch specials (${res.status})`)
+      const data = await res.json()
 
-        // Normalize dates coming from backend (strings) into Date objects
-        const normalized = Array.isArray(data)
-          ? data.map((d: any) => ({
-              ...d,
-              startDate: d.startDate ? new Date(d.startDate) : new Date(),
-              endDate: d.endDate ? new Date(d.endDate) : new Date()
-            }))
-          : []
-        setSpecialOffers(normalized)
-      } catch (err) {
-        console.error('Error fetching specials:', err)
-        setFetchError(err instanceof Error ? err.message : 'Unknown error')
-        // keep mock data as fallback
-      } finally {
-        setLoading(false)
-      }
+      // Normalize dates coming from backend (strings) into Date objects
+      const normalized = Array.isArray(data)
+        ? data.map((d: any) => ({
+            ...d,
+            startDate: d.startDate ? new Date(d.startDate) : new Date(),
+            endDate: d.endDate ? new Date(d.endDate) : new Date()
+          }))
+        : []
+      setSpecialOffers(normalized)
+    } catch (err) {
+      console.error('Error fetching specials:', err)
+      setFetchError(err instanceof Error ? err.message : 'Unknown error')
+      // keep mock data as fallback
+    } finally {
+      setLoading(false)
     }
-    load()
+  }
+
+  useEffect(() => {
+    loadSpecials()
   }, [])
+
+  const handleDeleteOffer = async (offer: SpecialOffer) => {
+    if (!confirm(`Supprimer l'offre "${offer.title}" ?`)) return
+    try {
+      const res = await fetch(`${API_BASE_URL}/specials/${offer.id}`, { method: 'DELETE' })
+      if (!res.ok && res.status !== 204) throw new Error(`Erreur ${res.status}`)
+      setSpecialOffers(prev => prev.filter(o => o.id !== offer.id))
+    } catch (err) {
+      console.error('Error deleting special:', err)
+      alert("Échec de la suppression de l'offre")
+    }
+  }
 
   const stats = useMemo(() => {
     const now = new Date()
@@ -142,7 +157,7 @@ export default function SpecialOffersPage() {
   }
 
   return (
-    <AdminOnly>
+    <AdminOrManager>
       <DashboardLayout>
       <div className="p-6">
         <div className="mb-8">
@@ -308,13 +323,10 @@ export default function SpecialOffersPage() {
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                          <div className="flex space-x-2">
-                           <Button variant="ghost" size="sm">
-                             <Eye className="h-4 w-4" />
-                           </Button>
-                           <Button variant="ghost" size="sm">
+                           <Button variant="ghost" size="sm" onClick={() => setEditingOffer(offer)} title="Modifier">
                              <Edit className="h-4 w-4" />
                            </Button>
-                           <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                           <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDeleteOffer(offer)} title="Supprimer">
                              <Trash2 className="h-4 w-4" />
                            </Button>
                          </div>
@@ -339,8 +351,15 @@ export default function SpecialOffersPage() {
             />
           )
         })()}
+
+        {/* Edit Special Offer Modal */}
+        <SpecialOfferEditModal
+          offer={editingOffer}
+          onClose={() => setEditingOffer(null)}
+          onSaved={loadSpecials}
+        />
       </div>
     </DashboardLayout>
-    </AdminOnly>
+    </AdminOrManager>
   )
 }

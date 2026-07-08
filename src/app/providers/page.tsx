@@ -8,7 +8,7 @@ import { ServiceProvider } from '@/types'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ProviderForm } from '@/components/forms/provider-form'
 import { ProviderEditModal } from '@/components/modals/provider-edit-modal'
-import { AdminOnly } from '@/components/auth/route-guard'
+import { AdminOrManager } from '@/components/auth/route-guard'
 
 const mockProviders: ServiceProvider[] = []
 
@@ -241,7 +241,7 @@ export default function ProvidersPage() {
   }
 
   return (
-    <AdminOnly>
+    <AdminOrManager>
       <DashboardLayout>
       <div className="p-6">
       {newCredentials && (
@@ -462,6 +462,6 @@ export default function ProvidersPage() {
       />
       </div>
     </DashboardLayout>
-    </AdminOnly>
+    </AdminOrManager>
   )
 }

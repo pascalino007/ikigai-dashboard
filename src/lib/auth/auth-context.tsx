@@ -27,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [notice, setNotice] = useState<string | null>(null)
   const router = useRouter()
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
@@ -35,8 +36,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const INACTIVITY_TIMEOUT = 5 * 60 * 1000
 
   const logout = useCallback(() => {
+    // Best-effort: release the active session server-side so it isn't left dangling.
+    try {
+      const sid = localStorage.getItem('ikigai_session')
+      const savedUser = localStorage.getItem('ikigai_user')
+      const uid = savedUser ? JSON.parse(savedUser)?.id : null
+      if (uid && sid) {
+        fetch(`${API_BASE_URL}/auth/session/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: Number(uid), sessionId: sid }),
+        }).catch(() => {})
+      }
+    } catch {}
     localStorage.removeItem('ikigai_token')
     localStorage.removeItem('ikigai_user')
+    localStorage.removeItem('ikigai_session')
     setUser(null)
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current)
@@ -107,6 +122,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth()
   }, [])
 
+  // Single active session: poll the backend; if this session was superseded by a
+  // newer login elsewhere, sign out here.
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    const check = async () => {
+      try {
+        const sid = localStorage.getItem('ikigai_session')
+        if (!sid || !user.id) return
+        const res = await fetch(`${API_BASE_URL}/auth/session/check`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: Number(user.id), sessionId: sid }),
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (active && data && data.valid === false) {
+          setNotice('Votre session a été fermée : votre compte a été utilisé sur un autre appareil.')
+          localStorage.removeItem('ikigai_token')
+          localStorage.removeItem('ikigai_user')
+          localStorage.removeItem('ikigai_session')
+          setUser(null)
+          router.push('/login')
+        }
+      } catch {}
+    }
+    check()
+    const id = setInterval(check, 45000)
+    return () => { active = false; clearInterval(id) }
+  }, [user, router])
+
+  // Auto-dismiss the session notice.
+  useEffect(() => {
+    if (!notice) return
+    const t = setTimeout(() => setNotice(null), 7000)
+    return () => clearTimeout(t)
+  }, [notice])
+
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
     try {
@@ -147,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         localStorage.setItem('ikigai_token', token)
         localStorage.setItem('ikigai_user', JSON.stringify(userData))
+        if (data.sessionId) localStorage.setItem('ikigai_session', data.sessionId)
         setUser(userData)
         return true
       }
@@ -173,6 +227,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
+      {notice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-md w-[calc(100%-2rem)] px-4 py-3 rounded-lg bg-red-600 text-white text-sm shadow-lg text-center">
+          {notice}
+        </div>
+      )}
       {children}
     </AuthContext.Provider>
   )

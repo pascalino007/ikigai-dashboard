@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors, Filter, List, Grid, Calendar, Tag, Star, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Search, MapPin, Phone, Mail, Edit, Trash2, Eye, Scissors, Filter, List, Grid, Calendar, Tag, Star, ToggleLeft, ToggleRight, TrendingUp, Store } from 'lucide-react'
 import { Shop } from '@/types'
 import { ShopForm } from '@/components/forms/shop-form'
 import { ShopViewModal } from '@/components/modals/shop-view-modal'
@@ -16,6 +16,13 @@ import { RouteGuard } from '@/components/auth/route-guard'
 
 interface GeoEntry { id: string; countryId: string; regionId: string; cityId?: string; districtId?: string; name: string }
 interface GeoCategory { id: string; name: string }
+
+// A shop's effective open/closed state (backend already computes `status` as open|closed).
+const isShopOnline = (s: any) => {
+  const st = String(s?.status ?? '').toLowerCase().trim()
+  return st === 'open' || st === 'ouvert' || st === 'free' || st === 'occupé'
+}
+const shopViews = (s: any) => Number(s?.views ?? 0) || 0
 
 export default function ShopsPage() {
   const router = useRouter()
@@ -93,6 +100,18 @@ export default function ShopsPage() {
     const matchesQuartier = !selectedQuartier || shop.area === selectedQuartier
     return matchesSearch && matchesCategory && matchesCountry && matchesCity && matchesArrondissement && matchesQuartier
   }), [shops, searchTerm, selectedCategory, selectedCountry, selectedCity, selectedArrondissement, selectedQuartier])
+
+  // Online/closed counts + the single most-visited shop, for the insights bar.
+  const insights = useMemo(() => {
+    const online = shops.filter(isShopOnline).length
+    let mostVisited: any = null
+    for (const s of shops) {
+      if (!mostVisited || shopViews(s) > shopViews(mostVisited)) mostVisited = s
+    }
+    if (mostVisited && shopViews(mostVisited) <= 0) mostVisited = null
+    return { online, closed: shops.length - online, mostVisited }
+  }, [shops])
+  const topVisitedId = insights.mostVisited ? String(insights.mostVisited.id) : null
 
   // Load shops + geo data on mount
   useEffect(() => {
@@ -424,6 +443,31 @@ export default function ShopsPage() {
       </div>
       
 
+      {/* Visits & online/closed insights */}
+      {shops.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-ikigai-primary/10 flex items-center justify-center shrink-0"><Store className="h-5 w-5 text-ikigai-primary" /></div>
+            <div><p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{shops.length}</p><p className="text-xs text-gray-500">Salons</p></div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0"><span className="h-2.5 w-2.5 rounded-full bg-green-500" /></div>
+            <div><p className="text-2xl font-bold text-green-600">{insights.online}</p><p className="text-xs text-gray-500">En ligne</p></div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0"><span className="h-2.5 w-2.5 rounded-full bg-red-400" /></div>
+            <div><p className="text-2xl font-bold text-red-500">{insights.closed}</p><p className="text-xs text-gray-500">Fermés</p></div>
+          </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0"><TrendingUp className="h-5 w-5 text-amber-500" /></div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{insights.mostVisited ? insights.mostVisited.name : '—'}</p>
+              <p className="text-xs text-gray-500 truncate">Plus visité{insights.mostVisited ? ` · ${shopViews(insights.mostVisited)} visites` : ''}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* View Mode Toggle */}
       <div className="flex justify-end mb-4">
         <div className="flex space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
@@ -490,6 +534,21 @@ export default function ShopsPage() {
                         const stars = { basic: 1, pro: 3, elite: 5 }[g]
                         return <>{'★'.repeat(stars)}{'☆'.repeat(5 - stars)}</>
                       })()}
+                    </span>
+                  )}
+                  {/* Online/closed + visits overlay */}
+                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium shadow-md ${isShopOnline(shop) ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${isShopOnline(shop) ? 'bg-green-500' : 'bg-gray-400'}`} />
+                      {isShopOnline(shop) ? 'En ligne' : 'Fermé'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-black/60 text-white shadow-md">
+                      <Eye className="h-3 w-3" />{shopViews(shop)}
+                    </span>
+                  </div>
+                  {topVisitedId === String(shop.id) && (
+                    <span className="absolute top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-amber-400 text-amber-900 shadow-md">
+                      <TrendingUp className="h-3 w-3" /> Plus visité
                     </span>
                   )}
                 </div>
@@ -649,6 +708,11 @@ export default function ShopsPage() {
                   >
                     {shop.isActive ? 'Active' : 'Inactive'}
                   </span>
+                  {topVisitedId === String(shop.id) && (
+                    <span className="absolute bottom-1 left-1 right-1 inline-flex items-center justify-center gap-1 px-1 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-amber-900 shadow">
+                      <TrendingUp className="h-2.5 w-2.5" /> Top
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex-1 p-4 flex flex-col justify-between">
@@ -701,9 +765,14 @@ export default function ShopsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                       <span className="flex items-center"><MapPin className="h-3 w-3 mr-1" />{shop.city}</span>
                       <span className="flex items-center"><Phone className="h-3 w-3 mr-1" />{shop.phone}</span>
+                      <span className={`inline-flex items-center gap-1 ${isShopOnline(shop) ? 'text-green-600' : 'text-red-500'}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${isShopOnline(shop) ? 'bg-green-500' : 'bg-red-400'}`} />
+                        {isShopOnline(shop) ? 'En ligne' : 'Fermé'}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-gray-500"><Eye className="h-3 w-3" />{shopViews(shop)} visites</span>
                     </div>
                   </div>
 

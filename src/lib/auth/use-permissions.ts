@@ -61,14 +61,14 @@ export function usePermissions() {
       { name: 'Mi Services', href: '/mi-services', icon: 'Sparkles', permission: 'MANAGE_MI_SERVICES' },
       { name: 'Mi Services Catégories', href: '/mi-services/categories', icon: 'Tag', permission: 'MANAGE_MI_SERVICES' },
       { name: 'Mi Services Commandees', href: '/mi-services/orders', icon: 'ClipboardList', permission: 'MANAGE_MI_SERVICE_ORDERS' },
-      { name: 'OTP Codes', href: '/otp', icon: 'Key', permission: 'VIEW_OTP_CODES' },
+      { name: 'Utilisation des App', href: '/app-usage', icon: 'Smartphone', permission: 'VIEW_APP_USAGE' },
       { name: 'Notifications', href: '/notifications', icon: 'Bell', permission: 'SEND_NOTIFICATIONS' },
       { name: 'Analytics', href: '/analytics', icon: 'BarChart3', permission: 'VIEW_ANALYTICS' },
       { name: 'Settings', href: '/settings', icon: 'Settings', permission: 'MANAGE_SETTINGS' },
       { name: 'Geolocation', href: '/geolocation', icon: 'Settings', permission: 'MANAGE_GEOLOCATION' },
       // Enroller specific items
       { name: 'Enrolled Shops', href: '/enrolled-shops', icon: 'Store', permission: 'VIEW_ENROLLED_SHOPS' },
-      { name: 'Register Shop', href: '/register-shop', icon: 'Plus', permission: 'CREATE_SHOP' },
+      { name: 'Register Shop', href: '/register-shop', icon: 'Plus', permission: 'SHOW_REGISTER_SHOP_MENU' },
     ]
 
     // The original list had some duplicate items; this ensures each nav item appears only once.

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, DollarSign, Clock, Tag, Loader2 } from 'lucide-react'
+import { X, DollarSign, Clock, Tag, Loader2, Pencil } from 'lucide-react'
 import { API_BASE_URL } from '@/services/api'
 import { ShopService } from '@/types'
 
@@ -14,6 +14,17 @@ interface ShopServiceEditModalProps {
 
 interface ApiCategory { id: string; name: string }
 interface ApiSousCategory { id: string; name: string; category: string }
+
+/** Resolve a stored value (which may be an id OR a name) to the canonical category/sous-category id. */
+function resolveId(raw: string, list: { id: string; name: string }[]): string {
+  if (!raw) return ''
+  const s = String(raw).trim().toLowerCase()
+  const byId = list.find(o => o.id.toLowerCase() === s)
+  if (byId) return byId.id
+  const byName = list.find(o => o.name.trim().toLowerCase() === s)
+  if (byName) return byName.id
+  return ''
+}
 
 export function ShopServiceEditModal({ service, onClose, onSaved }: ShopServiceEditModalProps) {
   const [formData, setFormData] = useState({
@@ -31,29 +42,60 @@ export function ShopServiceEditModal({ service, onClose, onSaved }: ShopServiceE
   const [allSousCategories, setAllSousCategories] = useState<ApiSousCategory[]>([])
   const [loadingData, setLoadingData] = useState(false)
 
+  // Per-field inline edit toggles — collapsed shows the current value, expanded shows the control.
+  const [editName, setEditName] = useState(false)
+  const [editCategory, setEditCategory] = useState(false)
+  const [editSubcategory, setEditSubcategory] = useState(false)
+
   useEffect(() => {
     if (!service) return
+    // Fields we know immediately.
     setFormData({
       name: service.name ?? '',
       description: service.description ?? '',
       price: String(service.price ?? ''),
       duration: String(service.duration ?? ''),
-      category: service.category ?? '',
-      sous_category: service.subcategory ?? '',
+      category: '',        // resolved after the lists load
+      sous_category: '',   // resolved after the lists load
       tags: Array.isArray(service.tags) ? service.tags.join(', ') : (service.tags ?? ''),
     })
     setErrors({})
+    setEditName(false)
+    setEditCategory(false)
+    setEditSubcategory(false)
     setLoadingData(true)
+
+    const rawCategory = (service as any).category ?? ''
+    const rawSubcategory = (service as any).subcategory ?? ''
+
     Promise.all([
       fetch(`${API_BASE_URL}/categories/`).then(r => r.json()),
       fetch(`${API_BASE_URL}/sous-categories`).then(r => r.json()),
     ]).then(([cats, scs]) => {
-      setCategories(Array.isArray(cats) ? cats.map((c: any) => ({ id: String(c.id), name: c.name })) : [])
-      setAllSousCategories(Array.isArray(scs) ? scs.map((s: any) => ({ id: String(s.id), name: s.name, category: String(s.category) })) : [])
+      const catList: ApiCategory[] = Array.isArray(cats) ? cats.map((c: any) => ({ id: String(c.id), name: c.name })) : []
+      const scList: ApiSousCategory[] = Array.isArray(scs) ? scs.map((s: any) => ({ id: String(s.id), name: s.name, category: String(s.category) })) : []
+      setCategories(catList)
+      setAllSousCategories(scList)
+
+      // The service may store the category/sous-category as an id OR a name (older/mobile data).
+      // Resolve both to the canonical id so the <select> options preselect correctly.
+      const catId = resolveId(rawCategory, catList)
+      const subId = resolveId(rawSubcategory, scList)
+      setFormData(prev => ({ ...prev, category: catId, sous_category: subId }))
+
+      // If we couldn't match the stored category, open its editor so it can be set.
+      if (!catId) setEditCategory(true)
     }).catch(() => {}).finally(() => setLoadingData(false))
   }, [service])
 
   const filteredSousCategories = allSousCategories.filter(s => s.category === formData.category)
+
+  const categoryLabel =
+    categories.find(c => c.id === formData.category)?.name ??
+    (service ? ((service as any).categoryName || (service as any).category || '') : '')
+  const subcategoryLabel =
+    allSousCategories.find(s => s.id === formData.sous_category)?.name ??
+    (service ? ((service as any).sousCategoryName || (service as any).subcategory || '') : '')
 
   const validate = () => {
     const e: Record<string, string> = {}
@@ -63,6 +105,9 @@ export function ShopServiceEditModal({ service, onClose, onSaved }: ShopServiceE
     if (!formData.duration || parseInt(formData.duration) <= 0) e.duration = 'Durée invalide'
     if (!formData.category) e.category = 'Requis'
     setErrors(e)
+    // Surface the offending field so the user can act on it.
+    if (e.name) setEditName(true)
+    if (e.category) setEditCategory(true)
     return Object.keys(e).length === 0
   }
 
@@ -129,13 +174,27 @@ export function ShopServiceEditModal({ service, onClose, onSaved }: ShopServiceE
 
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom du service *</label>
-            <input
-              type="text"
-              className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.name ? 'border-red-400' : 'border-gray-200'}`}
-              value={formData.name}
-              onChange={e => set('name', e.target.value)}
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom du service *</label>
+              {!editName && (
+                <button type="button" onClick={() => setEditName(true)} className="inline-flex items-center gap-1 text-xs text-ikigai-primary hover:underline">
+                  <Pencil className="h-3 w-3" /> Modifier
+                </button>
+              )}
+            </div>
+            {editName ? (
+              <input
+                type="text"
+                autoFocus
+                className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.name ? 'border-red-400' : 'border-gray-200'}`}
+                value={formData.name}
+                onChange={e => set('name', e.target.value)}
+              />
+            ) : (
+              <div className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/40">
+                {formData.name || <span className="text-gray-400">—</span>}
+              </div>
+            )}
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
 
@@ -153,13 +212,21 @@ export function ShopServiceEditModal({ service, onClose, onSaved }: ShopServiceE
 
           {/* Category + Sous-category */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Catégorie *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Catégorie *</label>
+                {!editCategory && !loadingData && (
+                  <button type="button" onClick={() => setEditCategory(true)} className="inline-flex items-center gap-1 text-xs text-ikigai-primary hover:underline">
+                    <Pencil className="h-3 w-3" /> Modifier
+                  </button>
+                )}
+              </div>
               {loadingData ? (
                 <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-400">
                   <Loader2 className="h-3 w-3 animate-spin" /> Chargement...
                 </div>
-              ) : (
+              ) : editCategory ? (
                 <select
                   className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.category ? 'border-red-400' : 'border-gray-200'}`}
                   value={formData.category}
@@ -170,25 +237,43 @@ export function ShopServiceEditModal({ service, onClose, onSaved }: ShopServiceE
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
+              ) : (
+                <div className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/40">
+                  {categoryLabel || <span className="text-gray-400">—</span>}
+                </div>
               )}
               {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category}</p>}
             </div>
 
+            {/* Sous-category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sous-catégorie</label>
-              <select
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
-                value={formData.sous_category}
-                onChange={e => set('sous_category', e.target.value)}
-                disabled={!formData.category || filteredSousCategories.length === 0}
-              >
-                <option value="">
-                  {!formData.category ? "Choisir une catégorie d'abord" : filteredSousCategories.length === 0 ? 'Aucune sous-catégorie' : 'Sélectionner...'}
-                </option>
-                {filteredSousCategories.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Sous-catégorie</label>
+                {!editSubcategory && !loadingData && (
+                  <button type="button" onClick={() => setEditSubcategory(true)} className="inline-flex items-center gap-1 text-xs text-ikigai-primary hover:underline">
+                    <Pencil className="h-3 w-3" /> Modifier
+                  </button>
+                )}
+              </div>
+              {editSubcategory ? (
+                <select
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+                  value={formData.sous_category}
+                  onChange={e => set('sous_category', e.target.value)}
+                  disabled={!formData.category || filteredSousCategories.length === 0}
+                >
+                  <option value="">
+                    {!formData.category ? "Choisir une catégorie d'abord" : filteredSousCategories.length === 0 ? 'Aucune sous-catégorie' : 'Sélectionner...'}
+                  </option>
+                  {filteredSousCategories.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800/40">
+                  {subcategoryLabel || <span className="text-gray-400">—</span>}
+                </div>
+              )}
             </div>
           </div>
 

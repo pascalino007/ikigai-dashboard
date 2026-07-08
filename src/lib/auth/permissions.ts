@@ -41,29 +41,32 @@ export const PERMISSIONS = {
   EXPORT_DATA: ['admin'],
 
   // Settings
-  MANAGE_SETTINGS: ['admin'],
-  MANAGE_USERS: ['admin'],
+  MANAGE_SETTINGS: ['admin', 'manager'],
+  MANAGE_USERS: ['admin', 'manager'],
 
   // NOTE: Add other permissions based on application features
   // Examples from use-permissions.ts:
   MANAGE_CATEGORIES: ['admin', 'manager', 'enroller'],
-  MANAGE_SPECIAL_OFFERS: ['admin'],
+  MANAGE_SPECIAL_OFFERS: ['admin', 'manager'],
   MANAGE_SLIDERS: ['admin'],
   READ_PAYMENTS: ['admin', 'manager'],
   VIEW_MARKETPLACE: ['admin', 'manager'],
   MANAGE_ENROLLERS: ['admin', 'manager'],
   MANAGE_MANAGERS: ['admin'],
   MANAGE_REFERRALS: ['admin', 'manager'],
-  MANAGE_SUBSCRIPTIONS: ['admin', 'manager'],
+  MANAGE_SUBSCRIPTIONS: ['admin'],
   MANAGE_GEOLOCATION: ['admin'],
   VIEW_ENROLLED_SHOPS: ['enroller'],
   MANAGE_COMMANDES: ['admin', 'manager'],
   MANAGE_CLIENT_WALLETS: ['admin'],
   MANAGE_WITHDRAWALS: ['admin', 'manager'],
   VIEW_OTP_CODES: ['admin'],
-  SEND_NOTIFICATIONS: ['admin'],
-  MANAGE_MI_SERVICES: ['admin', 'manager'],
+  SEND_NOTIFICATIONS: ['admin', 'manager'],
+  MANAGE_MI_SERVICES: ['admin'],
   MANAGE_MI_SERVICE_ORDERS: ['admin', 'manager'],
+  VIEW_APP_USAGE: ['admin'],
+  // Nav-only visibility for the "Register Shop" menu (admins manage shops elsewhere).
+  SHOW_REGISTER_SHOP_MENU: ['enroller'],
 } as const
 
 export function hasPermission(user: User | null, permission: keyof typeof PERMISSIONS): boolean {

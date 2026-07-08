@@ -1,9 +1,9 @@
 'use client'
 
 import { API_BASE_URL } from '@/services/api'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Edit, Trash2 } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, MapPin, Globe, Building2, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { AreaCountryForm } from '@/components/forms/area-form'
 import { AreaEditModal } from '@/components/modals/area-edit-modal'
@@ -31,11 +31,18 @@ export default function GeolocationPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [editingZone, setEditingZone] = useState<GeoVille | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   /* ---------------- FETCH ---------------- */
   useEffect(() => {
     fetchZones()
   }, [])
+
+  // Reset to the first page whenever the search changes.
+  useEffect(() => {
+    setPage(1)
+  }, [search])
 
   const fetchZones = async () => {
     setLoading(true)
@@ -57,6 +64,20 @@ export default function GeolocationPage() {
       .toLowerCase()
       .includes(search.toLowerCase())
   )
+
+  /* ---------------- STATS ---------------- */
+  const stats = useMemo(() => {
+    const total = zones.length
+    const active = zones.filter(z => z.isActive).length
+    const countries = new Set(zones.map(z => z.countryId).filter(Boolean)).size
+    const cities = new Set(zones.map(z => z.cityId).filter(Boolean)).size
+    return { total, active, inactive: total - active, countries, cities }
+  }, [zones])
+
+  /* ---------------- PAGINATION ---------------- */
+  const totalPages = Math.max(1, Math.ceil(filteredZones.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const paginatedZones = filteredZones.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   /* ---------------- SELECTION ---------------- */
   const toggleSelect = (id: number) => {
@@ -95,6 +116,25 @@ export default function GeolocationPage() {
           </Button>
         </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          {[
+            { icon: <MapPin className="h-5 w-5 text-ikigai-primary" />, bg: 'bg-ikigai-primary/10', val: stats.total, label: 'Zones' },
+            { icon: <CheckCircle className="h-5 w-5 text-green-600" />, bg: 'bg-green-50', val: stats.active, label: 'Actives' },
+            { icon: <XCircle className="h-5 w-5 text-red-500" />, bg: 'bg-red-50', val: stats.inactive, label: 'Inactives' },
+            { icon: <Globe className="h-5 w-5 text-blue-600" />, bg: 'bg-blue-50', val: stats.countries, label: 'Pays' },
+            { icon: <Building2 className="h-5 w-5 text-amber-500" />, bg: 'bg-amber-50', val: stats.cities, label: 'Villes' },
+          ].map(({ icon, bg, val, label }) => (
+            <div key={label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-3 shadow-sm">
+              <div className={`h-10 w-10 rounded-lg ${bg} flex items-center justify-center shrink-0`}>{icon}</div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{val.toLocaleString('fr-FR')}</p>
+                <p className="text-xs text-gray-500">{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Search */}
         <div className="bg-white dark:bg-gray-900 p-4 rounded-lg shadow mb-6">
           <div className="relative">
@@ -127,7 +167,7 @@ export default function GeolocationPage() {
             </thead>
 
             <tbody className="divide-y">
-              {filteredZones.map(zone => (
+              {paginatedZones.map(zone => (
                 <tr key={zone.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <input
@@ -194,6 +234,50 @@ export default function GeolocationPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {filteredZones.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+            <p className="text-sm text-gray-500">
+              {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredZones.length)} sur {filteredZones.length.toLocaleString('fr-FR')}
+            </p>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                .map((p, idx, arr) => (
+                  <span key={p} className="flex items-center">
+                    {idx > 0 && p - arr[idx - 1] > 1 && <span className="px-1 text-gray-400">…</span>}
+                    <button
+                      onClick={() => setPage(p)}
+                      className={`h-8 min-w-8 px-2 rounded-md text-sm font-medium ${
+                        p === currentPage
+                          ? 'bg-ikigai-primary text-white'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  </span>
+                ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Modal */}
         <AreaCountryForm

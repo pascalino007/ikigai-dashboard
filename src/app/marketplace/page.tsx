@@ -9,7 +9,7 @@ import {
   Package, Filter, Store, SlidersHorizontal
 } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
-import { AdminOnly } from '@/components/auth/route-guard'
+import { AdminOrManager } from '@/components/auth/route-guard'
 import { ProductForm, Product } from '@/components/forms/product-form'
 import { useAuth } from '@/lib/auth/auth-context'
 
@@ -111,7 +111,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <AdminOnly>
+    <AdminOrManager>
       <DashboardLayout>
         <div className="p-6 space-y-6">
 
@@ -391,6 +391,6 @@ export default function ProductsPage() {
           providerId={user?.id ? parseInt(user.id) : 0}
         />
       </DashboardLayout>
-    </AdminOnly>
+    </AdminOrManager>
   )
 }

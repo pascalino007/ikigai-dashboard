@@ -30,7 +30,8 @@ import {
   ArrowUpRight,
   Sparkles,
   ClipboardList,
-  Tag
+  Tag,
+  Smartphone
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -60,7 +61,8 @@ const iconMap = {
   ArrowUpRight,
   Sparkles,
   ClipboardList,
-  Tag
+  Tag,
+  Smartphone
 }
 
 export function Sidebar() {
