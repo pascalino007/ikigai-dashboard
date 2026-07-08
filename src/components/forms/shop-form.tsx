@@ -143,6 +143,7 @@ const [formData, setFormData] = useState<ShopFormData>({
   const [listsError, setListsError] = useState<string | null>(null)
   const [geoZones, setGeoZones] = useState<GeoVille[]>([])
   const [geoLoading, setGeoLoading] = useState(false)
+  const [quartierSearch, setQuartierSearch] = useState('')
 
   useEffect(() => {
     let mounted = true
@@ -210,29 +211,31 @@ const [formData, setFormData] = useState<ShopFormData>({
     }
   }
 
-  const uniqueCountries = [...new Set(geoZones.map(z => z.countryId).filter(Boolean))]
-  const filteredRegions = [...new Set(
-    geoZones
-      .filter(z => !formData.pays || z.countryId === formData.pays)
-      .map(z => z.regionId)
-      .filter(Boolean)
-  )]
-  const filteredVilles = [...new Set(
-    geoZones
-      .filter(z => z.cityId && (!formData.region || z.regionId === formData.region))
-      .map(z => z.cityId as string)
-  )]
-  const filteredDistricts = [...new Set(
-    geoZones
-      .filter(z => z.districtId && (!formData.ville || z.cityId === formData.ville))
-      .map(z => z.districtId as string)
-  )]
-  const filteredQuartiers = [...new Set(
-    geoZones
-      .filter(z => !formData.arrondissement || z.districtId === formData.arrondissement)
-      .map(z => z.name)
-      .filter(Boolean)
-  )]
+  const uniqueCountries = Array.from(new Set(geoZones.map(z => z.countryId).filter(Boolean)))
+
+  // Quartiers of the selected country, narrowed by the search box and deduped
+  // by name; at most 20 are shown at a time.
+  const countryQuartiers = formData.pays
+    ? geoZones.filter(z => z.name && z.countryId === formData.pays)
+    : []
+  const searchedQuartiers = quartierSearch.trim()
+    ? countryQuartiers.filter(z => z.name.toLowerCase().includes(quartierSearch.trim().toLowerCase()))
+    : countryQuartiers
+  const dedupedQuartiers = Array.from(new Map(searchedQuartiers.map(z => [z.name, z])).values())
+  const visibleQuartiers = dedupedQuartiers.slice(0, 20)
+
+  // Région/ville/arrondissement are no longer picked by the user — they come
+  // from the selected quartier's geolocation record.
+  const selectQuartier = (zone: GeoVille) => {
+    setFormData(prev => ({
+      ...prev,
+      quartier: zone.name,
+      ville: zone.cityId || '',
+      region: zone.regionId || '',
+      arrondissement: zone.districtId || '',
+    }))
+    setErrors(prev => ({ ...prev, quartier: undefined }))
+  }
 
   if (!isOpen) return null
 
@@ -325,8 +328,8 @@ const [formData, setFormData] = useState<ShopFormData>({
   if ( !formData.profileImageUrl) newErrors.profileImageUrl = 'Profile image is required';
   if (!formData.cfeImageUrl.trim()) newErrors.cfeImageUrl = 'CFE image is required';
   if (!formData.pays?.trim()) newErrors.pays = 'Country is required';
-  if (!formData.ville.trim()) newErrors.ville = 'City is required';
-  if (!formData.quartier.trim()) newErrors.quartier = 'Neighborhood is required';
+  // ville/region/arrondissement are derived from the selected quartier's geo record
+  if (!formData.quartier.trim()) newErrors.quartier = 'Quartier is required';
   if (!formData.non_loin_de.trim()) newErrors.non_loin_de = 'Landmark is required';
   if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
   if (!formData.email.trim()) newErrors.email = 'Email is required';
@@ -477,7 +480,10 @@ const [formData, setFormData] = useState<ShopFormData>({
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pays *</label>
       <select
         value={formData.pays}
-        onChange={(e) => setFormData(prev => ({ ...prev, pays: e.target.value, region: '', ville: '', arrondissement: '', quartier: '' }))}
+        onChange={(e) => {
+          setFormData(prev => ({ ...prev, pays: e.target.value, region: '', ville: '', arrondissement: '', quartier: '' }))
+          setQuartierSearch('')
+        }}
         className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.pays ? 'border-red-500' : 'border-gray-300'}`}
         disabled={geoLoading}
       >
@@ -487,57 +493,56 @@ const [formData, setFormData] = useState<ShopFormData>({
       {errors.pays && <p className="text-red-500 text-sm mt-1">{errors.pays}</p>}
     </div>
 
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Région</label>
-      <select
-        value={formData.region}
-        onChange={(e) => setFormData(prev => ({ ...prev, region: e.target.value, ville: '', arrondissement: '', quartier: '' }))}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-        disabled={geoLoading || !formData.pays}
-      >
-        <option value="">Select region</option>
-        {filteredRegions.map(r => <option key={r} value={r}>{r}</option>)}
-      </select>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ville *</label>
-      <select
-        value={formData.ville}
-        onChange={(e) => setFormData(prev => ({ ...prev, ville: e.target.value, arrondissement: '', quartier: '' }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.ville ? 'border-red-500' : 'border-gray-300'}`}
-        disabled={geoLoading}
-      >
-        <option value="">Select city</option>
-        {filteredVilles.map(v => <option key={v} value={v}>{v}</option>)}
-      </select>
-      {errors.ville && <p className="text-red-500 text-sm mt-1">{errors.ville}</p>}
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arrondissement</label>
-      <select
-        value={formData.arrondissement}
-        onChange={(e) => setFormData(prev => ({ ...prev, arrondissement: e.target.value, quartier: '' }))}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
-        disabled={geoLoading || !formData.ville}
-      >
-        <option value="">Select arrondissement</option>
-        {filteredDistricts.map(d => <option key={d} value={d}>{d}</option>)}
-      </select>
-    </div>
-
-    <div>
+    <div className="md:col-span-2">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quartier *</label>
-      <select
-        value={formData.quartier}
-        onChange={(e) => setFormData(prev => ({ ...prev, quartier: e.target.value }))}
-        className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent ${errors.quartier ? 'border-red-500' : 'border-gray-300'}`}
-        disabled={geoLoading}
-      >
-        <option value="">Select quartier</option>
-        {filteredQuartiers.map(q => <option key={q} value={q}>{q}</option>)}
-      </select>
+      {!formData.pays ? (
+        <p className="text-sm text-gray-400 px-3 py-2 border border-dashed border-gray-300 rounded-md">
+          Select a country to choose a quartier
+        </p>
+      ) : (
+        <>
+          <input
+            type="text"
+            value={quartierSearch}
+            onChange={(e) => setQuartierSearch(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-ikigai-primary focus:border-transparent"
+            placeholder="Search for a quartier..."
+          />
+          {formData.quartier && (
+            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm bg-ikigai-primary text-white">
+              {formData.quartier}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, quartier: '', ville: '', region: '', arrondissement: '' }))}
+                className="hover:opacity-70"
+                aria-label="Clear quartier"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {visibleQuartiers.map(z => (
+              <button
+                key={z.id}
+                type="button"
+                onClick={() => selectQuartier(z)}
+                className={`px-3 py-1 rounded-full text-sm border ${formData.quartier === z.name ? 'bg-ikigai-primary text-white border-ikigai-primary' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-ikigai-primary'}`}
+              >
+                {z.name}
+              </button>
+            ))}
+          </div>
+          {visibleQuartiers.length === 0 && (
+            <p className="text-sm text-gray-400 mt-2">No quartier found{quartierSearch ? ` for “${quartierSearch}”` : ' for this country'}</p>
+          )}
+          {dedupedQuartiers.length > visibleQuartiers.length && (
+            <p className="text-xs text-gray-400 mt-2">
+              Showing {visibleQuartiers.length} of {dedupedQuartiers.length} — refine the search to see more
+            </p>
+          )}
+        </>
+      )}
       {errors.quartier && <p className="text-red-500 text-sm mt-1">{errors.quartier}</p>}
     </div>
   </div>
