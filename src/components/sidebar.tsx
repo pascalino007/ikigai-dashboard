@@ -113,8 +113,9 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      {/* Mobile/tablet menu button — sidebar is collapsible below xl (1280px),
+          so iPads in landscape (1024px) get the hamburger too */}
+      <div className="xl:hidden fixed top-4 left-4 z-50">
         <Button
           variant="outline"
           size="icon"
@@ -126,7 +127,7 @@ export function Sidebar() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-[hsl(220,18%,10%)] border-r border-gray-200 dark:border-gray-800/60 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-[hsl(220,18%,10%)] border-r border-gray-200 dark:border-gray-800/60 transform transition-transform duration-300 ease-in-out xl:translate-x-0 xl:static xl:inset-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
@@ -230,10 +231,10 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Overlay for mobile */}
+      {/* Overlay for mobile/tablet */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+        <div
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 xl:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}

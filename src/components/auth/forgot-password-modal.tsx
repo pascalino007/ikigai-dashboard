@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { API_BASE_URL } from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { X, Mail, KeyRound, Lock, ArrowLeft, CheckCircle } from 'lucide-react'
+
+const RESEND_COOLDOWN_S = 30
 
 interface ForgotPasswordModalProps {
   isOpen: boolean
@@ -22,6 +24,13 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [devOtp, setDevOtp] = useState('')
+  const [resendIn, setResendIn] = useState(0)
+
+  useEffect(() => {
+    if (resendIn <= 0) return
+    const t = setTimeout(() => setResendIn(s => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [resendIn])
 
   const resetAll = () => {
     setStep('email')
@@ -32,6 +41,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
     setConfirmPassword('')
     setError('')
     setDevOtp('')
+    setResendIn(0)
   }
 
   const handleClose = () => {
@@ -39,8 +49,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
     onClose()
   }
 
-  const handleRequestOtp = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const requestOtp = async () => {
     setError('')
     if (!email) {
       setError('Please enter your email')
@@ -62,11 +71,17 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
         setDevOtp(data.devOtp)
       }
       setStep('otp')
+      setResendIn(RESEND_COOLDOWN_S)
     } catch (err) {
       setError('Network error. Please try again.')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRequestOtp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await requestOtp()
   }
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -208,11 +223,13 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                   <input
                     type="text"
                     inputMode="numeric"
+                    autoComplete="one-time-code"
                     maxLength={6}
+                    autoFocus
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    className="appearance-none rounded-md relative block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:ring-ikigai-primary focus:border-ikigai-primary sm:text-sm tracking-widest"
-                    placeholder="000000"
+                    className="appearance-none rounded-md relative block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:ring-ikigai-primary focus:border-ikigai-primary text-center font-mono text-lg tracking-[0.4em]"
+                    placeholder="••••••"
                     required
                   />
                 </div>
@@ -235,6 +252,17 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                 <Button type="submit" disabled={loading} className="flex-1">
                   {loading ? 'Verifying...' : 'Verify'}
                 </Button>
+              </div>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => { setError(''); requestOtp() }}
+                  disabled={loading || resendIn > 0}
+                  className="text-sm text-ikigai-primary hover:text-ikigai-secondary font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {resendIn > 0 ? `Resend code (${resendIn}s)` : "Didn't get it? Resend code"}
+                </button>
               </div>
             </form>
           )}

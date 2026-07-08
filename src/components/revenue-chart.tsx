@@ -82,20 +82,25 @@ export function RevenueChart() {
         </div>
       </div>
 
-      <div className="h-64 flex items-end justify-between gap-2">
+      <div className="h-64 flex justify-between gap-2">
         {data.map((item) => {
           const heightPercent = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0
           return (
-            <div key={item.label} className="flex flex-col items-center flex-1">
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {item.revenue > 0 ? `${(item.revenue / 1000).toFixed(0)}k` : '0'}
+            <div key={item.label} className="flex flex-col items-center flex-1 h-full">
+              {/* The bar's % height needs a parent with a resolved height — this
+                  flex-1 wrapper provides it (the old layout had an auto-height
+                  parent, so every bar computed to 0px and nothing "graphed"). */}
+              <div className="flex-1 w-full flex flex-col items-center justify-end min-h-0">
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex-shrink-0">
+                  {item.revenue > 0 ? `${(item.revenue / 1000).toFixed(0)}k` : '0'}
+                </div>
+                <div
+                  className="w-full bg-ikigai-primary rounded-t transition-all duration-700 ease-out"
+                  style={{ height: `${Math.max(heightPercent, 2)}%` }}
+                  title={`${item.label}: ${item.revenue.toLocaleString()} FCFA`}
+                />
               </div>
-              <div
-                className="w-full bg-ikigai-primary rounded-t transition-all duration-700 ease-out"
-                style={{ height: `${Math.max(heightPercent, 4)}%` }}
-                title={`${item.label}: ${item.revenue.toLocaleString()} FCFA`}
-              />
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{item.label}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex-shrink-0">{item.label}</div>
             </div>
           )
         })}
