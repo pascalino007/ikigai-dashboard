@@ -28,7 +28,9 @@ const IMG_BASE = 'https://myikigai.sfo2.digitaloceanspaces.com/uploads/'
 
 export default function MiServicesPage() {
   const [services, setServices] = useState<MiService[]>([])
+  const [categories, setCategories] = useState<MiServiceCategory[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [filterCategory, setFilterCategory] = useState('all')
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingService, setEditingService] = useState<MiService | null>(null)
@@ -38,14 +40,30 @@ export default function MiServicesPage() {
   const loadAll = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`${API_BASE_URL}/mi-services`)
-      const data = await res.json()
+      const [svcRes, catRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/mi-services`),
+        fetch(`${API_BASE_URL}/mi-services/categories`),
+      ])
+      const data = await svcRes.json()
       setServices(Array.isArray(data) ? data : [])
+      if (catRes.ok) {
+        const cats = await catRes.json()
+        setCategories(Array.isArray(cats) ? cats : [])
+      }
     } catch (e) { setServices([]) }
     finally { setLoading(false) }
   }
 
-  const filtered = services.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const categoryName = (id: number | null) =>
+    id != null ? categories.find(c => c.id === id)?.name ?? null : null
+
+  const filtered = services.filter(s => {
+    const matchSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchCategory =
+      filterCategory === 'all' ||
+      (filterCategory === 'none' ? s.categoryId == null : String(s.categoryId) === filterCategory)
+    return matchSearch && matchCategory
+  })
 
   const handleDelete = async (id: number) => {
     if (!confirm('Supprimer ce Mi Service ?')) return
@@ -82,13 +100,22 @@ export default function MiServicesPage() {
           ))}
         </div>
 
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 p-4 shadow-sm">
-          <div className="relative">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 p-4 shadow-sm flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input type="text" placeholder="Rechercher..."
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary"
               value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
           </div>
+          <select
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-ikigai-primary bg-white dark:bg-gray-800"
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
+          >
+            <option value="all">Toutes catégories</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <option value="none">Sans catégorie</option>
+          </select>
         </div>
 
         {loading && (
@@ -113,6 +140,12 @@ export default function MiServicesPage() {
                 </div>
                 <div className="p-4 flex flex-col flex-1">
                   <h3 className="text-sm font-bold text-gray-900 truncate">{s.name}</h3>
+                  <div className="mt-1 mb-1.5">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${categoryName(s.categoryId) ? 'bg-ikigai-primary/10 text-ikigai-primary' : 'bg-gray-100 text-gray-400'}`}>
+                      <Tag className="h-3 w-3" />
+                      {categoryName(s.categoryId) || 'Sans catégorie'}
+                    </span>
+                  </div>
                   <p className="text-xs text-gray-500 line-clamp-2 flex-1 mb-2">{s.details || '—'}</p>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-ikigai-primary">{s.price.toLocaleString('fr-FR')} FCFA</p>

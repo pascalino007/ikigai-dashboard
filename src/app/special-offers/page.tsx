@@ -32,7 +32,8 @@ export default function SpecialOffersPage() {
     setLoading(true)
     setFetchError(null)
     try {
-      const res = await fetch(`${API_BASE_URL}/specials`)
+      // include_inactive: the dashboard must list deactivated offers too
+      const res = await fetch(`${API_BASE_URL}/specials?include_inactive=1`)
       if (!res.ok) throw new Error(`Failed to fetch specials (${res.status})`)
       const data = await res.json()
 
@@ -40,6 +41,8 @@ export default function SpecialOffersPage() {
       const normalized = Array.isArray(data)
         ? data.map((d: any) => ({
             ...d,
+            // Backend column is is_active; older rows without it count as active.
+            isActive: d.is_active ?? d.isActive ?? true,
             startDate: d.startDate ? new Date(d.startDate) : new Date(),
             endDate: d.endDate ? new Date(d.endDate) : new Date()
           }))
@@ -57,6 +60,23 @@ export default function SpecialOffersPage() {
   useEffect(() => {
     loadSpecials()
   }, [])
+
+  const handleToggleActive = async (offer: SpecialOffer) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/specials/${offer.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !offer.isActive }),
+      })
+      if (!res.ok) throw new Error(`Erreur ${res.status}`)
+      setSpecialOffers(prev =>
+        prev.map(o => (o.id === offer.id ? { ...o, isActive: !o.isActive } : o))
+      )
+    } catch (err) {
+      console.error('Error toggling special:', err)
+      alert("Échec du changement de statut de l'offre")
+    }
+  }
 
   const handleDeleteOffer = async (offer: SpecialOffer) => {
     if (!confirm(`Supprimer l'offre "${offer.title}" ?`)) return
@@ -290,8 +310,8 @@ export default function SpecialOffersPage() {
                        <td className="px-6 py-4 whitespace-nowrap">
                          <div>
                            <div className="text-sm text-gray-900 dark:text-gray-100">
-                             <span className="line-through text-gray-400">${offer.originalPrice}</span>
-                             <span className="ml-2 font-semibold text-green-600">${offer.discountedPrice}</span>
+                             <span className="line-through text-gray-400">{offer.originalPrice} FCFA</span>
+                             <span className="ml-2 font-semibold text-green-600">{offer.discountedPrice} FCFA</span>
                            </div>
                            <div className="text-sm text-red-600 font-medium">
                              <Percent className="h-3 w-3 inline mr-1" />
@@ -323,6 +343,15 @@ export default function SpecialOffersPage() {
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                          <div className="flex space-x-2">
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             onClick={() => handleToggleActive(offer)}
+                             className={offer.isActive ? 'text-orange-500 hover:text-orange-600' : 'text-green-600 hover:text-green-700'}
+                             title={offer.isActive ? 'Désactiver' : 'Activer'}
+                           >
+                             {offer.isActive ? 'Désactiver' : 'Activer'}
+                           </Button>
                            <Button variant="ghost" size="sm" onClick={() => setEditingOffer(offer)} title="Modifier">
                              <Edit className="h-4 w-4" />
                            </Button>
