@@ -514,7 +514,7 @@ export default function ShopsPage() {
                 {/* Grid: Image 100% width at top */}
                 <div className="relative w-full h-52 flex-shrink-0">
                   <img
-                    src={(() => { const img = (shop as any).profileImageUrl || shop.profileImage || ''; return img.startsWith('http') ? img : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${img}` })()}
+                    src={(() => { const img = (shop as any).profileImageUrl || shop.profileImage || ''; return img.startsWith('http') ? img : `https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/${img}` })()}
                     alt={shop.name}
                     className="object-cover w-full h-full"
                   />
@@ -695,7 +695,7 @@ export default function ShopsPage() {
                 {/* List view - keep compact horizontal layout */}
                 <div className="w-24 h-24 flex-shrink-0 relative">
                   <img
-                    src={(() => { const img = (shop as any).profileImageUrl || shop.profileImage || ''; return img.startsWith('http') ? img : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${img}` })()}
+                    src={(() => { const img = (shop as any).profileImageUrl || shop.profileImage || ''; return img.startsWith('http') ? img : `https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/${img}` })()}
                     alt={shop.name}
                     className="object-cover w-full h-full"
                   />

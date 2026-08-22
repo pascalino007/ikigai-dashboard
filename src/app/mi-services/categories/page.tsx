@@ -14,7 +14,7 @@ interface MiServiceCategory {
   createdAt: string
 }
 
-const IMG_BASE = 'https://myikigai.sfo2.digitaloceanspaces.com/uploads/'
+const IMG_BASE = 'https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/'
 
 export default function MiServiceCategoriesPage() {
   const [categories, setCategories] = useState<MiServiceCategory[]>([])

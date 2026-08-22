@@ -577,7 +577,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
               {formData.profileImageUrl && (
                 <div className="relative inline-block">
                   <img 
-                    src={formData.profileImageUrl.startsWith('http') ? formData.profileImageUrl : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${formData.profileImageUrl}`}
+                    src={formData.profileImageUrl.startsWith('http') ? formData.profileImageUrl : `https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/${formData.profileImageUrl}`}
                     alt="Profile"
                     className="w-32 h-32 object-cover rounded-lg border border-gray-300"
                   />
@@ -619,7 +619,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
                   {previewGallery.map((image, index) => (
                     <div key={index} className="relative">
                       <img
-                        src={image.startsWith('http') ? image : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${image}`}
+                        src={image.startsWith('http') ? image : `https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/${image}`}
                         alt={`Gallery ${index + 1}`}
                         className="w-full h-24 object-cover rounded-lg border border-gray-300"
                       />
@@ -675,7 +675,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
               {formData.certificationImageUrl && !formData.certificationImageFile && (
                 <div className="mb-3">
                   <div className="relative inline-block">
-                    <img 
+                    {/* Legacy bare filenames here were only ever stored under DO Spaces' certification/ path — never written to B2. */}
+                    <img
                       src={formData.certificationImageUrl.startsWith('http') ? formData.certificationImageUrl : `https://myikigai.sfo2.digitaloceanspaces.com/certification/${formData.certificationImageUrl}`}
                       alt="Certification"
                       className="w-full h-32 object-cover rounded-lg border border-gray-300"
@@ -731,7 +732,8 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
               {formData.cfeImageUrl && !formData.cfeImageFile && (
                 <div className="mb-3">
                   <div className="relative inline-block">
-                    <img 
+                    {/* Legacy bare filenames here were only ever stored under DO Spaces' cfe/ path — never written to B2. */}
+                    <img
                       src={formData.cfeImageUrl.startsWith('http') ? formData.cfeImageUrl : `https://myikigai.sfo2.digitaloceanspaces.com/cfe/${formData.cfeImageUrl}`}
                       alt="CFE"
                       className="w-full h-32 object-cover rounded-lg border border-gray-300"

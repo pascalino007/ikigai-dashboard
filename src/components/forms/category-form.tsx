@@ -258,7 +258,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
                 {imagePreview && (
                   <div className="mb-4">
                     <img
-                      src={formData.imageurl?.startsWith('http') ? formData.imageurl : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${formData.imageurl}`}
+                      src={formData.imageurl?.startsWith('http') ? formData.imageurl : `https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/${formData.imageurl}`}
                       alt="Preview"
                       className="w-full h-48 object-cover rounded-lg border"
                     />

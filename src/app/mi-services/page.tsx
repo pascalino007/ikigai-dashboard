@@ -24,7 +24,7 @@ interface MiServiceCategory {
   isActive: boolean
 }
 
-const IMG_BASE = 'https://myikigai.sfo2.digitaloceanspaces.com/uploads/'
+const IMG_BASE = 'https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/'
 
 export default function MiServicesPage() {
   const [services, setServices] = useState<MiService[]>([])
@@ -258,7 +258,7 @@ function MiServiceModal({ isOpen, onClose, onSaved, initialData }: { isOpen: boo
   }
 
   if (!isOpen) return null
-  const IMG_BASE = 'https://myikigai.sfo2.digitaloceanspaces.com/uploads/'
+  const IMG_BASE = 'https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/'
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

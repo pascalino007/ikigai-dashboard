@@ -220,7 +220,7 @@ export default function CategoriesPage() {
                 <div key={category.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                   <div className="relative h-40 flex-shrink-0">
                     <img
-                      src={category.imageurl?.startsWith('http') ? category.imageurl : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${category.imageurl}`}
+                      src={category.imageurl?.startsWith('http') ? category.imageurl : `https://ikigai-app.s3.us-east-005.backblazeb2.com/ikigai/uploads/${category.imageurl}`}
                       alt={category.name}
                       className="w-full h-full object-cover"
                       onError={e => {
