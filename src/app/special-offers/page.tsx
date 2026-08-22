@@ -127,37 +127,14 @@ export default function SpecialOffersPage() {
     return 'Active'
   }
 
-  const handleAddSpecialOffer = async (formData: any) => {
-    // Find the service to get its details
-    const service = shopServices.find(s => s.id === formData.serviceId)
-    if (!service) return
-
-    // Calculate discount percentage
-    const discountPercentage = Math.round(((formData.originalPrice - formData.discountedPrice) / formData.originalPrice) * 100)
-
-    // Create new special offer
+  // `created` is the record the backend just persisted (real image URL, real id) —
+  // re-derived fake fields here previously crashed on URL.createObjectURL(string).
+  const handleAddSpecialOffer = (created: any) => {
     const newOffer: SpecialOffer = {
-      id: Date.now().toString(),
-      title: formData.title,
-      description: formData.description,
-      serviceId: formData.serviceId,
-      serviceName: service.name,
-      shopId: service.shopId,
-      shopName: service.shopName,
-      originalPrice: formData.originalPrice,
-      discountedPrice: formData.discountedPrice,
-      discountPercentage,
-      startDate: new Date(formData.startDate),
-      endDate: new Date(formData.endDate),
-      duration: formData.duration,
-      isActive: true,
-      maxUses: formData.maxUses || undefined,
-      usedCount: 0,
-      image: formData.image ? URL.createObjectURL(formData.image) : undefined,
-      termsAndConditions: formData.termsAndConditions,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: 'admin-1' // This would come from auth context
+      ...created,
+      isActive: created.is_active ?? created.isActive ?? true,
+      startDate: created.startDate ? new Date(created.startDate) : new Date(),
+      endDate: created.endDate ? new Date(created.endDate) : new Date(),
     }
 
     setSpecialOffers(prev => [newOffer, ...prev])

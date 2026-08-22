@@ -292,7 +292,7 @@ export function ServiceForm({
 
       if (formData.tags) payload.tags = String(formData.tags)
       if (typeof formData.provider_id !== 'undefined' && formData.provider_id !== null) {
-        payload.provider_id = String(formData.provider_id)
+        payload.provider_id = Number(formData.provider_id)
       }
       if (formData.provider_name) payload.provider_name = String(formData.provider_name)
 

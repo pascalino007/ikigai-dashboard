@@ -23,7 +23,6 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [devOtp, setDevOtp] = useState('')
   const [resendIn, setResendIn] = useState(0)
 
   useEffect(() => {
@@ -40,7 +39,6 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
     setNewPassword('')
     setConfirmPassword('')
     setError('')
-    setDevOtp('')
     setResendIn(0)
   }
 
@@ -66,9 +64,6 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
       if (!res.ok) {
         setError(data.message || 'Failed to send OTP')
         return
-      }
-      if (data.devOtp) {
-        setDevOtp(data.devOtp)
       }
       setStep('otp')
       setResendIn(RESEND_COOLDOWN_S)
@@ -204,13 +199,6 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 We sent a 6-digit code to <span className="font-medium">{email}</span>
               </p>
-
-              {devOtp && (
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-md p-3">
-                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Development OTP (non-prod only):</p>
-                  <p className="text-lg font-mono font-bold text-blue-800 dark:text-blue-200 tracking-widest">{devOtp}</p>
-                </div>
-              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

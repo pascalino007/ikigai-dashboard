@@ -258,7 +258,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
                 {imagePreview && (
                   <div className="mb-4">
                     <img
-                      src={`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+formData.imageurl}
+                      src={formData.imageurl?.startsWith('http') ? formData.imageurl : `https://myikigai.sfo2.digitaloceanspaces.com/uploads/${formData.imageurl}`}
                       alt="Preview"
                       className="w-full h-48 object-cover rounded-lg border"
                     />
@@ -272,7 +272,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
                   >
                     <Upload className="h-8 w-8 text-gray-400 mb-2" />
                     <span className="text-sm text-gray-500 text-center">
-                      {`https://myikigai.sfo2.digitaloceanspaces.com/uploads/`+formData.imageurl ? 'Change Image' : 'Upload Image'}
+                      {formData.imageurl ? 'Change Image' : 'Upload Image'}
                     </span>
                     <input
                       id="image-upload"

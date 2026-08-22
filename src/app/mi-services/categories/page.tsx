@@ -93,7 +93,7 @@ export default function MiServiceCategoriesPage() {
               <div key={c.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
                 <div className="relative h-32 flex-shrink-0 bg-gray-100">
                   {c.imageUrl ? (
-                    <img src={IMG_BASE + c.imageUrl} alt={c.name} className="w-full h-full object-cover" />
+                    <img src={c.imageUrl.startsWith('http') ? c.imageUrl : IMG_BASE + c.imageUrl} alt={c.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center"><ImageIcon className="h-10 w-10 text-gray-300" /></div>
                   )}
@@ -198,7 +198,7 @@ function CategoryModal({ isOpen, onClose, onSaved, initialData }: { isOpen: bool
             <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
             {imagePreview ? (
               <div className="relative w-full h-40 rounded-lg overflow-hidden border mb-2">
-                <img src={IMG_BASE + imagePreview} alt="preview" className="w-full h-full object-cover" />
+                <img src={imagePreview.startsWith('http') ? imagePreview : IMG_BASE + imagePreview} alt="preview" className="w-full h-full object-cover" />
                 {uploadingImage && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><Loader2 className="h-6 w-6 text-white animate-spin" /></div>}
               </div>
             ) : null}

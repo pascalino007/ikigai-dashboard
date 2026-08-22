@@ -133,6 +133,8 @@ const [formData, setFormData] = useState<ShopFormData>({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploadingProfile, setIsUploadingProfile] = useState(false)
   const [profileUploadError, setProfileUploadError] = useState<string | null>(null)
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false)
+  const [galleryUploadError, setGalleryUploadError] = useState<string | null>(null)
   const [modal, setModal] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -208,6 +210,35 @@ const [formData, setFormData] = useState<ShopFormData>({
       setErrors(prev => ({ ...prev, profileImageUrl: err instanceof Error ? err.message : 'Failed to upload profile image' }))
     } finally {
       setIsUploadingProfile(false)
+    }
+  }
+
+  // Upload gallery images to backend and set the returned imageUrls on success
+  const uploadGalleryImages = async (files: File[]) => {
+    setGalleryUploadError(null)
+    setIsUploadingGallery(true)
+    try {
+      const urls = await Promise.all(files.map(async (file) => {
+        const form = new FormData()
+        form.append('image', file) // backend expects 'image'
+        const res = await fetch(`${API_BASE_URL}/upload`, { method: 'POST', body: form })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.message || `Upload failed (${res.status})`)
+        }
+        const data = await res.json()
+        if (!data?.imageUrl) throw new Error('No imageUrl in upload response')
+        return data.imageUrl as string
+      }))
+      setFormData(prev => ({ ...prev, galleryImages: urls }))
+      console.log('✅ Gallery images uploaded:', urls)
+    } catch (err) {
+      console.error('❌ Gallery upload error:', err)
+      setGalleryUploadError(err instanceof Error ? err.message : 'Upload failed')
+      setFormData(prev => ({ ...prev, galleryImages: [] }))
+      setErrors(prev => ({ ...prev, galleryImages: err instanceof Error ? err.message : 'Failed to upload gallery images' }))
+    } finally {
+      setIsUploadingGallery(false)
     }
   }
 
@@ -639,13 +670,12 @@ const [formData, setFormData] = useState<ShopFormData>({
     multiple
     onChange={(e) => {
       const files = Array.from(e.target.files || []);
-      const urls = files.map(file => URL.createObjectURL(file)); // temporary preview URLs
-      setFormData(prev => ({
-        ...prev,
-        galleryImages: urls
-      }));
+      if (files.length === 0) return;
+      void uploadGalleryImages(files);
     }}
   />
+  {isUploadingGallery && <p className="text-xs text-ink-600 mt-1">Uploading gallery images...</p>}
+  {galleryUploadError && <p className="text-red-500 text-sm mt-1">{galleryUploadError}</p>}
   {errors.galleryImages && <p className="text-red-500 text-sm mt-1">{errors.galleryImages}</p>}
 </div>
   </div>
@@ -740,8 +770,8 @@ const [formData, setFormData] = useState<ShopFormData>({
 
   <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
     <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-    <Button type="submit" disabled={isSubmitting || isUploadingProfile}>
-      {isUploadingProfile ? 'Uploading image...' : isSubmitting ? 'Creating...' : 'Create Shop'}
+    <Button type="submit" disabled={isSubmitting || isUploadingProfile || isUploadingGallery}>
+      {isUploadingProfile || isUploadingGallery ? 'Uploading image...' : isSubmitting ? 'Creating...' : 'Create Shop'}
     </Button>
   </div>
 </form>
