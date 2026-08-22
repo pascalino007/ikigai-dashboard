@@ -48,52 +48,19 @@ export default function CategoriesPage() {
     return matchesSearch && matchesStatus
   })
 
-  // Add category via API
-  const handleAddCategory = async (data: any) => {
-    try {
-      const formData = new FormData()
-      formData.append('name', data.name)
-      formData.append('description', data.description)
-      formData.append('isActive', data.isActive !== false ? 'true' : 'false')
-      if (data.image) formData.append('image', data.image)
-
-      const res = await fetch(`${API_BASE_URL}/categories/`, {
-        method: 'POST',
-        body: formData,
-      })
-      const newCategory: Category = await res.json()
-      setCategories(prev => [newCategory, ...prev])
-      setShowAddModal(false)
-    } catch (err) {
-      console.error(err)
-    }
+  // CategoryForm already performs the actual create/update request itself
+  // (POST /categories and POST /categories/update/:id) and hands us back the
+  // server's response — we just merge it into local state, no second request.
+  const handleAddCategory = (newCategory: Category) => {
+    setCategories(prev => [newCategory, ...prev])
+    setShowAddModal(false)
   }
 
-  // Update category via API
-  const handleUpdateCategory = async (data: any) => {
-    if (!editingCategory) return
-    try {
-      const formData = new FormData()
-      formData.append('name', data.name)
-      formData.append('description', data.description)
-      formData.append('isActive', data.isActive !== false ? 'true' : 'false')
-      if (data.image) formData.append('image', data.image)
-
-      const res = await fetch(
-        `${API_BASE_URL}/categories/${editingCategory.id}`,
-        {
-          method: 'PUT',
-          body: formData,
-        }
-      )
-      const updatedCategory: Category = await res.json()
-      setCategories(prev =>
-        prev.map(cat => (cat.id === editingCategory.id ? updatedCategory : cat))
-      )
-      setEditingCategory(null)
-    } catch (err) {
-      console.error(err)
-    }
+  const handleUpdateCategory = (updatedCategory: Category) => {
+    setCategories(prev =>
+      prev.map(cat => (cat.id === updatedCategory.id ? updatedCategory : cat))
+    )
+    setEditingCategory(null)
   }
 
   // Delete category via API

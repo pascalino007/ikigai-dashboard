@@ -17,7 +17,7 @@ interface CategoryFormData {
 interface CategoryFormProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: CategoryFormData) => void
+  onSubmit: (data: Category) => void
   initialData?: Category | null
 }
 
@@ -176,7 +176,9 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
       const result = await response.json()
       console.log('✅ Category ' + (isUpdate ? 'updated' : 'created') + ':', result)
 
-      onSubmit(formData)
+      // Pass the server's response (source of truth) up, not local form state —
+      // the parent no longer makes its own follow-up request.
+      onSubmit(result)
       setFormData({ name: '', description: '', imageurl: '', isActive: true })
       setImagePreview('')
       onClose()
