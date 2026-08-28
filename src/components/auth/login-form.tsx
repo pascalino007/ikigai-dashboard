@@ -317,63 +317,7 @@ export function LoginForm() {
             </Button>
           </div>
 
-          <div className="text-center">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p className="font-medium mb-3">Demo Credentials:</p>
-               <div className="space-y-2 text-left">
-                <div className="bg-blue-50 dark:bg-blue-950/50 p-3 rounded-lg border border-blue-100 dark:border-blue-900">
-                  <p className="font-semibold text-blue-800 dark:text-blue-300">Admin (Full Access)</p>
-                  <p className="text-xs">Email: erikfash@gmail.com</p>
-                  <p className="text-xs">Password: 12345678</p>
-                </div>
-                <div className="bg-green-50 dark:bg-green-950/50 p-3 rounded-lg border border-green-100 dark:border-green-900">
-                  <p className="font-semibold text-green-800 dark:text-green-300">Manager (Shops & Services)</p>
-                  <p className="text-xs">Email: myikigai2025@gmail.com</p>
-                  <p className="text-xs">Password: 12345678</p>
-                </div>
-                <div className="bg-purple-50 dark:bg-purple-950/50 p-3 rounded-lg border border-purple-100 dark:border-purple-900">
-                  <p className="font-semibold text-purple-800 dark:text-purple-300">Enroller (Register Shops)</p>
-                  <p className="text-xs">Email: edolire@gmail.com</p>
-                  <p className="text-xs">Password: 12345678</p>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 space-x-2">
-               <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setEmail('erikfash@gmail.com')
-                  setPassword('12345678')
-                }}
-                className="text-xs"
-              >
-                Admin
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setEmail('myikigai2025@gmail.com')
-                  setPassword('12345678')
-                }}
-                className="text-xs"
-              >
-                Manager
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setEmail('edolire@gmail.com')
-                  setPassword('12345678')
-                }}
-                className="text-xs"
-              >
-                Enroller
-              </Button>
-            </div>
-          </div>
+          {/* Demo credentials removed */}
         </form>
         )}
       </div>
