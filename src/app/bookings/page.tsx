@@ -151,7 +151,13 @@ export default function BookingsPage() {
   }, [])
 
   /* ── Derived ──────────────────────────────────────────────────── */
-  const providerIds = useMemo(() => [...new Set(bookings.map((b) => b.providerId))].sort(), [bookings])
+  const providerIds = useMemo(() => {
+    const s = new Set<number>()
+    bookings.forEach((b) => s.add(b.providerId))
+    const arr: number[] = []
+    s.forEach((v) => arr.push(v))
+    return arr.sort()
+  }, [bookings])
 
   const filtered = useMemo(() => {
     return bookings.filter((b) => {
