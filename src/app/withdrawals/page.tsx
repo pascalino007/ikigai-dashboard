@@ -73,7 +73,7 @@ export default function WithdrawalsPage() {
     } catch (e) { console.error(e) }
   }
 
-  async function confirm(id: number) {
+  async function confirmWithdrawal(id: number) {
     setProcessingId(id)
     try {
       const res = await fetch(`${API_BASE_URL}/transactions/withdrawals/${id}/confirm`, { method: 'POST' })
@@ -87,7 +87,7 @@ export default function WithdrawalsPage() {
   }
 
   async function reject(id: number) {
-    if (!confirm('Rejeter cette demande ? Les fonds seront restitues au portefeuille.')) return
+    if (!window.confirm('Rejeter cette demande ? Les fonds seront restitues au portefeuille.')) return
     setProcessingId(id)
     try {
       const res = await fetch(`${API_BASE_URL}/transactions/withdrawals/${id}/reject`, { method: 'POST' })
@@ -125,7 +125,7 @@ export default function WithdrawalsPage() {
   const pendingCount = withdrawals.filter((w) => w.status === 0).length
 
   return (
-    <RouteGuard permission="MANAGE_WITHDRAWALS">
+    <RouteGuard allowedRoles={["admin", "manager"]}>
       <DashboardLayout>
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -196,7 +196,7 @@ export default function WithdrawalsPage() {
                               size="sm"
                               variant="outline"
                               className="text-green-600 border-green-200 hover:bg-green-50"
-                              onClick={() => confirm(w.id)}
+                              onClick={() => confirmWithdrawal(w.id)}
                               disabled={processingId === w.id}
                             >
                               {processingId === w.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}

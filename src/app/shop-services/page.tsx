@@ -46,7 +46,7 @@ function normalize(s: any, i: number): NormalizedService {
     image: s.imageurl ?? s.image ?? undefined,
     createdAt: s.createdAt ? new Date(s.createdAt) : new Date(),
     updatedAt: s.updatedAt ? new Date(s.updatedAt) : new Date(),
-    services: [],
+    // `services` not needed here; keep object shape aligned with `NormalizedService`
   }
 }
 

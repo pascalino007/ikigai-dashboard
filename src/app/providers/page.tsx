@@ -23,6 +23,18 @@ export default function ProvidersPage() {
   const [editingProvider, setEditingProvider] = useState<ServiceProvider | null>(null)
   const [newCredentials, setNewCredentials] = useState<{ email: string; password: string } | null>(null)
 
+  // Helper: map numeric service type to typed union
+  const mapServiceType = (n: number | string): ServiceProvider['type'] => {
+    switch (Number(n)) {
+      case 1: return 'barber'
+      case 2: return 'hairdresser'
+      case 3: return 'makeup_artist'
+      case 4: return 'nail_technician'
+      case 5: return 'esthetician'
+      default: return 'barber'
+    }
+  }
+
   // fetch providers and shops from backend
   useEffect(() => {
     let mounted = true
@@ -41,16 +53,7 @@ export default function ProvidersPage() {
         }
         const data = await proRes.json()
 
-        const mapType = (n: number | string) => {
-          switch (Number(n)) {
-            case 1: return 'barber'
-            case 2: return 'hairdresser'
-            case 3: return 'makeup_artist'
-            case 4: return 'nail_technician'
-            case 5: return 'esthetician'
-            default: return 'barber'
-          }
-        }
+        
 
         const arr = Array.isArray(data) ? data.map((d: any, i: number) => ({
           id: d.id || d._id || String(d._key || `prov-${Date.now()}-${i}`),
@@ -62,7 +65,7 @@ export default function ProvidersPage() {
           idCardNumber: d.CNI_number || d.CNI_number || '',
           profilePicture: d.profileImageUrl || d.profileImageUrl || '',
           idCardPicture: Array.isArray(d.idcards) && d.idcards.length ? d.idcards[0] : undefined,
-          type: mapType(d.service_type),
+          type: mapServiceType(d.service_type),
           experience: d.year_expe || 0,
           description: d.description || '',
           rating: d.rating || 0,
@@ -138,7 +141,7 @@ export default function ProvidersPage() {
         idCardNumber: d.CNI_number || '',
         profilePicture: d.profileImageUrl || '',
         idCardPicture: Array.isArray(d.idcards) && d.idcards.length ? d.idcards[0] : undefined,
-        type: (() => { switch(Number(d.service_type)){ case 1: return 'barber'; case 2: return 'hairdresser'; case 3: return 'makeup_artist'; case 4: return 'nail_technician'; case 5: return 'esthetician'; default: return 'barber' } })(),
+        type: mapServiceType(d.service_type),
         experience: d.year_expe || 0,
         description: d.description || '',
         rating: d.rating || 0,

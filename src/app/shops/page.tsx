@@ -255,7 +255,7 @@ export default function ShopsPage() {
       handleApiSuccess(`Shop ${currentActive ? 'disabled' : 'enabled'}`)
       loadShops()
     } catch (err) {
-      handleApiError(err, 'Failed to toggle shop status')
+      handleApiError(err)
     }
   }
 
@@ -263,7 +263,7 @@ export default function ShopsPage() {
     // Check if shop has certification image
     const certImage = (shop as any).certificationImage || shop.certificationImage
     if (!certImage) {
-      handleApiError(new Error('Shop cannot be verified without a certification image'), 'Verification failed')
+      handleApiError(new Error('Shop cannot be verified without a certification image'))
       return
     }
     try {
@@ -273,7 +273,7 @@ export default function ShopsPage() {
       handleApiSuccess(result.is_verified ? 'Shop verified' : 'Shop unverified')
       loadShops()
     } catch (err) {
-      handleApiError(err, 'Failed to toggle verification')
+      handleApiError(err)
     }
   }
 

@@ -36,6 +36,7 @@ const mockBookings: Booking[] = [
     serviceId: 'service1',
     serviceName: 'Haircut & Style',
     workerId: 'worker1',
+    providerId: 'prov-1',
     workerName: 'Sarah Johnson',
     shopId: '1',
     shopName: 'Downtown Beauty Studio',
@@ -57,6 +58,7 @@ const mockBookings: Booking[] = [
     serviceId: 'service2',
     serviceName: 'Manicure',
     workerId: 'worker2',
+    providerId: 'prov-2',
     workerName: 'Maria Garcia',
     shopId: '1',
     shopName: 'Downtown Beauty Studio',
@@ -78,6 +80,7 @@ const mockBookings: Booking[] = [
     serviceId: 'service3',
     serviceName: 'Massage',
     workerId: 'worker3',
+    providerId: 'prov-3',
     workerName: 'David Chen',
     shopId: '1',
     shopName: 'Downtown Beauty Studio',
@@ -113,8 +116,8 @@ export default function ShopBookingsPage() {
 
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = booking.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.workerName.toLowerCase().includes(searchTerm.toLowerCase())
+               (booking.serviceName ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+               (booking.workerName ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = filterStatus === 'all' || booking.status === filterStatus
     const matchesDate = filterDate === 'all' || 
                        (filterDate === 'today' && isToday(booking.date)) ||
@@ -165,7 +168,7 @@ export default function ShopBookingsPage() {
     confirmed: bookings.filter(b => b.status === 'confirmed').length,
     pending: bookings.filter(b => b.status === 'pending').length,
     cancelled: bookings.filter(b => b.status === 'cancelled').length,
-    totalRevenue: bookings.filter(b => b.status === 'completed').reduce((sum, b) => sum + b.price, 0)
+    totalRevenue: bookings.filter(b => b.status === 'completed').reduce((sum, b) => sum + (b.price ?? 0), 0)
   }
 
   if (isLoading) {

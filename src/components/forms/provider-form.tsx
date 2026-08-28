@@ -38,7 +38,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
     description: ''
   })
 
-  const [errors, setErrors] = useState<Partial<ProviderFormData>>({})
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadingProfile, setUploadingProfile] = useState(false)
   const [uploadingIdCards, setUploadingIdCards] = useState(false)
@@ -70,7 +70,7 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
   }
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<ProviderFormData> = {}
+    const newErrors: Record<string, string> = {}
 
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required'
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required'

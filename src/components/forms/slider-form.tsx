@@ -31,7 +31,7 @@ export function SliderForm({ isOpen, onClose, onSubmit, initialData }: SliderFor
     isCurrent: false
   })
 
-  const [errors, setErrors] = useState<Partial<SliderFormData>>({})
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [imagePreview, setImagePreview] = useState<string>('')
 
@@ -84,7 +84,7 @@ export function SliderForm({ isOpen, onClose, onSubmit, initialData }: SliderFor
   }
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<SliderFormData> = {}
+    const newErrors: Record<string, string> = {}
 
     if (!formData.title.trim()) newErrors.title = 'Slider title is required'
     if (!formData.description.trim()) newErrors.description = 'Description is required'

@@ -33,7 +33,10 @@ export interface Shop {
   email: string;
   description: string;
   isActive: boolean;
-  ownerId: string;
+  ownerId?: string;
+  owner?: string;
+  certificationImage?: string;
+  is_verified?: boolean;
   openingHours?: Array<{
     day: string; // e.g., Monday
     open: string; // e.g., 09:00
@@ -41,7 +44,7 @@ export interface Shop {
   }>;
   createdAt: Date;
   updatedAt: Date;
-  services: Service[];
+  services?: Service[];
   longitude?: number;
   latitude?: number;
 }
@@ -68,7 +71,7 @@ export interface SousCategory {
 }
 
 export interface Service {
-  imageurl: string;
+  imageurl?: string;
   id: string;
   name: string;
   description: string;
@@ -88,9 +91,16 @@ export interface Booking {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerId?: string;
+  workerId?: string;
   serviceId: string;
   providerId: string;
   shopId: string;
+  serviceName?: string;
+  workerName?: string;
+  duration?: number;
+  price?: number;
+  shopName?: string;
   date: Date;
   time: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
@@ -127,7 +137,10 @@ export interface Payment {
   paymentMethod: 'cash' | 'card' | 'bank_transfer' | 'ouvert';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   transactionId?: string;
-  notes?: string;
+  ownerId?: string;
+  owner?: string;
+  certificationImage?: string;
+  is_verified?: boolean;
   paidAt?: Date;
   createdAt: Date;
   updatedAt: Date;
