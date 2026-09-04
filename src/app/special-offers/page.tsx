@@ -37,15 +37,30 @@ export default function SpecialOffersPage() {
       if (!res.ok) throw new Error(`Failed to fetch specials (${res.status})`)
       const data = await res.json()
 
-      // Normalize dates coming from backend (strings) into Date objects
+      // Normalize dates coming from backend (strings) into Date objects, and fill in
+      // fields the backend doesn't return under the name the table expects: prices are
+      // MySQL decimals (serialized as strings), used-count is `uses`, and shop/service
+      // names come back snake_case (or, for service, only as a raw id) from `/specials`.
       const normalized = Array.isArray(data)
-        ? data.map((d: any) => ({
-            ...d,
-            // Backend column is is_active; older rows without it count as active.
-            isActive: d.is_active ?? d.isActive ?? true,
-            startDate: d.startDate ? new Date(d.startDate) : new Date(),
-            endDate: d.endDate ? new Date(d.endDate) : new Date()
-          }))
+        ? data.map((d: any) => {
+            const originalPrice = Number(d.originalPrice) || 0
+            const discountedPrice = Number(d.discountedPrice) || 0
+            return {
+              ...d,
+              // Backend column is is_active; older rows without it count as active.
+              isActive: d.is_active ?? d.isActive ?? true,
+              startDate: d.startDate ? new Date(d.startDate) : new Date(),
+              endDate: d.endDate ? new Date(d.endDate) : new Date(),
+              originalPrice,
+              discountedPrice,
+              discountPercentage: originalPrice > 0
+                ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)
+                : 0,
+              usedCount: d.uses ?? d.usedCount ?? 0,
+              shopName: d.shop_name ?? d.shopName ?? '',
+              serviceName: d.service_name ?? d.serviceName ?? '',
+            }
+          })
         : []
       setSpecialOffers(normalized)
     } catch (err) {
@@ -130,11 +145,21 @@ export default function SpecialOffersPage() {
   // `created` is the record the backend just persisted (real image URL, real id) —
   // re-derived fake fields here previously crashed on URL.createObjectURL(string).
   const handleAddSpecialOffer = (created: any) => {
+    const originalPrice = Number(created.originalPrice) || 0
+    const discountedPrice = Number(created.discountedPrice) || 0
     const newOffer: SpecialOffer = {
       ...created,
       isActive: created.is_active ?? created.isActive ?? true,
       startDate: created.startDate ? new Date(created.startDate) : new Date(),
       endDate: created.endDate ? new Date(created.endDate) : new Date(),
+      originalPrice,
+      discountedPrice,
+      discountPercentage: originalPrice > 0
+        ? Math.round(((originalPrice - discountedPrice) / originalPrice) * 100)
+        : 0,
+      usedCount: created.uses ?? created.usedCount ?? 0,
+      shopName: created.shop_name ?? created.shopName ?? '',
+      serviceName: created.service_name ?? created.serviceName ?? '',
     }
 
     setSpecialOffers(prev => [newOffer, ...prev])
@@ -280,8 +305,8 @@ export default function SpecialOffersPage() {
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap">
                          <div>
-                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{offer.serviceId}</div>
-                           <div className="text-sm text-gray-500">{offer.shopId}</div>
+                           <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{offer.serviceName || offer.serviceId}</div>
+                           <div className="text-sm text-gray-500">{offer.shopName || offer.shopId}</div>
                          </div>
                        </td>
                        <td className="px-6 py-4 whitespace-nowrap">

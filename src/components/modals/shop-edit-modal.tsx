@@ -3,6 +3,7 @@
 import { API_BASE_URL } from '@/services/api'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
+import { LEGACY_SPACES_HOST } from '@/config/media'
 import { X, MapPin, Phone, Mail, Clock, Image as ImageIcon, Tag, Upload, Trash2, User } from 'lucide-react'
 import { Shop } from '@/types'
 
@@ -677,7 +678,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
                   <div className="relative inline-block">
                     {/* Legacy bare filenames here were only ever stored under DO Spaces' certification/ path — never written to B2. */}
                     <img
-                      src={formData.certificationImageUrl.startsWith('http') ? formData.certificationImageUrl : `https://myikigai.sfo2.digitaloceanspaces.com/certification/${formData.certificationImageUrl}`}
+                      src={formData.certificationImageUrl.startsWith('http') ? formData.certificationImageUrl : `${LEGACY_SPACES_HOST}/certification/${formData.certificationImageUrl}`}
                       alt="Certification"
                       className="w-full h-32 object-cover rounded-lg border border-gray-300"
                     />
@@ -734,7 +735,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
                   <div className="relative inline-block">
                     {/* Legacy bare filenames here were only ever stored under DO Spaces' cfe/ path — never written to B2. */}
                     <img
-                      src={formData.cfeImageUrl.startsWith('http') ? formData.cfeImageUrl : `https://myikigai.sfo2.digitaloceanspaces.com/cfe/${formData.cfeImageUrl}`}
+                      src={formData.cfeImageUrl.startsWith('http') ? formData.cfeImageUrl : `${LEGACY_SPACES_HOST}/cfe/${formData.cfeImageUrl}`}
                       alt="CFE"
                       className="w-full h-32 object-cover rounded-lg border border-gray-300"
                     />
