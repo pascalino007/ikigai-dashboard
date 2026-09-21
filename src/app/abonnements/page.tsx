@@ -54,7 +54,7 @@ function getColorClasses(color: string) {
   return { color: 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900', border: 'border-gray-200 dark:border-gray-700', accent: 'text-gray-700 dark:text-gray-300', badge: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' }
 }
 function authHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null
+  const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
   return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
 }
 

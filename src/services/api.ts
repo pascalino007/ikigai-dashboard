@@ -38,7 +38,7 @@ async function apiRequest<T>(
 
   // Add authentication token if available
 
-  const token = localStorage.getItem('authToken')
+  const token = localStorage.getItem('ikigai_token')
 
   if (token) {
 
@@ -580,7 +580,7 @@ export const songApi = {
 
   create: async (formData: FormData) => {
 
-    const token = localStorage.getItem('authToken')
+    const token = localStorage.getItem('ikigai_token')
 
     const headers: Record<string, string> = {}
 
@@ -678,7 +678,7 @@ export const sliderApi = {
 
   create: async (formData: FormData) => {
 
-    const token = localStorage.getItem('authToken')
+    const token = localStorage.getItem('ikigai_token')
 
     const headers: Record<string, string> = {}
 
@@ -714,7 +714,7 @@ export const sliderApi = {
 
   update: async (id: string, formData: FormData) => {
 
-    const token = localStorage.getItem('authToken')
+    const token = localStorage.getItem('ikigai_token')
 
     const headers: Record<string, string> = {}
 
@@ -774,7 +774,7 @@ export const handleApiError = (error: any) => {
 
     // Handle unauthorized access
 
-    localStorage.removeItem('authToken')
+    localStorage.removeItem('ikigai_token')
 
     window.location.href = '/login'
 

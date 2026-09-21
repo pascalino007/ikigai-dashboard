@@ -23,8 +23,16 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth`)
-      const data = await res.json()
+      // GET /auth is admin/manager-only, so it needs the bearer token.
+      const token = localStorage.getItem('ikigai_token')
+      const res = await fetch(`${API_BASE_URL}/auth`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok || !Array.isArray(data)) {
+        throw new Error(data?.message || `HTTP error! status: ${res.status}`)
+      }
 
       // MAP API RESPONSE → UserType used in UI
       const formatted: UserType[] = data.map((u: any) => ({
@@ -36,7 +44,8 @@ export default function UsersPage() {
         role: u.role === 'user' ? 'customer' : u.role,
         profilePicture: u.image || undefined,
         isActive: u.is_active,
-        lastLogin: null,
+        superior: undefined, // API only returns superior_id
+        lastLogin: undefined,
         createdAt: u.createdAt ? new Date(u.createdAt) : new Date(),
         updatedAt: u.createdAt ? new Date(u.createdAt) : new Date()
       }))

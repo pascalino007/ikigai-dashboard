@@ -2,6 +2,7 @@
 
 import { Sidebar } from '@/components/sidebar'
 import { ProtectedRoute } from '@/components/auth/protected-route'
+import { ChatWidget } from '@/components/chat-widget'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -16,6 +17,7 @@ export function DashboardLayout({ children, requiredRole }: DashboardLayoutProps
         <main className="flex-1">
           {children}
         </main>
+        <ChatWidget />
       </div>
     </ProtectedRoute>
   )

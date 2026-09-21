@@ -3,6 +3,7 @@
 import { API_BASE_URL } from '@/services/api'
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { appSignatureHeaders } from './app-signature'
 
 interface User {
   email: string
@@ -232,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login/request-otp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await appSignatureHeaders()) },
         body: JSON.stringify({
           email,
           password,
@@ -272,7 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login/verify`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await appSignatureHeaders()) },
         body: JSON.stringify({
           email,
           otp,
