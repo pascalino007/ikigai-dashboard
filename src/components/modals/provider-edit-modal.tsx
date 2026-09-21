@@ -151,9 +151,13 @@ export function ProviderEditModal({ isOpen, onClose, provider, onSubmit }: Provi
         registered_by: 'admin'
       }
 
+      const token = localStorage.getItem('ikigai_token')
       const res = await fetch(`${API_BASE_URL}/proownners/${provider.id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload)
       })
       if (!res.ok) {

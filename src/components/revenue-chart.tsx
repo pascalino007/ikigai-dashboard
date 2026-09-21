@@ -1,109 +1,119 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { TrendingUp } from 'lucide-react'
-import { API_BASE_URL } from '@/services/api'
+import { useState } from 'react'
+import { ArrowDown, ArrowUp, BarChart3, ChevronDown } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { formatFcfa, formatNumber, useMonthlySeries } from '@/lib/dashboard-data'
 
-function getMonthLabel(offset: number): string {
-  const d = new Date()
-  d.setMonth(d.getMonth() - offset)
-  return d.toLocaleString('default', { month: 'short', year: '2-digit' })
-}
+// recharts takes plain colour strings, not Tailwind classes: [top, bottom] of each bar's gradient.
+const BAR_PAST = ['#2B969E', '#1B7884']
+const BAR_CURRENT = ['#125F6E', '#074353']
 
-function getMonthRange(offset: number) {
-  const d = new Date()
-  d.setMonth(d.getMonth() - offset)
-  const year = d.getFullYear()
-  const month = d.getMonth()
-  const start = new Date(year, month, 1)
-  const end = new Date(year, month + 1, 0)
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  const fmt = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-  return { startDate: fmt(start), endDate: fmt(end) }
+const PERIODS = [3, 6, 12]
+
+function ChartTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
+  if (!active || !payload?.length) return null
+  const { label, value } = payload[0].payload
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 shadow-lg">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm font-bold text-foreground">{formatFcfa(value)}</p>
+    </div>
+  )
 }
 
 export function RevenueChart() {
-  const [data, setData] = useState<{ label: string; revenue: number }[]>([])
-  const [loading, setLoading] = useState(true)
+  const [months, setMonths] = useState(6)
+  const { data, loading, failed } = useMonthlySeries('revenue', months)
 
-  useEffect(() => {
-    const fetchRevenue = async () => {
-      try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
-        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
-
-        const months = Array.from({ length: 6 }, (_, i) => ({
-          label: getMonthLabel(5 - i),
-          ...getMonthRange(5 - i),
-        }))
-
-        const results = await Promise.all(
-          months.map(async (m) => {
-            const res = await fetch(
-              `${API_BASE_URL}/bookings/stats/revenue?startDate=${m.startDate}&endDate=${m.endDate}`,
-              { headers }
-            )
-            const json = res.ok ? await res.json() : { revenue: 0 }
-            return { label: m.label, revenue: json.revenue ?? 0 }
-          })
-        )
-
-        setData(results)
-      } catch {
-        setData([])
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchRevenue()
-  }, [])
-
-  const maxRevenue = Math.max(...data.map((d) => d.revenue), 1)
-  const totalRevenue = data.reduce((sum, d) => sum + d.revenue, 0)
-
-  if (loading) {
-    return (
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Revenue Overview</h3>
-        <div className="h-64 flex items-center justify-center">
-          <div className="animate-pulse text-gray-400">Loading revenue data...</div>
-        </div>
-      </div>
-    )
-  }
+  const last = data ? data.length - 1 : -1
+  const diff = data && data.length >= 2 ? data[last].value - data[last - 1].value : 0
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-800">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Revenue Overview</h3>
-        <div className="flex items-center text-green-600 dark:text-green-400">
-          <TrendingUp className="h-4 w-4 mr-1" />
-          <span className="text-sm font-medium">{totalRevenue.toLocaleString()} FCFA</span>
+    <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <BarChart3 className="h-5 w-5 text-ikigai-primary dark:text-ikigai-teal" strokeWidth={2.25} />
+        <h3 className="text-lg font-bold text-foreground">Aperçu des revenus</h3>
+
+        <div className="ml-auto flex items-center gap-3">
+          {diff !== 0 && (
+            <div
+              className={
+                diff > 0
+                  ? 'rounded-lg bg-positive-soft px-3 py-1.5 text-center text-positive dark:bg-emerald-500/10 dark:text-emerald-400'
+                  : 'rounded-lg bg-negative-soft px-3 py-1.5 text-center text-negative dark:bg-rose-500/10 dark:text-rose-400'
+              }
+            >
+              <p className="flex items-center justify-center gap-1 text-[13px] font-bold leading-tight">
+                {diff > 0 ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
+                {formatFcfa(Math.abs(diff))}
+              </p>
+              <p className="text-[11px] leading-tight opacity-80">vs mois dernier</p>
+            </div>
+          )}
+
+          <div className="relative">
+            <select
+              value={months}
+              onChange={(e) => setMonths(Number(e.target.value))}
+              aria-label="Période"
+              className="h-9 appearance-none rounded-lg border border-border bg-card pl-3 pr-8 text-xs font-medium text-foreground focus:border-ikigai-primary/40 focus:outline-none focus:ring-2 focus:ring-ikigai-primary/15"
+            >
+              {PERIODS.map((p) => (
+                <option key={p} value={p}>
+                  {p} derniers mois
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          </div>
         </div>
       </div>
 
-      <div className="h-64 flex justify-between gap-2">
-        {data.map((item) => {
-          const heightPercent = maxRevenue > 0 ? (item.revenue / maxRevenue) * 100 : 0
-          return (
-            <div key={item.label} className="flex flex-col items-center flex-1 h-full">
-              {/* The bar's % height needs a parent with a resolved height — this
-                  flex-1 wrapper provides it (the old layout had an auto-height
-                  parent, so every bar computed to 0px and nothing "graphed"). */}
-              <div className="flex-1 w-full flex flex-col items-center justify-end min-h-0">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex-shrink-0">
-                  {item.revenue > 0 ? `${(item.revenue / 1000).toFixed(0)}k` : '0'}
-                </div>
-                <div
-                  className="w-full bg-ikigai-primary rounded-t transition-all duration-700 ease-out"
-                  style={{ height: `${Math.max(heightPercent, 2)}%` }}
-                  title={`${item.label}: ${item.revenue.toLocaleString()} FCFA`}
-                />
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 flex-shrink-0">{item.label}</div>
-            </div>
-          )
-        })}
+      <div className="h-[260px]">
+        {loading ? (
+          <div className="h-full animate-pulse rounded-lg bg-muted/60" />
+        ) : failed || !data ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            Impossible de charger les revenus.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="bar-past" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={BAR_PAST[0]} />
+                  <stop offset="100%" stopColor={BAR_PAST[1]} />
+                </linearGradient>
+                <linearGradient id="bar-current" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={BAR_CURRENT[0]} />
+                  <stop offset="100%" stopColor={BAR_CURRENT[1]} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="label"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                tickMargin={10}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                width={52}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                tickFormatter={(v: number) => formatNumber(v)}
+              />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'hsl(var(--muted))', opacity: 0.6 }} />
+              <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={72} isAnimationActive={false}>
+                {data.map((_, i) => (
+                  <Cell key={i} fill={`url(#${i === last ? 'bar-current' : 'bar-past'})`} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   )

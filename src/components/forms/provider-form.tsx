@@ -156,10 +156,14 @@ export function ProviderForm({ isOpen, onClose, onSubmit }: ProviderFormProps) {
         registered_by: 'admin' // set as required - replace as needed
       }
 
-      // send to proownners endpoint
+      // send to proownners endpoint (admin/manager-only → needs the bearer token)
+      const token = localStorage.getItem('ikigai_token')
       const res = await fetch(`${API_BASE_URL}/proownners`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload)
       })
       if (!res.ok) {

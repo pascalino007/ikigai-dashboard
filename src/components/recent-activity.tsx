@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Clock, User, Scissors, MapPin } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, CalendarDays, ChevronRight, Clock, Store, User, Wallet } from 'lucide-react'
 import { API_BASE_URL } from '@/services/api'
+import { cn } from '@/lib/utils'
+import { formatFcfa } from '@/lib/dashboard-data'
 
 interface Booking {
   id: number
@@ -18,62 +21,53 @@ interface Booking {
   created_at?: string
 }
 
+// Decorative only — bookings carry no per-row type, so the icons just vary the list.
+const ICONS = [User, Store, Wallet, CalendarDays]
+
 function timeAgo(dateStr: string): string {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-  if (seconds < 60) return 'Just now'
+  const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
+  if (Number.isNaN(seconds)) return ''
+  if (seconds < 60) return "À l'instant"
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
+  if (minutes < 60) return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+  if (hours < 24) return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`
   const days = Math.floor(hours / 24)
-  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`
+  if (days < 7) return `Il y a ${days} jour${days > 1 ? 's' : ''}`
   const weeks = Math.floor(days / 7)
-  return `${weeks} week${weeks > 1 ? 's' : ''} ago`
+  return `Il y a ${weeks} semaine${weeks > 1 ? 's' : ''}`
 }
 
-function statusLabel(status: number): string {
-  switch (status) {
-    case 0: return 'Pending'
-    case 1: return 'Confirmed'
-    case 2: return 'Cancelled'
-    case 3: return 'Payment Failed'
-    case 4: return 'In Progress'
-    case 5: return 'Completed'
-    case 6: return 'No Show'
-    default: return 'Unknown'
-  }
-}
+const POSITIVE = 'bg-positive-soft text-positive dark:bg-emerald-500/10 dark:text-emerald-400'
+const NEGATIVE = 'bg-negative-soft text-negative dark:bg-rose-500/10 dark:text-rose-400'
 
-function statusColor(status: number): string {
-  switch (status) {
-    case 0: return 'bg-yellow-100 text-yellow-800'
-    case 1: return 'bg-green-100 text-green-800'
-    case 2: return 'bg-red-100 text-red-800'
-    case 3: return 'bg-orange-100 text-orange-800'
-    case 4: return 'bg-blue-100 text-blue-800'
-    case 5: return 'bg-gray-100 text-gray-800'
-    case 6: return 'bg-purple-100 text-purple-800'
-    default: return 'bg-gray-100 text-gray-800'
-  }
+const STATUS: Record<number, { label: string; className: string }> = {
+  0: { label: 'En attente', className: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' },
+  1: { label: 'Confirmée', className: POSITIVE },
+  2: { label: 'Annulée', className: NEGATIVE },
+  3: { label: 'Paiement échoué', className: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400' },
+  4: { label: 'En cours', className: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400' },
+  5: { label: 'Complété', className: POSITIVE },
+  6: { label: 'Absent', className: 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400' },
 }
+const UNKNOWN_STATUS = { label: 'Inconnu', className: 'bg-muted text-muted-foreground' }
 
 export function RecentActivity() {
   const [activities, setActivities] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
     const fetchRecent = async () => {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
         const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
-        const res = await fetch(`${API_BASE_URL}/bookings?limit=5`, { headers })
+        const res = await fetch(`${API_BASE_URL}/bookings?limit=4`, { headers })
         if (!res.ok) throw new Error(`Failed (${res.status})`)
         const json = await res.json()
         setActivities(json.data ?? [])
       } catch {
-        setActivities([])
+        setFailed(true)
       } finally {
         setLoading(false)
       }
@@ -81,48 +75,61 @@ export function RecentActivity() {
     fetchRecent()
   }, [])
 
-  const getIcon = () => <Clock className="h-4 w-4" />
-
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow border border-gray-100 dark:border-gray-800">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Recent Activity</h3>
+    <div className="rounded-xl border border-border bg-card p-5 shadow-card">
+      <div className="mb-2 flex items-center gap-3">
+        <Clock className="h-5 w-5 text-ikigai-primary dark:text-ikigai-teal" strokeWidth={2.25} />
+        <h3 className="text-lg font-bold text-foreground">Activité récente</h3>
+        <Link
+          href="/bookings"
+          className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-ikigai-primary dark:hover:text-ikigai-teal"
+        >
+          Voir tout <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {loading ? (
-          <div className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Loading...</div>
-        ) : activities.length === 0 ? (
-          <div className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No recent activity</div>
-        ) : (
-          activities.map((booking) => (
-            <div key={booking.id} className="px-6 py-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-ikigai-light flex items-center justify-center">
-                    {getIcon()}
-                  </div>
-                </div>
-                <div className="ml-4 flex-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+
+      {loading ? (
+        <div className="space-y-3 py-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-14 animate-pulse rounded-lg bg-muted/60" />
+          ))}
+        </div>
+      ) : failed ? (
+        <div className="py-10 text-center text-sm text-muted-foreground">Impossible de charger l&apos;activité.</div>
+      ) : activities.length === 0 ? (
+        <div className="py-10 text-center text-sm text-muted-foreground">Aucune activité récente</div>
+      ) : (
+        <ul className="divide-y divide-border">
+          {activities.map((booking, i) => {
+            const Icon = ICONS[i % ICONS.length]
+            const status = STATUS[booking.booking_status] ?? UNKNOWN_STATUS
+            return (
+              <li key={booking.id}>
+                <Link href="/bookings" className="group flex items-center gap-3.5 py-3.5">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border bg-card text-ikigai-primary dark:text-ikigai-teal">
+                    <Icon className="h-5 w-5" strokeWidth={1.75} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-bold text-foreground">
                       {booking.client_name ?? `Client #${booking.user_id}`}
                     </p>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor(booking.booking_status)}`}>
-                      {statusLabel(booking.booking_status)}
-                    </span>
+                    <p className="truncate text-xs text-ikigai-primary/70 dark:text-ikigai-teal/80">
+                      {booking.service_name ?? 'Service'} — {formatFcfa(booking.amount ?? 0)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {timeAgo(`${booking.booking_date}T${booking.booking_time}`)}
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {booking.service_name ?? 'Service'} — {booking.amount.toLocaleString()} FCFA
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                    {timeAgo(`${booking.booking_date}T${booking.booking_time}`)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+                  <span className={cn('shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold', status.className)}>
+                    {status.label}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </div>
   )
 }

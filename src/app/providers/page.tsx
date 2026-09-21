@@ -12,6 +12,12 @@ import { AdminOrManager } from '@/components/auth/route-guard'
 
 const mockProviders: ServiceProvider[] = []
 
+// /proownners is admin/manager-only, so list calls need the bearer token.
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('ikigai_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 export default function ProvidersPage() {
   const [providers, setProviders] = useState<ServiceProvider[]>(mockProviders)
   const [shops, setShops] = useState<any[]>([])
@@ -43,7 +49,7 @@ export default function ProvidersPage() {
       setProvidersError(null)
       try {
         const [proRes, shopsRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/proownners`),
+          fetch(`${API_BASE_URL}/proownners`, { headers: authHeaders() }),
           fetch(`${API_BASE_URL}/shops`),
         ])
         if (!proRes.ok) throw new Error(`Failed to fetch providers (${proRes.status})`)
@@ -126,7 +132,7 @@ export default function ProvidersPage() {
     // Refresh provider list and shops
     try {
       const [proRes, shopsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/proownners`),
+        fetch(`${API_BASE_URL}/proownners`, { headers: authHeaders() }),
         fetch(`${API_BASE_URL}/shops`),
       ])
       if (!proRes.ok) throw new Error('Failed to refresh providers')

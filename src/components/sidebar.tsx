@@ -1,243 +1,259 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { API_BASE_URL } from '@/services/api'
-import { 
-  LayoutDashboard, 
-  Users, 
-  Store, 
-  Scissors, 
+import { usePathname } from 'next/navigation'
+import {
+  type LucideIcon,
+  LayoutDashboard,
+  Users,
+  UserSquare,
+  Store,
+  CalendarCheck,
   Calendar,
   BarChart3,
   Settings,
-  Menu,
   X,
-  LogOut,
   User,
   CreditCard,
   Percent,
-  Wrench,
   Plus,
   UserCheck,
-  TrendingUp,
-  Moon,
-  Sun,
   ShoppingBag,
   Wallet,
-  Key,
   Bell,
   ArrowUpRight,
   Sparkles,
   ClipboardList,
   Tag,
   Smartphone,
-  Camera
+  Layers,
+  Image as ImageIcon,
+  Gift,
+  Crown,
+  Package,
+  MapPin,
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { useAuth } from '@/lib/auth/auth-context'
 import { usePermissions } from '@/lib/auth/use-permissions'
-import { useTheme } from '@/lib/theme-context'
+import { useSidebarCollapsed } from '@/lib/sidebar-store'
+import { IkigaiKWatermark, IkigaiLogo, IkigaiMark } from '@/components/brand/ikigai-logo'
 
-// Icon mapping for dynamic navigation
-const iconMap = {
+// Icon mapping for dynamic navigation (names come from use-permissions)
+const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
   Users,
+  UserSquare,
   Store,
-  Wrench,
-  Percent,
-  Scissors,
+  CalendarCheck,
   Calendar,
-  CreditCard,
   BarChart3,
   Settings,
+  User,
+  CreditCard,
+  Percent,
   Plus,
   UserCheck,
-  TrendingUp,
   ShoppingBag,
   Wallet,
-  Key,
   Bell,
   ArrowUpRight,
   Sparkles,
   ClipboardList,
   Tag,
-  Smartphone
+  Smartphone,
+  Layers,
+  Image: ImageIcon,
+  Gift,
+  Crown,
+  Package,
+  MapPin,
 }
 
-export function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false)
+// Where "Aide" and the help card lead. Left unset, both are hidden rather than pointing nowhere.
+const SUPPORT_URL = process.env.NEXT_PUBLIC_SUPPORT_URL
+
+const linkBase =
+  'flex items-center gap-3 rounded-lg px-3 py-[7px] text-[13px] font-medium transition-colors'
+
+interface SidebarProps {
+  /** Off-canvas drawer state below xl (owned by DashboardLayout so the top bar can open it). */
+  mobileOpen: boolean
+  onMobileClose: () => void
+}
+
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname()
-  const { user, logout, updateUser } = useAuth()
   const { getNavigationItems } = usePermissions()
-  const { theme, toggleTheme } = useTheme()
-  const router = useRouter()
-  const avatarInputRef = useRef<HTMLInputElement>(null)
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [collapsed, toggleCollapsed] = useSidebarCollapsed()
+  const activeRef = useRef<HTMLAnchorElement>(null)
 
-  const navigation = getNavigationItems()
+  const items = getNavigationItems()
 
-  const handleLogout = () => {
-    logout()
-    router.push('/login')
-  }
+  // Highlight the closest matching route so /shops/12 still lights up "Boutiques".
+  const activeHref = items
+    .filter((i) => i.href && (pathname === i.href || (i.href !== '/' && pathname.startsWith(i.href + '/'))))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href
 
-  // Any signed-in user (enroller included) can change their own picture.
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = '' // allow re-selecting the same file
-    if (!file || !user?.id) return
-    setIsUploadingAvatar(true)
-    try {
-      const fd = new FormData()
-      fd.append('image', file)
-      const res = await fetch(`${API_BASE_URL}/auth/${user.id}/profile-image`, {
-        method: 'POST',
-        body: fd,
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.message || `Upload failed (${res.status})`)
-      }
-      const data = await res.json()
-      if (data?.imageUrl) updateUser({ avatar: data.imageUrl })
-    } catch (err) {
-      console.error('Avatar upload failed:', err)
-      alert("Impossible de mettre à jour la photo de profil")
-    } finally {
-      setIsUploadingAvatar(false)
-    }
-  }
+  const groups = [1, 2, 3, 4]
+    .map((g) => items.filter((i) => i.group === g))
+    .filter((g) => g.length > 0)
+
+  // The sidebar is re-created on every navigation; keep the current page in view in long menus.
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [])
+
+  const labelClass = cn(collapsed && 'xl:hidden')
+  const itemLayout = cn(collapsed && 'xl:justify-center xl:px-0')
 
   return (
     <>
-      {/* Mobile/tablet menu button — sidebar is collapsible below xl (1280px),
-          so iPads in landscape (1024px) get the hamburger too */}
-      <div className="xl:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setIsOpen(!isOpen)}
+      {/* Overlay for mobile/tablet */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-30 bg-black/50 xl:hidden" onClick={onMobileClose} />
+      )}
+
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col overflow-hidden text-white',
+          'bg-gradient-to-b from-sidebar-from to-sidebar-to',
+          'transition-[transform,width] duration-300 ease-in-out',
+          'xl:sticky xl:top-0 xl:h-screen xl:shrink-0 xl:translate-x-0',
+          collapsed && 'xl:w-[76px]',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+        {/* The "k" of the logo, oversized and cropped by the edge */}
+        <IkigaiKWatermark className="pointer-events-none absolute -right-28 top-[38%] h-[430px] w-auto text-white/[0.05]" />
+
+        {/* Logo + collapse */}
+        <div
+          className={cn(
+            'relative flex h-[76px] shrink-0 items-center justify-between px-5',
+            collapsed && 'xl:h-auto xl:flex-col xl:justify-center xl:gap-3 xl:px-0 xl:py-5',
+          )}
         >
-          {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-        </Button>
-      </div>
+          <Link href="/" onClick={onMobileClose} aria-label="ikigai — tableau de bord">
+            <IkigaiLogo
+              markClassName="h-9"
+              wordmarkClassName={cn('text-white', labelClass)}
+              className={cn(collapsed && 'xl:gap-0')}
+            />
+          </Link>
+          <button
+            type="button"
+            onClick={onMobileClose}
+            className="rounded-full p-1.5 text-white/80 hover:bg-white/10 xl:hidden"
+            aria-label="Fermer le menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="hidden rounded-full p-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white xl:inline-flex"
+            aria-label={collapsed ? 'Déplier le menu' : 'Replier le menu'}
+            title={collapsed ? 'Déplier le menu' : 'Replier le menu'}
+          >
+            {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+          </button>
+        </div>
 
-      {/* Sidebar */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-[hsl(220,18%,10%)] border-r border-gray-200 dark:border-gray-800/60 transform transition-transform duration-300 ease-in-out xl:translate-x-0 xl:static xl:inset-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-800/60">
-            <h1 className="text-2xl font-bold text-ikigai-primary dark:text-ikigai-teal">I<span className="text-ikigai-gold">k</span>igai</h1>
-          </div>
+        {/* Navigation */}
+        <nav className="ik-sidebar-scroll relative flex-1 overflow-y-auto px-4 pb-4">
+          {groups.map((group, gi) => (
+            <div key={gi} className={cn(gi > 0 && 'mt-3 border-t border-white/25 pt-3')}>
+              <div className="space-y-0.5">
+                {group.map((item) => {
+                  const Icon = iconMap[item.icon] ?? LayoutDashboard
+                  const isActive = item.href !== '' && item.href === activeHref
+                  const content = (
+                    <>
+                      <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+                      <span className={cn('truncate', labelClass)}>{item.name}</span>
+                    </>
+                  )
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item, index) => {
-              const isActive = pathname === item.href
-              const IconComponent = iconMap[item.icon as keyof typeof iconMap]
-              const isFourthItem = (index + 1) % 4 === 0
-              const isLastItem = index === navigation.length - 1
-              return (
-                <div key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
-                      isActive
-                        ? "bg-ikigai-primary dark:bg-ikigai-teal/15 text-white dark:text-ikigai-teal shadow-sm dark:shadow-none border-l-2 border-transparent dark:border-ikigai-teal"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-gray-200"
-                    )}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <IconComponent className="mr-3 h-5 w-5" />
-                    {item.name}
-                  </Link>
-                  {isFourthItem && !isLastItem && (
-                    <div className="my-2 border-b border-gray-200 dark:border-gray-700" />
-                  )}
-                </div>
-              )
-            })}
-          </nav>
+                  // Entries without a page yet (e.g. Parrainage) render inert instead of linking to nowhere.
+                  if (!item.href) {
+                    return (
+                      <div
+                        key={item.name}
+                        title={collapsed ? item.name : undefined}
+                        className={cn(linkBase, itemLayout, 'cursor-default text-white/50')}
+                      >
+                        {content}
+                      </div>
+                    )
+                  }
 
-          {/* User info */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800/60 space-y-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleTheme}
-              className="w-full justify-start text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/70"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4 mr-2" />
-              ) : (
-                <Moon className="h-4 w-4 mr-2" />
-              )}
-              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            </Button>
-            <div className="flex items-center mb-3">
-              <div className="flex-shrink-0 relative">
-                <button
-                  type="button"
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={isUploadingAvatar}
-                  className="group relative h-8 w-8 rounded-full bg-ikigai-primary flex items-center justify-center overflow-hidden"
-                  title="Changer ma photo de profil"
-                >
-                  {user?.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
-                  ) : (
-                    <User className="h-4 w-4 text-white" />
-                  )}
-                  <span className="absolute inset-0 hidden group-hover:flex items-center justify-center bg-black/50 rounded-full">
-                    {isUploadingAvatar ? (
-                      <span className="h-3 w-3 rounded-full border-b-2 border-white animate-spin" />
-                    ) : (
-                      <Camera className="h-3.5 w-3.5 text-white" />
-                    )}
-                  </span>
-                </button>
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarChange}
-                />
-              </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{user?.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500">{user?.email}</p>
-                <p className="text-xs text-ikigai-teal dark:text-ikigai-gold font-medium capitalize">{user?.role}</p>
+                  return (
+                    <Link
+                      key={item.name}
+                      ref={isActive ? activeRef : undefined}
+                      href={item.href}
+                      title={collapsed ? item.name : undefined}
+                      aria-current={isActive ? 'page' : undefined}
+                      onClick={onMobileClose}
+                      className={cn(
+                        linkBase,
+                        itemLayout,
+                        isActive
+                          ? 'bg-white/[0.18] text-white'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white',
+                      )}
+                    >
+                      {content}
+                    </Link>
+                  )
+                })}
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="w-full justify-start text-gray-600 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </div>
+          ))}
 
-      {/* Overlay for mobile/tablet */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 xl:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+          {SUPPORT_URL && (
+            <div className="mt-3 border-t border-white/25 pt-3">
+              <a
+                href={SUPPORT_URL}
+                target="_blank"
+                rel="noreferrer"
+                title={collapsed ? 'Aide' : undefined}
+                className={cn(linkBase, itemLayout, 'text-white/80 hover:bg-white/10 hover:text-white')}
+              >
+                <HelpCircle className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+                <span className={labelClass}>Aide</span>
+              </a>
+            </div>
+          )}
+        </nav>
+
+        {/* Help card */}
+        {SUPPORT_URL && (
+          <a
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noreferrer"
+            title={collapsed ? "Besoin d'aide ?" : undefined}
+            className={cn(
+              'relative m-4 mt-1 flex items-center gap-3 rounded-xl border border-white/25 bg-white/[0.06] p-3 transition-colors hover:bg-white/10',
+              collapsed && 'xl:mx-3 xl:justify-center xl:p-2',
+            )}
+          >
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white">
+              <IkigaiMark className="h-6 text-ikigai-primary" />
+            </span>
+            <span className={cn('min-w-0 flex-1', labelClass)}>
+              <span className="block text-[13px] font-semibold leading-tight">Besoin d&apos;aide ?</span>
+              <span className="block text-[11px] leading-snug text-white/70">Notre équipe est là pour vous</span>
+            </span>
+            <ChevronRight className={cn('h-4 w-4 shrink-0 text-white/80', labelClass)} />
+          </a>
+        )}
+      </aside>
     </>
   )
 }

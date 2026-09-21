@@ -28,6 +28,11 @@ interface ChatMessageRow {
   created_at: string
 }
 
+// Unread total we've already alerted for. Module-level, not a ref: every page wraps itself in
+// <DashboardLayout>, so ChatWidget remounts on each sidebar click and a per-instance ref would
+// restart at 0 and re-ring for messages the admin has already been alerted about.
+let lastKnownUnread = 0
+
 function authHeaders(): Record<string, string> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('ikigai_token') : null
   return {
@@ -116,7 +121,6 @@ export function ChatWidget() {
 
   const isOpenRef = useRef(isOpen)
   const selectedUserIdRef = useRef(selectedUserId)
-  const prevUnreadRef = useRef(0)
   const threadEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -143,7 +147,7 @@ export function ChatWidget() {
       const total = data.reduce((sum, c) => sum + c.unread_count, 0)
       setTotalUnread(total)
 
-      if (total > prevUnreadRef.current) {
+      if (total > lastKnownUnread) {
         playAlertSound()
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted' && !document.hasFocus()) {
           const newest = data[0]
@@ -152,7 +156,7 @@ export function ChatWidget() {
           })
         }
       }
-      prevUnreadRef.current = total
+      lastKnownUnread = total
     } catch {
       // Network hiccup — the next poll will retry.
     }
