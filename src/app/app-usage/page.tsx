@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Smartphone, Users, TrendingUp, RefreshCw, Loader2, CheckCircle, Flame, BarChart3, Eye, Activity } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { AdminOrManager } from '@/components/auth/route-guard'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 interface AppUsageStats {
   totalClients: number
@@ -45,12 +45,12 @@ export default function AppUsagePage() {
     setLoading(true)
     setError(null)
     // Analytics is best-effort — its failure must not hide the primary stats.
-    fetch(`${API_BASE_URL}/analytics/overview?days=14`)
+    fetch(`${API_BASE_URL}/analytics/overview?days=14`, { headers: authHeaders() })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setAnalytics(d))
       .catch(() => setAnalytics(null))
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/stats/app-usage`)
+      const res = await fetch(`${API_BASE_URL}/auth/stats/app-usage`, { headers: authHeaders() })
       if (!res.ok) throw new Error(`Erreur ${res.status} lors du chargement des statistiques`)
       setStats(await res.json())
     } catch (err) {

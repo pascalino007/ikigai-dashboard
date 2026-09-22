@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2, Tag, ImageIcon, Loader2 } from 'lucide-react'
@@ -67,7 +67,7 @@ export default function MiServicesPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Supprimer ce Mi Service ?')) return
-    await fetch(`${API_BASE_URL}/mi-services/${id}`, { method: 'DELETE' })
+    await fetch(`${API_BASE_URL}/mi-services/${id}`, { method: 'DELETE', headers: authHeaders() })
     setServices(prev => prev.filter(s => s.id !== id))
   }
 
@@ -250,7 +250,7 @@ function MiServiceModal({ isOpen, onClose, onSaved, initialData }: { isOpen: boo
         imageUrl: imageUrl || undefined,
       }
       const url = initialData ? `${API_BASE_URL}/mi-services/${initialData.id}` : `${API_BASE_URL}/mi-services`
-      const res = await fetch(url, { method: initialData ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const res = await fetch(url, { method: initialData ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) })
       if (!res.ok) throw new Error('Erreur')
       onSaved(); onClose()
     } catch (err: any) { setErrors({ _global: err.message }) }

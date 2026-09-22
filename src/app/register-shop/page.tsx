@@ -8,7 +8,7 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { useAuth } from '@/lib/auth/auth-context'
 import { EnrollerOnly } from '@/components/auth/route-guard'
 import { ShopForm } from '@/components/forms/shop-form'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 // ── Provider form state ────────────────────────────────────────────────────────
 interface ProviderForm {
@@ -102,7 +102,7 @@ export default function RegisterShopPage() {
       }
       const res = await fetch(`${API_BASE_URL}/proownners`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           firstname: provider.firstname,
           lastname: provider.lastname,

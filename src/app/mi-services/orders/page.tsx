@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Search, Filter, ClipboardList, Loader2, ChevronLeft, ChevronRight, CalendarDays, List, PackageCheck, Truck } from 'lucide-react'
@@ -52,7 +52,7 @@ export default function MiServiceOrdersPage() {
   const markDelivered = async (id: number) => {
     if (!confirm('Marquer cette commande comme livrée ?')) return
     try {
-      await fetch(`${API_BASE_URL}/mi-services/orders/${id}/deliver`, { method: 'PATCH' })
+      await fetch(`${API_BASE_URL}/mi-services/orders/${id}/deliver`, { method: 'PATCH', headers: authHeaders() })
       await loadAll()
     } catch (e) { /* ignore */ }
   }

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { RouteGuard } from '@/components/auth/route-guard'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 interface ClientWallet {
   id: number
@@ -102,7 +102,7 @@ export default function ClientWalletsPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/client-wallet/${selectedWallet.id}/topup`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ amount }),
       })
       
@@ -128,7 +128,7 @@ export default function ClientWalletsPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/client-wallet/${selectedWallet.id}/reset`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
       })
 
       if (!res.ok) throw new Error('Failed to reset wallet')

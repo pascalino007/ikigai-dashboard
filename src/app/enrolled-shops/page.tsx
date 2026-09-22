@@ -6,7 +6,7 @@ import { Plus, Search, MapPin, Phone, Mail, Eye, Calendar, Users, TrendingUp, Lo
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { useAuth } from '@/lib/auth/auth-context'
 import { EnrollerOnly } from '@/components/auth/route-guard'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 interface EnrolledShop {
   id: number
@@ -38,7 +38,7 @@ export default function EnrolledShopsPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE_URL}/enrollers/${user!.id}/shops`)
+      const res = await fetch(`${API_BASE_URL}/enrollers/${user!.id}/shops`, { headers: authHeaders() })
       if (!res.ok) throw new Error('Failed to fetch enrolled shops')
       const data = await res.json()
       setEnrolledShops(Array.isArray(data) ? data : [])

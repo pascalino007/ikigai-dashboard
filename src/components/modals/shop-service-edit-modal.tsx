@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, DollarSign, Clock, Tag, Loader2, Pencil } from 'lucide-react'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { ShopService } from '@/types'
 
 interface ShopServiceEditModalProps {
@@ -118,7 +118,7 @@ export function ShopServiceEditModal({ service, onClose, onSaved }: ShopServiceE
     try {
       const res = await fetch(`${API_BASE_URL}/services/${service.id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,

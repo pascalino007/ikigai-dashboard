@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Store, Calendar, CreditCard, UserCheck, TrendingUp, Users, Plus, Pencil, Ban, CheckCircle } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { RouteGuard } from '@/components/auth/route-guard'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 type TabType = 'overview' | 'bookings' | 'payments' | 'workers'
 
@@ -498,7 +498,7 @@ function ShopWorkersTab({ shopId, workers, onRefresh }: { shopId: number; worker
       const method = editingWorker ? 'PUT' : 'POST'
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(payload),
       })
       if (res.ok) {
@@ -519,7 +519,7 @@ function ShopWorkersTab({ shopId, workers, onRefresh }: { shopId: number; worker
     try {
       const res = await fetch(`${API_BASE_URL}/workers/${worker.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ is_active: !worker.is_active }),
       })
       if (res.ok) onRefresh()

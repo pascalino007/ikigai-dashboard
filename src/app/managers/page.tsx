@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Search, X, Users, Store, TrendingUp, Loader2, Award, RefreshCw } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { AdminOnly } from '@/components/auth/route-guard'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 // Shapes returned by the backend
 interface ApiUser {
@@ -108,8 +108,8 @@ export default function ManagersPage() {
     setError(null)
     try {
       const [usersRes, enrollersRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/auth`),
-        fetch(`${API_BASE_URL}/enrollers`),
+        fetch(`${API_BASE_URL}/auth`, { headers: authHeaders() }),
+        fetch(`${API_BASE_URL}/enrollers`, { headers: authHeaders() }),
       ])
       if (!usersRes.ok) throw new Error(`Erreur ${usersRes.status} lors du chargement des utilisateurs`)
       const users: ApiUser[] = await usersRes.json()

@@ -4,6 +4,14 @@
 
 export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://api.ikilist.com').replace(/\/*$/, '')
 
+// Most write/list endpoints require `Authorization: Bearer <token>` (JwtAuthGuard on the
+// backend) — attach this to any fetch that isn't already going through apiRequest() below.
+export function authHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  const token = localStorage.getItem('ikigai_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 
 
 // Generic API request function

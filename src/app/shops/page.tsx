@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -250,7 +250,7 @@ export default function ShopsPage() {
 
   const handleToggleActive = async (shopId: string, currentActive: boolean) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/shops/${shopId}/toggle-active`, { method: 'PATCH' })
+      const res = await fetch(`${API_BASE_URL}/shops/${shopId}/toggle-active`, { method: 'PATCH', headers: authHeaders() })
       if (!res.ok) throw new Error('Failed to toggle')
       handleApiSuccess(`Shop ${currentActive ? 'disabled' : 'enabled'}`)
       loadShops()
@@ -267,7 +267,7 @@ export default function ShopsPage() {
       return
     }
     try {
-      const res = await fetch(`${API_BASE_URL}/shops/${shopId}/toggle-verification`, { method: 'POST' })
+      const res = await fetch(`${API_BASE_URL}/shops/${shopId}/toggle-verification`, { method: 'POST', headers: authHeaders() })
       if (!res.ok) throw new Error('Failed to toggle verification')
       const result = await res.json()
       handleApiSuccess(result.is_verified ? 'Shop verified' : 'Shop unverified')

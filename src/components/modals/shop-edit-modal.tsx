@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { LEGACY_SPACES_HOST } from '@/config/media'
@@ -119,7 +119,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
       .catch(() => {})
 
     // Fetch providers for linking
-    fetch(`${API_BASE_URL}/proownners`)
+    fetch(`${API_BASE_URL}/proownners`, { headers: authHeaders() })
       .then(r => r.json())
       .then(data => setProviders(Array.isArray(data) ? data : []))
       .catch(() => {})
@@ -272,6 +272,7 @@ export function ShopEditModal({ isOpen, onClose, shop, onSubmit }: ShopEditModal
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders(),
         },
         body: JSON.stringify({
           name: formData.name.trim(),

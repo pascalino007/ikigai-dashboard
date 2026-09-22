@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, Store, Star, Calendar, Phone, Mail, User, Shield, ToggleLeft, ToggleRight, Loader2, ExternalLink } from 'lucide-react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { RouteGuard } from '@/components/auth/route-guard'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 interface EnrollerDetail {
   id: number
@@ -57,7 +57,7 @@ export default function EnrollerDetailPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE_URL}/enrollers/${enrollerId}`)
+      const res = await fetch(`${API_BASE_URL}/enrollers/${enrollerId}`, { headers: authHeaders() })
       if (!res.ok) throw new Error('Enroller introuvable')
       setData(await res.json())
     } catch (e: any) {
@@ -72,7 +72,7 @@ export default function EnrollerDetailPage() {
   const handleToggle = async () => {
     if (!data) return
     setToggling(true)
-    await fetch(`${API_BASE_URL}/enrollers/${data.id}/toggle-active`, { method: 'PATCH' })
+    await fetch(`${API_BASE_URL}/enrollers/${data.id}/toggle-active`, { method: 'PATCH', headers: authHeaders() })
     await load()
     setToggling(false)
   }

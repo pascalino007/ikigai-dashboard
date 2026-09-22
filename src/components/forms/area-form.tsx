@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Tag } from 'lucide-react'
@@ -63,7 +63,7 @@ export function AreaCountryForm({
 
       const res = await fetch(`${API_BASE_URL}/geoville`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(payload)
       })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -149,7 +149,8 @@ useEffect(() => {
     if (!confirm('Are you sure you want to delete this service?')) return
     try {
       const res = await fetch(`${API_BASE_URL}/services/${serviceId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: authHeaders(),
       })
       if (!res.ok) throw new Error('Failed to delete service')
       setServices(prev => prev.filter(s => s.id !== serviceId))

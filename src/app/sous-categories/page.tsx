@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2, Tag, Layers, CheckCircle, XCircle } from 'lucide-react'
@@ -82,7 +82,7 @@ export default function SousCategoriesPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/sous-categories`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ name: formData.name, category: formData.category, tags: formData.tags || '' }),
       })
       if (!res.ok) throw new Error('Failed to create sous-category')
@@ -97,7 +97,7 @@ export default function SousCategoriesPage() {
     try {
       await fetch(`${API_BASE_URL}/sous-categories/${item.id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ is_active: !item.isActive }),
       })
       setItems(prev => prev.map(s => s.id === item.id ? { ...s, isActive: !s.isActive } : s))
@@ -107,7 +107,7 @@ export default function SousCategoriesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this sous-category?')) return
     try {
-      await fetch(`${API_BASE_URL}/sous-categories/${id}`, { method: 'DELETE' })
+      await fetch(`${API_BASE_URL}/sous-categories/${id}`, { method: 'DELETE', headers: authHeaders() })
       setItems(prev => prev.filter(s => s.id !== id))
     } catch { /* silent */ }
   }
@@ -119,7 +119,7 @@ export default function SousCategoriesPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/sous-categories/${id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ name: data.name, category: data.category, tags: data.tags, is_active: data.isActive }),
       })
       if (!res.ok) throw new Error(`Update failed (${res.status})`)

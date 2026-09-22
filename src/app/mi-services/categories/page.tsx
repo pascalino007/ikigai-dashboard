@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2, Tag, ImageIcon, Loader2 } from 'lucide-react'
@@ -39,7 +39,7 @@ export default function MiServiceCategoriesPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Supprimer cette catégorie ? Les Mi Services associés ne seront plus rangés dessous.')) return
-    await fetch(`${API_BASE_URL}/mi-services/categories/${id}`, { method: 'DELETE' })
+    await fetch(`${API_BASE_URL}/mi-services/categories/${id}`, { method: 'DELETE', headers: authHeaders() })
     setCategories(prev => prev.filter(c => c.id !== id))
   }
 
@@ -176,7 +176,7 @@ function CategoryModal({ isOpen, onClose, onSaved, initialData }: { isOpen: bool
     try {
       const payload = { name: name.trim(), isActive, imageUrl: imageUrl || undefined }
       const url = initialData ? `${API_BASE_URL}/mi-services/categories/${initialData.id}` : `${API_BASE_URL}/mi-services/categories`
-      const res = await fetch(url, { method: initialData ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const res = await fetch(url, { method: initialData ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) })
       if (!res.ok) throw new Error('Erreur')
       onSaved(); onClose()
     } catch (err: any) { setErrors({ _global: err.message }) }

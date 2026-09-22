@@ -7,7 +7,7 @@ import { Plus, Search, Store, Star, Eye, ToggleLeft, ToggleRight, X, Loader2, Us
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { RouteGuard } from '@/components/auth/route-guard'
 import { useAuth } from '@/lib/auth/auth-context'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 interface Enroller {
   id: number
@@ -53,7 +53,7 @@ export default function EnrollersPage() {
   const fetchEnrollers = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(`${API_BASE_URL}/enrollers`)
+      const res = await fetch(`${API_BASE_URL}/enrollers`, { headers: authHeaders() })
       if (res.ok) setEnrollers(await res.json())
     } catch (e) {
       console.error('Failed to fetch enrollers', e)
@@ -151,7 +151,7 @@ export default function EnrollersPage() {
 
       const res = await fetch(`${API_BASE_URL}/enrollers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           firstname: form.firstname,
           lastname: form.lastname,
@@ -180,7 +180,7 @@ export default function EnrollersPage() {
 
   const handleToggle = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    await fetch(`${API_BASE_URL}/enrollers/${id}/toggle-active`, { method: 'PATCH' })
+    await fetch(`${API_BASE_URL}/enrollers/${id}/toggle-active`, { method: 'PATCH', headers: authHeaders() })
     fetchEnrollers()
   }
 
@@ -209,7 +209,7 @@ export default function EnrollersPage() {
 
       const res = await fetch(`${API_BASE_URL}/enrollers/${editing.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(body),
       })
       if (!res.ok) {
@@ -232,7 +232,7 @@ export default function EnrollersPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/enrollers/${enroller.id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ updaterRole: user?.role, updaterId: Number(user?.id) }),
       })
       if (!res.ok) {

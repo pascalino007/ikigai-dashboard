@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Upload, MapPin, Phone, Mail, Tag, Image as ImageIcon, Calendar, Navigation } from 'lucide-react'
@@ -153,7 +153,7 @@ const [formData, setFormData] = useState<ShopFormData>({
       setListsLoading(true)
       setListsError(null)
       try {
-        const provRes = await fetch(`${API_BASE_URL}/proownners`)
+        const provRes = await fetch(`${API_BASE_URL}/proownners`, { headers: authHeaders() })
         if (!provRes.ok) throw new Error(`Failed to fetch responsables (${provRes.status})`)
 
         const provs = await provRes.json()
@@ -385,7 +385,7 @@ const [formData, setFormData] = useState<ShopFormData>({
     try {
     const res = await fetch(`${API_BASE_URL}/shops`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ ...formData, ...(enrollerId != null ? { registered_by: String(enrollerId) } : {}) }),
     });
 

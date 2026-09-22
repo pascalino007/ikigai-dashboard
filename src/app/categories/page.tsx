@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2, Tag } from 'lucide-react'
@@ -69,6 +69,7 @@ export default function CategoriesPage() {
     try {
       await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
         method: 'DELETE',
+        headers: authHeaders(),
       })
       setCategories(prev => prev.filter(cat => cat.id !== categoryId))
     } catch (err) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, Upload, Loader2, Trash2, AlertCircle, Store } from 'lucide-react'
@@ -140,7 +140,7 @@ export function ProductForm({
         image1: safeImg(img1), image2: safeImg(img2), image3: safeImg(img3),
       }
       const url = initialData?.id ? `${API_BASE_URL}/marketplace/products/${initialData.id}` : `${API_BASE_URL}/marketplace/products`
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(payload) })
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.message || 'Failed to save') }
       const result = await res.json()
       if (onSubmit) onSubmit(result)

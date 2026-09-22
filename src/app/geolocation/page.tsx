@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useEffect, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2, MapPin, Globe, Building2, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -91,8 +91,10 @@ export default function GeolocationPage() {
     if (!confirm('Supprimer cette zone ?')) return
 
     try {
-      await fetch(`${API_BASE_URL}/geoville/${id}`, {
-        method: 'DELETE'
+      // Backend exposes deletion as POST /geoville/:id/delete, not DELETE /geoville/:id.
+      await fetch(`${API_BASE_URL}/geoville/${id}/delete`, {
+        method: 'POST',
+        headers: authHeaders(),
       })
       setZones(prev => prev.filter(z => z.id !== id))
     } catch (err) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { X } from 'lucide-react'
@@ -304,7 +304,7 @@ export function ServiceForm({
       console.log('Submitting service payload:', payload)
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(payload)
       })
 

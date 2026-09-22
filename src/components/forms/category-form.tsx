@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { X, ImageIcon, Tag, Upload } from 'lucide-react'
@@ -164,6 +164,7 @@ export function CategoryForm({ isOpen, onClose, onSubmit, initialData }: Categor
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders(),
         },
         body: JSON.stringify(payload),
       })

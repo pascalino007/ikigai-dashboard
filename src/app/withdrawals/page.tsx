@@ -5,7 +5,7 @@ import { Search, Check, X, ArrowUpRight, RefreshCw, Clock, AlertCircle } from 'l
 import { Button } from '@/components/ui/button'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { RouteGuard } from '@/components/auth/route-guard'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 
 interface Withdrawal {
   id: number
@@ -53,7 +53,7 @@ export default function WithdrawalsPage() {
     setLoading(true)
     try {
       const statusParam = filter === 'all' ? '' : `?status=${filter}`
-      const res = await fetch(`${API_BASE_URL}/transactions/withdrawals${statusParam}`)
+      const res = await fetch(`${API_BASE_URL}/transactions/withdrawals${statusParam}`, { headers: authHeaders() })
       if (res.ok) {
         const data = await res.json()
         setWithdrawals(data || [])
@@ -76,7 +76,7 @@ export default function WithdrawalsPage() {
   async function confirmWithdrawal(id: number) {
     setProcessingId(id)
     try {
-      const res = await fetch(`${API_BASE_URL}/transactions/withdrawals/${id}/confirm`, { method: 'POST' })
+      const res = await fetch(`${API_BASE_URL}/transactions/withdrawals/${id}/confirm`, { method: 'POST', headers: authHeaders() })
       if (res.ok) await load()
       else alert('Erreur lors de la confirmation')
     } catch (e) {
@@ -90,7 +90,7 @@ export default function WithdrawalsPage() {
     if (!window.confirm('Rejeter cette demande ? Les fonds seront restitues au portefeuille.')) return
     setProcessingId(id)
     try {
-      const res = await fetch(`${API_BASE_URL}/transactions/withdrawals/${id}/reject`, { method: 'POST' })
+      const res = await fetch(`${API_BASE_URL}/transactions/withdrawals/${id}/reject`, { method: 'POST', headers: authHeaders() })
       if (res.ok) await load()
       else alert('Erreur lors du rejet')
     } catch (e) {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { Button } from '@/components/ui/button'
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import {
   ShoppingBag, Search, RefreshCw, Loader2, ChevronDown, ChevronUp,
   MapPin, CreditCard, Truck, Wallet, Package
@@ -80,7 +80,7 @@ export default function CommandesPage() {
     try {
       const res = await fetch(`${API_BASE_URL}/commandes/${id}/status`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ status }),
       })
       if (!res.ok) throw new Error('Update failed')

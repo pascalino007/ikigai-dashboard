@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Search, Edit, Trash2, Clock, DollarSign, Tag, List, Grid, Layers, CheckCircle, XCircle } from 'lucide-react'
@@ -101,7 +101,7 @@ export default function ShopServicesPage() {
   const handleAddService = async (formData: any) => {
     const res = await fetch(`${API_BASE_URL}/services`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(formData),
     })
     if (!res.ok) {
@@ -114,7 +114,7 @@ export default function ShopServicesPage() {
   const handleToggle = async (s: NormalizedService) => {
     await fetch(`${API_BASE_URL}/services/${s.id}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ is_active: !s.isActive }),
     }).catch(() => {})
     setServices(prev => prev.map(x => x.id === s.id ? { ...x, isActive: !x.isActive } : x))
@@ -122,7 +122,7 @@ export default function ShopServicesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Supprimer ce service ?')) return
-    await fetch(`${API_BASE_URL}/services/${id}`, { method: 'DELETE' }).catch(() => {})
+    await fetch(`${API_BASE_URL}/services/${id}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})
     setServices(prev => prev.filter(x => x.id !== id))
   }
 

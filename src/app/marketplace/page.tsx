@@ -1,6 +1,6 @@
 'use client'
 
-import { API_BASE_URL } from '@/services/api'
+import { API_BASE_URL, authHeaders } from '@/services/api'
 import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -106,7 +106,7 @@ export default function ProductsPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Supprimer ce produit ?')) return
-    await fetch(`${API_BASE_URL}/marketplace/products/${id}`, { method: 'DELETE' }).catch(() => {})
+    await fetch(`${API_BASE_URL}/marketplace/products/${id}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})
     setProducts(prev => prev.filter(p => p.id !== id))
   }
 
