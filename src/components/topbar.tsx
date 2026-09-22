@@ -13,7 +13,7 @@ import { useTheme } from '@/lib/theme-context'
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrateur',
-  manager: 'Gestionnaire',
+  manager: 'Manager',
   enroller: 'Enrôleur',
   designer: 'Designer',
   provider: 'Prestataire',
